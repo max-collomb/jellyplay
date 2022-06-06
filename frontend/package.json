@@ -11,7 +11,7 @@
     "typescript": "^4.6.4"
   },
   "scripts": {
-    "build": "npx parcel build .\\src\\index.html --public-url ./",
-    "watch": "npx parcel watch .\\src\\index.html --public-url ./"
+    "build": "npx parcel build ./src/index.html --public-url ./",
+    "watch": "npx parcel watch ./src/index.html --public-url ./"
   }
 }
