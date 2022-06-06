@@ -14,6 +14,8 @@ type CatalogOptions = {
   rootPath: string;
 }
 
+const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
+
 export class Catalog {
   moviesPath: string;
   tvshowsPath: string;
@@ -119,6 +121,9 @@ export class Catalog {
     // scanner dossier pour détecter changements
     const filenames: string[] = await fs.promises.readdir(this.moviesPath);
     for (const filename of filenames) {
+      if (videoExts.indexOf(path.extname(filename).toLowerCase()) < 0) {
+        continue;
+      }
       const filepath: string = path.join(this.moviesPath, filename);
       if (this.tables.movies?.find({ filename }).length === 0) {
         console.log(`new file detected ${filename}`);

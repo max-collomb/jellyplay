@@ -13,6 +13,8 @@
 [x] [api] récupérer les infos (codec, langue, etc) du fichier 
 [x] [frontend] affichage détaillé d'un film
 [ ] [frontend] lancement du lecteur video
+[ ] [api] détecter les fichiers dans les sous-dossiers
+[ ] [api] nettoyer la base après suppression d'un fichier (movies + credits)
 [ ] [api] déployer sur le nas
 [ ] [frontend] style des boutons
 [ ] [client+frontend+api] enregistrer l'avancement dans un fichier par user + marque comme vu à > 90%
