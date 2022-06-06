@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import { startHttp } from './http';
@@ -6,14 +7,26 @@ import { Catalog } from './catalog';
 
 const rootPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+type ConfigFile = {
+  moviesLocalPath: string;
+  moviesRemotePath: string;
+  tvshowsLocalPath: string;
+  tvshowsRemotePath: string;
+}
+
+declare global {
+  var config: ConfigFile;
+}
+
 export async function main() {
   console.log("main begin");
-  const moviesPath: string = path.join(rootPath, '..', 'sample-library', 'movies');
-  const moviesClientPath: string = 'C:\\dev\\git\\jellyplay\\sample-library\\movies';
-  const tvshowsPath: string = path.join(rootPath, '..', 'sample-library', 'tvshows');
-  const tvshowsClientPath: string = 'C:\\dev\\git\\jellyplay\\sample-library\\tvshows';
+  global.config = JSON.parse(fs.readFileSync(path.join(rootPath, 'config.json'), 'utf8'));
 
-  const catalog: Catalog = new Catalog({ moviesPath, tvshowsPath, rootPath });
+  const catalog: Catalog = new Catalog({
+    moviesPath: global.config.moviesLocalPath,
+    tvshowsPath: global.config.tvshowsLocalPath,
+    rootPath,
+  });
 
   await catalog.load();
 

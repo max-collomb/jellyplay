@@ -350,6 +350,7 @@ MigrationBackup/
 .ionide/
 
 /sample-library
+/api/config.json
 /api/db/images/backdrops_w1280/*.jpg
 /api/db/images/posters_w342/*.jpg
 /api/db/images/posters_w780/*.jpg
