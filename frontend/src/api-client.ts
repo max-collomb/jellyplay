@@ -11,7 +11,7 @@ class ApiClient {
       if (cache.movies) {
         resolve(cache.movies);
       } else {
-        fetch('http://127.0.0.1:3000/catalog/movies/list')
+        fetch('/catalog/movies/list')
         .then(async (response) => {
           let json = await response.json();
           cache.movies = json.list;
@@ -26,7 +26,7 @@ class ApiClient {
       if (cache.credits) {
         resolve(cache.credits);
       } else {
-        fetch('http://127.0.0.1:3000/catalog/credits/list')
+        fetch('/catalog/credits/list')
         .then(async (response) => {
           let json = await response.json();
           cache.credits = json.list;
