@@ -1,0 +1,30 @@
+- inspiration : jellyfin https://demo.jellyfin.org/stable/web/index.html
+- doc bootstrap : https://getbootstrap.com/docs/5.1/getting-started/introduction/
+- doc react-bootstrap : https://react-bootstrap.github.io/components/alerts
+- bootstrap-icons : https://icons.getbootstrap.com/icons/play-fill/
+
+- parsers :
+  * [movies & tvshows] https://github.com/scttcper/video-filename-parser
+  * [tvshows] https://github.com/tregusti/episode-parser
+
+
+
+[x] [api] recupérer toutes les infos tmdb pour chaque film
+[x] [api] récupérer les infos (codec, langue, etc) du fichier 
+[x] [frontend] affichage détaillé d'un film
+[ ] [frontend] lancement du lecteur video
+[ ] [api] déployer sur le nas
+[ ] [frontend] style des boutons
+[ ] [client+frontend+api] enregistrer l'avancement dans un fichier par user + marque comme vu à > 90%
+[ ] [frontend+api] marquer un film comme vu
+[ ] [frontend+api] tags par film (par user ?) : ajout / suppression
+[ ] [frontend] filter selon audience
+[ ] [frontend+api] corriger l'audience d'un film
+[ ] [frontend+api] corriger l'identification d'un film
+[ ] [frontend+api] renommer un fichier
+[ ] [frontend+api] supprimer un fichier
+[ ] [frontend] recherche de film par texte / nom de réal ou d'acteur / genre / pays
+[ ] [frontend] lazy loading des images
+
+[ ] [todo] créer une liste de tâches pour séries
+[ ] [todo] créer une liste de tâches pour page d'accueil

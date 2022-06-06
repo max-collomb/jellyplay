@@ -348,3 +348,13 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+
+/sample-library
+/api/db/images/backdrops_w1280/*.jpg
+/api/db/images/posters_w342/*.jpg
+/api/db/images/posters_w780/*.jpg
+/api/db/images/profiles_w185/*.jpg
+/api/db/*_movies
+/api/dist/*
+.parcel-cache
+/frontend/dist/*

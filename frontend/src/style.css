@@ -1,0 +1,188 @@
+:root {
+  --bs-primary-rgb-alt: 0, 127, 255;
+  --bs-body-bg-alt: #0c0d0e;
+}
+
+* { font-family: 'Noto Sans', sans-serif; }
+
+html.dark .btn { border-radius: 0; }
+html.dark .btn-primary { background-color: rgb(0, 127, 255); border-color: rgb(0, 127, 255); }
+html.dark .btn-primary:hover,
+html.dark .btn-primary:focus { background-color: rgb(0, 89, 178); border-color: rgb(0, 89, 178); }
+html.dark .navbar-dark .navbar-nav .nav-link { color: #fafafacc; margin-right: 1em; }
+html.dark .navbar-dark .navbar-nav .nav-link:focus,
+html.dark .navbar-dark .navbar-nav .nav-link:hover { color: #fafafaff; }
+
+html.dark #navbar { background-color: rgb(24, 26, 27); }
+html.dark #navbar .form-control { background-color: #fff1; border-width: 0; border-radius: 0; color: #fff }
+html.dark #navbar ::placeholder { color: #fff6 }
+html.dark #navbar .nav-link.active { background-color: #fff1 }
+html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
+
+.movie-card {
+  min-width: 150px;
+  max-width: 342px;
+  width: 10vw;
+  position: relative;
+  cursor: pointer;
+  margin: 1em 0.5vw;
+  background: #181a1b;
+  /*border:  1px solid #181a1b;*/
+  border-radius: 6px;
+  overflow: hidden;
+  font-size:  90%;
+  /*transition: all linear 0.15s;*/
+}
+.movie-card:hover {
+  /*box-shadow: 0px -10px 30px 3px rgba(145,176,255,0.15);*/
+}
+
+.movie-card .poster {
+  min-width: 150px;
+  max-width: 342px;
+}
+
+.movie-card .poster,
+.movie-poster .poster {
+  display: block;
+  background-position: center center;
+  background-size: cover;
+  aspect-ratio: 2/3;
+  position: relative;
+}
+
+.movie-card:hover .poster {
+  /*opacity: 0.6;*/
+}
+.poster b {
+  cursor: pointer;
+  opacity: 0;
+  transition: all linear 0.1s;
+  position: absolute;
+  top: 40%;
+  left: 30%;
+  width: 40%;
+  aspect-ratio: 1;
+  color: #fff;
+  background: rgba(0,0,0,1);
+  border-radius: 50%;
+  padding: 5%;
+}
+.poster svg {
+  margin-left: 5%;
+  margin-top: 2.5%;
+}
+
+.movie-poster:hover .poster b,
+.movie-card:hover .poster b {
+  opacity: 0.33;
+}
+
+.movie-poster:hover .poster b:hover,
+.movie-card:hover .poster b:hover {
+  opacity: 0.66;
+  transform: scale(1.25);
+}
+
+.movie-card .title {
+  display: block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+  color: #fff;
+  padding: 0.5rem;
+  opacity: 0.5;
+  transition: opacity linear 0.15s;
+}
+
+.movie-card .title:hover { text-decoration: underline; }
+
+.movie-card .infos {
+  display: block;
+  text-align: center;
+  color: #fff9;
+  padding: 0 0.5rem 0.5rem;
+  font-size: 90%;
+  opacity: 0.2;
+  transition: opacity linear 0.15s;
+}
+
+.movie-card:hover .title,
+.movie-card:hover .infos { opacity: 1; }
+
+.movie-card .lang {
+  display: inline-block;
+  padding: 0 0.2rem;
+  background: #666;
+  color: #222;
+  border-radius: 4px;
+}
+
+.movie-details {
+  position: fixed;
+  top: 56px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-size: cover;
+  overflow: auto;
+}
+
+.movie-poster {
+  min-width: 300px;
+  max-width: 780px;
+  width: 25vw;
+  margin: 5vh 3vw 0 3vw;
+  float: left;
+  border-radius: 0.5vw;
+  overflow: hidden;
+}
+
+.title-bar {
+  padding: 1em;
+  background: rgba(0,0,0,0.75);
+  margin-top: 10vh;
+}
+
+.title-bar h2 { font-weight: bold; }
+.title-bar h6 { font-weight: bold; opacity: 0.6; }
+
+.content-bar {
+  background: rgba(0,0,0,0.5);
+  padding: 1em;
+}
+
+.content-bar .dt { display: inline-block; width: 110px; }
+.content-bar .dd { font-weight: bold; }
+.content-bar .synopsis { max-width: 600px; }
+
+.cast-card {
+  width: 185px;
+  margin: 1em 0.5vw;
+  border-radius: 5px;
+  overflow: hidden;
+  font-size:  90%;
+  background: rgba(0,0,0,0.3);
+}
+
+.cast-card .character,
+.cast-card .actor {
+  display: block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+}
+
+.cast-card .actor { color: #fff; padding: 0.5rem 0.5rem 0; }
+.cast-card .character { color: #777; font-size: 80%; font-weight: normal; padding: 0 0.5rem 1rem; }
+
+.cast-card .no-profile-picture {
+  display: block;
+  background: rgba(0,0,0,0.5);
+  width: 185px;
+  padding-top: 80px;
+  aspect-ratio:2/3;
+  text-align: center;
+}
