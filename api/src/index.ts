@@ -4,18 +4,12 @@ import { fileURLToPath } from 'url';
 
 import { startHttp } from './http';
 import { Catalog } from './catalog';
+import { Config } from './types';
 
 const rootPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-type ConfigFile = {
-  moviesLocalPath: string;
-  moviesRemotePath: string;
-  tvshowsLocalPath: string;
-  tvshowsRemotePath: string;
-}
-
 declare global {
-  var config: ConfigFile;
+  var config: Config;
 }
 
 export async function main() {

@@ -9,9 +9,13 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 
+import { Config, DbUser } from '../../api/src/types';
+
 import Home from './home';
 import Movies from './movies';
 import TvShows from './tvshows';
+import UserSelection from './user-selection';
+import apiClient from './api-client';
 
 enum AppTab {
   home = "home",
@@ -21,6 +25,9 @@ enum AppTab {
 
 type AppProps = {};
 type AppState = {
+  config: Config;
+  users: DbUser[];
+  user?: DbUser;
   optionsVisible: boolean;
   tab: AppTab;
   selection?: number;
@@ -31,9 +38,24 @@ export default class App extends React.Component<AppProps, AppState> {
   constructor(props: AppProps) {
     super(props);
     this.state = {
+      config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "" },
+      users: [],
       optionsVisible: false,
       tab: AppTab.movies
     };
+    apiClient.getConfig().then((config) => {
+      this.setState({ config });
+    });
+    apiClient.getUsers().then((users) => {
+      let userName = localStorage.getItem('userName');
+      let user;
+      for(let u of users) {
+        if (u.name == userName) {
+          user = u;
+        }
+      }
+      this.setState({ users, user });
+    });
   }
 
   handleOptionsToggle(isVisible: boolean): void {
@@ -45,7 +67,25 @@ export default class App extends React.Component<AppProps, AppState> {
     evt.preventDefault();
   }
 
+  handleUserSelected(user?: DbUser): void {
+    this.setState({ user });
+    localStorage.setItem('userName', user ? user.name : "none");
+  }
+
   render(): JSX.Element {
+    let content: JSX.Element = <div/>;
+    if (! this.state.users.length) {
+      content = <div className="d-flex justify-content-center mt-5"><div className="spinner-border text-light"></div></div>;
+    } else if (! this.state.user) {
+      content = <UserSelection users={this.state.users} onValidation={this.handleUserSelected.bind(this)}/>
+    } else if (this.state.tab == AppTab.home) {
+      content = <Home />;
+    } else if (this.state.tab == AppTab.movies) {
+      content = <Movies config={this.state.config} user={this.state.user} />;
+    } else if (this.state.tab == AppTab.tvshows) {
+      content = <TvShows />
+    }
+
     return (
       <>
         <Navbar variant="dark" fixed="top" id="navbar">
@@ -81,6 +121,7 @@ export default class App extends React.Component<AppProps, AppState> {
                 <Button variant="dark" style={{ lineHeight: "18px" }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg></Button>
               </InputGroup>
               <Button variant="dark" className="ms-1" style={{ lineHeight: "18px" }} onClick={ this.handleOptionsToggle.bind(this, true) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16"><path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg></Button>
+              {this.state.user ? <div style={{ cursor: "pointer" }} onClick={this.handleUserSelected.bind(this, undefined)}><img src={`/images/users/${this.state.user.name}.svg`} width="36" className="ms-3"/></div> : null}
             </Form>
             <Offcanvas
               id={`offcanvasNavbar-expand`}
@@ -103,9 +144,7 @@ export default class App extends React.Component<AppProps, AppState> {
             </Offcanvas>
           </Container>
         </Navbar>
-        <div className={ "mt-5 p-2" + (this.state.tab == AppTab.home    ? "" : " d-none") }><Home /></div>
-        <div className={ "mt-5 p-2" + (this.state.tab == AppTab.movies  ? "" : " d-none") }><Movies /></div>
-        <div className={ "mt-5 p-2" + (this.state.tab == AppTab.tvshows ? "" : " d-none") }><TvShows /></div>
+        <div className="mt-5 p-2">{content}</div>
       </>
     );    
   }

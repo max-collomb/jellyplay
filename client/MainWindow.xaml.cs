@@ -39,15 +39,13 @@ namespace client
     async void MpvScheme(object? sender, CoreWebView2NavigationStartingEventArgs args)
     {
 
-      Match match = Regex.Match(args.Uri, @"mpv:\/\/(.*)\?id=([0-9]+)&pos=([0-9]*)");
+      Match match = Regex.Match(args.Uri, @"mpv:\/\/(.*)\?pos=([0-9]*)");
       if (match.Success)
       {
         args.Cancel = true;
         string path = match.Groups[1].Value;
-        int videoId = int.Parse(match.Groups[2].Value);
-        int position = int.Parse(match.Groups[3].Value);
+        int position = int.Parse(match.Groups[2].Value);
         Debug.WriteLine("path = " + path);
-        Debug.WriteLine("videoId = " + videoId);
         Debug.WriteLine("position = " + position);
         // Prepare the process to run
         ProcessStartInfo start = new ProcessStartInfo();
@@ -70,7 +68,7 @@ namespace client
           {
             Dispatcher.BeginInvoke((Action)delegate ()
             {
-              webView.CoreWebView2.ExecuteScriptAsync($"window._jellyplay.setFilePosition({videoId}, {position});");
+              webView.CoreWebView2.ExecuteScriptAsync($"window._setPosition({position});");
             });
           });
           Thread t = new Thread(mpvApi.PollPlaybackTime);
@@ -92,6 +90,7 @@ namespace client
         webView.Visibility = Visibility.Visible;
         webView.CoreWebView2.OpenDevToolsWindow();
       }
+      webView.CoreWebView2.ExecuteScriptAsync($"window._mpvSchemeSupported = true;");
     }
   }
 }

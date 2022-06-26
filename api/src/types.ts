@@ -1,5 +1,14 @@
+export type Config = {
+  moviesLocalPath: string;
+  moviesRemotePath: string;
+  tvshowsLocalPath: string;
+  tvshowsRemotePath: string;
+};
+
 export type DbUser = {
-  name: string,
+  name: string;
+  audience: number;
+  admin: boolean;
 };
 
 export type DbCredit = {
@@ -25,39 +34,48 @@ export type AudioInfo = {
   lang: string;
 };
 
+export type UserMovieStatus = {
+  userName: string;
+  seen: number[];
+  toSee: boolean;
+  notInterested: boolean;
+  position: number;
+};
+
 export type DbMovie = {
-  filename: string,
-  tmdbid: number,
-  title: string,
-  originalTitle: string,
-  year: number,
-  duration: number,
-  directors: number[],
-  writers: number[],
-  cast: Cast[],
-  genres: string[],
-  countries: string[],
-  audience: number,
+  filename: string;
+  tmdbid: number;
+  title: string;
+  originalTitle: string;
+  year: number;
+  duration: number;
+  directors: number[];
+  writers: number[];
+  cast: Cast[];
+  genres: string[];
+  countries: string[];
+  audience: number;
   created: string; // date de création du fichier
-  filesize: number,
-  video: VideoInfo,
-  audio: AudioInfo[],
-  subtitles: string[],
-  synopsys: string,
-  backdropPath: string,
-  posterPath: string,
+  filesize: number;
+  video: VideoInfo;
+  audio: AudioInfo[];
+  subtitles: string[];
+  synopsys: string;
+  backdropPath: string;
+  posterPath: string;
+  userStatus: UserMovieStatus[];
 };
 
 export type DbTvshow = {
-  foldername: string,
-  tmdbid: number,
-  title: string,
-  filenames: string[],
+  foldername: string;
+  tmdbid: number;
+  title: string;
+  filenames: string[];
 };
 
 export type DataTables = {
-  users?: Collection<DbUser>,
-  movies?: Collection<DbMovie>,
-  tvshows?: Collection<DbTvshow>,
-  credits?: Collection<DbCredit>
+  users?: Collection<DbUser>;
+  movies?: Collection<DbMovie>;
+  tvshows?: Collection<DbTvshow>;
+  credits?: Collection<DbCredit>;
 };

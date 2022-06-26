@@ -2,15 +2,13 @@ import React from 'react';
 
 
 type HomeProps = {};
-type HomeState = {
-};
+type HomeState = {};
 
 export default class Home extends React.Component<HomeProps, HomeState> {
 
   constructor(props: HomeProps) {
     super(props);
-    this.state = {
-    };
+    this.state = {};
   }
 
   render(): JSX.Element {

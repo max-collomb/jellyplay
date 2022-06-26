@@ -19,6 +19,15 @@ html.dark #navbar ::placeholder { color: #fff6 }
 html.dark #navbar .nav-link.active { background-color: #fff1 }
 html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
 
+html.dark .link-light:hover,
+html.dark .link-light:focus { color: rgb(50,203,255); }
+
+html.dark .nav-tabs { border-bottom: none; }
+html.dark .nav-tabs .nav-item.show .nav-link,
+html.dark .nav-tabs .nav-link.active { color: #fff; background-color: transparent; border-width: 0 0 3px 0; border-color: #fff; }
+html.dark .nav-tabs .nav-link { color: rgba(255, 255, 255, 0.5); border-width: 0; }
+html.dark .nav-tabs .nav-link:hover { color: #fff; border-bottom: solid 3px #fff; }
+
 .movie-card {
   min-width: 150px;
   max-width: 342px;
@@ -68,10 +77,16 @@ html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
   border-radius: 50%;
   padding: 5%;
 }
-.poster svg {
+.poster b svg {
   margin-left: 5%;
   margin-top: 2.5%;
 }
+.poster i { display: block;text-align: center; opacity: 0; transition: all linear 0.1s; }
+.poster em { padding: 5%; margin-right: 5%; background-color: rgba(0,0,0,0.33); }
+.poster em:hover { background-color: rgba(0, 131, 176, 0.2); color: rgb(50, 203, 255); }
+.poster em.active { color: rgb(209, 71, 71); }
+/*.poster em svg { width: 20px; }*/
+.movie-card:hover .poster i { opacity: 1; }
 
 .movie-poster:hover .poster b,
 .movie-card:hover .poster b {
@@ -80,7 +95,9 @@ html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
 
 .movie-poster:hover .poster b:hover,
 .movie-card:hover .poster b:hover {
-  opacity: 0.66;
+  opacity: 1;
+  color: rgb(50, 203, 255);
+  background: rgba(0, 131, 176, 0.2);
   transform: scale(1.25);
 }
 
@@ -102,7 +119,7 @@ html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
   display: block;
   text-align: center;
   color: #fff9;
-  padding: 0 0.5rem 0.5rem;
+  padding: 0 0.5rem 0.75rem;
   font-size: 90%;
   opacity: 0.2;
   transition: opacity linear 0.15s;
@@ -139,6 +156,22 @@ html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
   overflow: hidden;
 }
 
+span.poster .progress-bar,
+div.movie-card .progress-bar {
+  position: absolute;
+  bottom: 0px;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.poster .progress-bar > div,
+.movie-card .progress-bar > div {
+  height: 4px;
+  background: #32cbff;
+}
+
 .title-bar {
   padding: 1em;
   background: rgba(0,0,0,0.75);
@@ -147,6 +180,10 @@ html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
 
 .title-bar h2 { font-weight: bold; }
 .title-bar h6 { font-weight: bold; opacity: 0.6; }
+
+.title-bar .actions .active,
+.title-bar .actions .active:focus,
+.title-bar .actions .active:hover { color: rgb(209, 71, 71); }
 
 .content-bar {
   background: rgba(0,0,0,0.5);
@@ -186,3 +223,7 @@ html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
   aspect-ratio:2/3;
   text-align: center;
 }
+
+.user-card { padding: 3rem; cursor: pointer; }
+.user-card:hover { background: rgba(255,255,255,0.1);}
+.user-card .name { display: block; text-align: center; text-transform: uppercase; margin-top: 1rem; }

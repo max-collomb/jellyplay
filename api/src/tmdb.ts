@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import childProcess from 'child_process';
 import { createWriteStream, statSync, existsSync } from 'fs';
 import * as https from 'https';
@@ -70,6 +71,7 @@ export const mediaInfo = async (movie: DbMovie, filename: string): Promise<any> 
           console.log("media info for " + filename, json);
           movie.created = json.general.created;
           movie.filesize = json.general.size;
+          movie.duration = json.general.duration / 1000; // conversion ms => s
           movie.video = json.video[0];
           movie.audio = json.audio;
           movie.subtitles = json.subs || [];
@@ -214,8 +216,32 @@ export class TmdbClient {
     return credits;
   }
 
+  public async unlinkMovieImages(movie: DbMovie) {
+    let filepath: string;
+    let stat;
+    if (movie.posterPath) {
+      filepath = path.join(this.imagePath, 'posters_w342', movie.posterPath);
+      await fs.promises.access(filepath).then(async () => {
+        console.log(`deleting file ${filepath}`);
+        await fs.promises.unlink(filepath);        
+      }).catch(() => {});
+      filepath = path.join(this.imagePath, 'posters_w780', movie.posterPath);
+      await fs.promises.access(filepath).then(async () => {
+        console.log(`deleting file ${filepath}`);
+        await fs.promises.unlink(filepath);        
+      }).catch(() => {});
+    }
+    if (movie.backdropPath) {
+      filepath = path.join(this.imagePath, 'backdrops_w1280', movie.backdropPath);
+      await fs.promises.access(filepath).then(async () => {
+        console.log(`deleting file ${filepath}`);
+        await fs.promises.unlink(filepath);        
+      }).catch(() => {});
+    }
+  }
+
   public async autoIdentifyMovie(movie: DbMovie): Promise<DbCredit[]> {
-    const data: ParsedFilename = filenameParse(movie.filename);
+    const data: ParsedFilename = filenameParse(movie.filename.split("\\").pop() || movie.filename);
     const response = await this.movieDb.searchMovie({
       language: this.lang,
       query: data.title,
@@ -235,6 +261,16 @@ export class TmdbClient {
         `${this.baseUrl}w185${credit.profilePath}`,
         path.join(this.imagePath, 'profiles_w185', credit.profilePath)
       );    
+    }
+  }
+
+  public async unlinkProfileImage(credit: DbCredit) {
+    if (credit.profilePath) {
+      const filepath: string = path.join(this.imagePath, 'profiles_w185', credit.profilePath);
+      await fs.promises.access(filepath).then(async () => {
+        console.log(`deleting file ${filepath}`);
+        await fs.promises.unlink(filepath);        
+      }).catch(() => {});
     }
   }
 }
