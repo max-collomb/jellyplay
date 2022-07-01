@@ -227,3 +227,8 @@ div.movie-card .progress-bar {
 .user-card { padding: 3rem; cursor: pointer; }
 .user-card:hover { background: rgba(255,255,255,0.1);}
 .user-card .name { display: block; text-align: center; text-transform: uppercase; margin-top: 1rem; }
+
+.audience-link img { vertical-align: text-bottom; }
+.audience-link { transition: all linear 0.15s; border-radius: 0.25rem; }
+.audience-link.disabled { cursor: not-allowed; }
+.audience-link:hover { background: rgba(255,255,255,0.1); }

@@ -20,8 +20,8 @@ V1.0
 [x] [client+frontend+api] enregistrer l'avancement dans un fichier par user + marque comme vu à > 90% + affichage progression dans fiche film
 [x] [client] reprendre le film
 [x] [frontend+api] marquer un film comme "vu" ou "pas intéressé"
-[ ] [frontend] filter selon audience
-[ ] [frontend+api] corriger l'audience d'un film
+[x] [frontend] filter selon audience
+[x] [frontend+api] corriger l'audience d'un film
 [ ] [frontend+api] corriger l'identification d'un film
 [ ] [frontend+api] renommer un fichier
 [ ] [frontend+api] supprimer un fichier

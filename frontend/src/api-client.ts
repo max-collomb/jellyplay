@@ -92,6 +92,19 @@ class ApiClient {
       });
     });
   }
+
+  setAudience(movie: DbMovie, audience: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/set_audience', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ filename: movie.filename, audience })
+      }).then(async (response) => {
+        let json = await response.json();
+        resolve(json.audience);
+      });
+    });
+  }
 }
 
 const apiClient: ApiClient = new ApiClient();

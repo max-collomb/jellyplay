@@ -27,6 +27,11 @@ type setMovieStatusMessage = {
   value: any;  
 };
 
+type setMovieAudienceMessage = {
+  filename: string;
+  audience: number;  
+};
+
 const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
 
 export class Catalog {
@@ -299,6 +304,17 @@ export class Catalog {
         userStatus.notInterested = body.value as boolean;
       this.tables.movies?.update(movie);
       reply.send({ userStatus: movie.userStatus });
+    }
+    reply.send({});
+  }
+
+  public setAudience(request: FastifyRequest, reply: FastifyReply) {
+    let body: setMovieAudienceMessage = request.body as setMovieAudienceMessage;
+    let movie = this.tables.movies?.findOne({ filename: body.filename });
+    if (movie) {
+      movie.audience = body.audience;
+      this.tables.movies?.update(movie);
+      reply.send({ audience: movie.audience });
     }
     reply.send({});
   }

@@ -2,6 +2,7 @@ import React from 'react';
 
 import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
+import Dropdown from 'react-bootstrap/Dropdown';
 
 import { AudioInfo, Config, DbCredit, DbMovie, DbUser, UserMovieStatus, VideoInfo } from '../../api/src/types';
 import apiClient from './api-client';
@@ -21,6 +22,38 @@ enum MovieAction {
   play = "play",
   open = "open",
 };
+
+
+// const MoreToggle = React.forwardRef(({ children }) => (
+//   <a href="#" className="link-light me-3 dropdown-toggle">
+//     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
+//       <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+//     </svg>
+//     {children}
+//   </a>
+// ));
+
+
+interface MoreToggleProps {
+  children?: React.ReactNode;
+  onClick: (evt: React.MouseEvent<HTMLAnchorElement>) => void;
+}
+const MoreToggle = React.forwardRef<HTMLAnchorElement, MoreToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLAnchorElement>) => (
+  <a href="" ref={ref} className="link-light me-3" onClick={(e) => {
+      e.preventDefault();
+      onClick(e);
+    }}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
+      <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+    </svg>
+  </a>
+));
+
+const MultiItem = React.forwardRef<HTMLElement, MoreToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLElement>) => {
+    return <span ref={ref} className="d-block text-nowrap p-2" onClick={onClick}>{children}</span>;
+  },
+);
+
 
 export default class Movies extends React.Component<MoviesProps, MoviesState> {
 
@@ -65,7 +98,6 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   }
 
   getUserStatus(movie: DbMovie): UserMovieStatus|null {
-    console.log("getUserStatus", movie.userStatus);
     for (let userStatus of movie.userStatus) {
       if (userStatus.userName == this.props.user.name) {
         return userStatus;
@@ -137,6 +169,16 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       this.setState({ movies: this.state.movies });
     });
     evt.stopPropagation();
+    evt.preventDefault();
+  }
+
+  handleSetAudience(movie: DbMovie, audience: number, evt: React.MouseEvent<HTMLElement>): void {
+    if (this.props.user.admin) {
+      apiClient.setAudience(movie, audience).then((aud: number) => {
+        movie.audience = aud;
+        this.setState({ movies: this.state.movies });
+      });
+    }
     evt.preventDefault();
   }
 
@@ -247,11 +289,16 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
                   <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
               </svg>
             </a>
-            <a href="#" className="link-light me-3 d-none" onClick={undefined}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-              </svg>
-            </a>
+            <Dropdown className="d-inline-block">
+              <Dropdown.Toggle as={MoreToggle}/>
+              <Dropdown.Menu align="end">
+                <Dropdown.Header>Audience</Dropdown.Header>
+                <Dropdown.Item as={MultiItem}>
+                  { [0,10,12,16,18,999].map(a => <a className={"audience-link p-2" + (this.props.user.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, movie, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
+                </Dropdown.Item>
+                {/*<Dropdown.Divider/>*/}
+              </Dropdown.Menu>
+            </Dropdown>
           </div>
         </div>
       </div>
@@ -285,7 +332,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
         <div className="d-flex align-items-start mb-5">
           <p className="synopsis">{movie.synopsys}</p>
         </div>
-        <Tabs id="controlled-tab-example" activeKey={this.state.tabKey} onSelect={(tabKey) => this.setState({ tabKey })}>
+        <Tabs id="controlled-tab-example" activeKey={this.state.tabKey} onSelect={(tabKey) => this.setState({ tabKey: tabKey || "cast" })}>
           <Tab eventKey="cast" title="Casting">
             <div className="d-flex flex-wrap mt-3">{
               movie.cast.map((role, idx) => {

@@ -41,6 +41,8 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.get('/catalog/credits/list', catalog.getCredits.bind(catalog));
     // /catalog/set_status
     server.post('/catalog/set_status', catalog.setStatus.bind(catalog));
+    // /catalog/set_audience
+    server.post('/catalog/set_audience', catalog.setAudience.bind(catalog));
     // /catalog/set_position
     server.post('/catalog/set_position', catalog.setPosition.bind(catalog));
 
