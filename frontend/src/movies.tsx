@@ -142,7 +142,9 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
 
   renderList(): JSX.Element {
     return <div className="d-flex flex-wrap justify-content-evenly mt-3">{
-      this.state.movies.map((movie, idx) => {
+      this.state.movies
+      .filter(m => m.audience <= this.props.user.audience)
+      .map((movie, idx) => {
         const userStatus = this.getUserStatus(movie);
         return <div key={idx} className="movie-card" onClick={this.handleMovieClick.bind(this, movie, MovieAction.open)}>
           <span className="poster" style={{ backgroundImage: `url(/images/posters_w342${movie.posterPath})` }}>
