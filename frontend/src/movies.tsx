@@ -6,10 +6,13 @@ import Dropdown from 'react-bootstrap/Dropdown';
 
 import { AudioInfo, Config, DbCredit, DbMovie, DbUser, UserMovieStatus, VideoInfo } from '../../api/src/types';
 import apiClient from './api-client';
+import TmdbClient from './tmdb';
+import FixMetadataForm from './fix-metadata-form';
 
 type MoviesProps = {
   config: Config;
   user: DbUser;
+  tmdbClient?: TmdbClient;
 };
 type MoviesState = {
   movies: DbMovie[];
@@ -23,22 +26,11 @@ enum MovieAction {
   open = "open",
 };
 
-
-// const MoreToggle = React.forwardRef(({ children }) => (
-//   <a href="#" className="link-light me-3 dropdown-toggle">
-//     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
-//       <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-//     </svg>
-//     {children}
-//   </a>
-// ));
-
-
-interface MoreToggleProps {
+interface CustomToggleProps {
   children?: React.ReactNode;
   onClick: (evt: React.MouseEvent<HTMLAnchorElement>) => void;
 }
-const MoreToggle = React.forwardRef<HTMLAnchorElement, MoreToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLAnchorElement>) => (
+const MoreToggle = React.forwardRef<HTMLAnchorElement, CustomToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLAnchorElement>) => (
   <a href="" ref={ref} className="link-light me-3" onClick={(e) => {
       e.preventDefault();
       onClick(e);
@@ -49,7 +41,7 @@ const MoreToggle = React.forwardRef<HTMLAnchorElement, MoreToggleProps>(({ child
   </a>
 ));
 
-const MultiItem = React.forwardRef<HTMLElement, MoreToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLElement>) => {
+const MultiItem = React.forwardRef<HTMLElement, CustomToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLElement>) => {
     return <span ref={ref} className="d-block text-nowrap p-2" onClick={onClick}>{children}</span>;
   },
 );
@@ -64,12 +56,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       credits: [],
       tabKey: "cast",
     };
-    apiClient.getMovies().then((movies) => {
-      this.setState({ movies });
-    });
-    apiClient.getCredits().then((credits) => {
-      this.setState({ credits });
-    });
+    apiClient.getMovies().then(movies => this.setState({ movies }));
+    apiClient.getCredits().then(credits => this.setState({ credits }));
   }
 
   getLanguage(movie: DbMovie): string {
@@ -180,6 +168,20 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       });
     }
     evt.preventDefault();
+  }
+
+  handleFixMetadata(movie: DbMovie, evt: React.MouseEvent<HTMLElement>): void {
+    this.setState({ fixingMovie: movie });
+    evt.preventDefault();
+  }
+
+  handleFixingMetadataFormClose(movie?: DbMovie): void {
+    if (movie) {
+      const movies = this.state.movies.filter(m => m.filename !== movie.filename)
+      movies.push(movie);
+      this.setState({ movies, selection: movie });
+    }
+    this.setState({ fixingMovie: undefined });
   }
 
   renderList(): JSX.Element {
@@ -294,9 +296,10 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
               <Dropdown.Menu align="end">
                 <Dropdown.Header>Audience</Dropdown.Header>
                 <Dropdown.Item as={MultiItem}>
-                  { [0,10,12,16,18,999].map(a => <a className={"audience-link p-2" + (this.props.user.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, movie, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
+                  { [0,10,12,16,18,999].map(a => <a key={a} className={"audience-link p-2" + (this.props.user.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, movie, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
                 </Dropdown.Item>
-                {/*<Dropdown.Divider/>*/}
+                <Dropdown.Divider/>
+                <Dropdown.Item onClick={this.handleFixMetadata.bind(this, movie)} disabled={! this.props.user.admin}>Corriger les métadonnées ...</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
           </div>
@@ -345,7 +348,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
                       <path fillRule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
                     </svg></span>}
                   <span className="actor">{credit.name}</span>
-                  <span className="character">en tant que {role.character}</span>
+                  <span className={"character"}>{(role.character ? "en tant que " + role.character: "-")}</span>
                 </div> : null;
               })
             }</div>
@@ -358,7 +361,9 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   }
 
   render(): JSX.Element {
-    if (this.state.selection) {
+    if (this.state.fixingMovie) {
+      return <FixMetadataForm {...this.props} movie={this.state.fixingMovie} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
+    } else if (this.state.selection) {
       return this.renderDetails();
     } else {
       return this.renderList();

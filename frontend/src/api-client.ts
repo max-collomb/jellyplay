@@ -1,4 +1,4 @@
-import { Config, DbUser, DbMovie, DbCredit, UserMovieStatus } from '../../api/src/types';
+import { Config, DbUser, DbMovie, DbCredit, ParsedFilename, UserMovieStatus } from '../../api/src/types';
 
 const cache = {
   config: null,
@@ -102,6 +102,32 @@ class ApiClient {
       }).then(async (response) => {
         let json = await response.json();
         resolve(json.audience);
+      });
+    });
+  }
+
+  parseFilename(filename: string): Promise<ParsedFilename> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/parse_filename', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ filename })
+      }).then(async (response) => {
+        let json = await response.json();
+        resolve(json.parsedFilename);
+      });
+    });
+  }
+
+  fixMetadata(filename: string, tmdbId: number): Promise<DbMovie> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/fix_metadata', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ filename, tmdbId })
+      }).then(async (response) => {
+        let json = await response.json();
+        resolve(json.movie);
       });
     });
   }

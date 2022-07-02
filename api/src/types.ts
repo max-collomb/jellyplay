@@ -3,6 +3,7 @@ export type Config = {
   moviesRemotePath: string;
   tvshowsLocalPath: string;
   tvshowsRemotePath: string;
+  tmdbApiKey: string;
 };
 
 export type DbUser = {
@@ -71,6 +72,11 @@ export type DbTvshow = {
   tmdbid: number;
   title: string;
   filenames: string[];
+};
+
+export type ParsedFilename = {
+  title: string;
+  year: string | null;
 };
 
 export type DataTables = {

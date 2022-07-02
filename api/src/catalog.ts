@@ -4,6 +4,7 @@ import fs from 'fs';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
+import { filenameParse, ParsedFilename } from '@ctrl/video-filename-parser';
 
 import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, UserMovieStatus } from './types';
 import { TmdbClient, mediaInfo } from './tmdb';
@@ -14,22 +15,31 @@ type CatalogOptions = {
   rootPath: string;
 };
 
-type setPositionMessage = {
+type SetPositionMessage = {
   filename: string;
   userName: string;
   position: number;
 };
 
-type setMovieStatusMessage = {
+type SetMovieStatusMessage = {
   filename: string;
   userName: string;
   field: string;
   value: any;  
 };
 
-type setMovieAudienceMessage = {
+type SetMovieAudienceMessage = {
   filename: string;
   audience: number;  
+};
+
+type ParseFilenameMessage = {
+  filename: string;
+};
+
+type FixMetadataMessage = {
+  filename: string;
+  tmdbId: number;
 };
 
 const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
@@ -68,7 +78,7 @@ export class Catalog {
         autosaveInterval: 60_000
       }
     );
-    this.tmdbClient = new TmdbClient('3b46e3ee8f7f66bf1449b4c85c0b2819', 'fr-FR', path.join(this.rootPath, 'db', 'images'));
+    this.tmdbClient = new TmdbClient(global.config.tmdbApiKey, 'fr-FR', path.join(this.rootPath, 'db', 'images'));
   }
 
   private initSchemas(): void {
@@ -251,7 +261,7 @@ export class Catalog {
   }
 
   public setPosition(request: FastifyRequest, reply: FastifyReply) {
-    let body: setPositionMessage = request.body as setPositionMessage;
+    let body: SetPositionMessage = request.body as SetPositionMessage;
     console.log("set_position ", body.filename, body.userName, body.position);
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
@@ -284,7 +294,7 @@ export class Catalog {
   }
 
   public setStatus(request: FastifyRequest, reply: FastifyReply) {
-    let body: setMovieStatusMessage = request.body as setMovieStatusMessage;
+    let body: SetMovieStatusMessage = request.body as SetMovieStatusMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
       let userStatus: UserMovieStatus | undefined = undefined;
@@ -309,7 +319,7 @@ export class Catalog {
   }
 
   public setAudience(request: FastifyRequest, reply: FastifyReply) {
-    let body: setMovieAudienceMessage = request.body as setMovieAudienceMessage;
+    let body: SetMovieAudienceMessage = request.body as SetMovieAudienceMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
       movie.audience = body.audience;
@@ -317,6 +327,28 @@ export class Catalog {
       reply.send({ audience: movie.audience });
     }
     reply.send({});
+  }
+
+  public parseFilename(request: FastifyRequest, reply: FastifyReply) {
+    let body: ParseFilenameMessage = request.body as ParseFilenameMessage;
+    const data: ParsedFilename = filenameParse(body.filename.split("\\").pop() || body.filename);
+    reply.send({ parsedFilename: { title: data.title, year: data.year }});
+  }
+
+  public async fixMetadata(request: FastifyRequest, reply: FastifyReply) {
+    let body: FixMetadataMessage = request.body as FixMetadataMessage;
+    let movie = this.tables.movies?.findOne({ filename: body.filename });
+    if (movie) {
+      movie.tmdbid = body.tmdbId;
+      movie.directors = [];
+      movie.writers = [];
+      movie.cast = [];
+      movie.genres = [];
+      movie.countries = [];
+
+      await this.tmdbClient.getMovieData(movie);
+    }
+    reply.send({ movie });
   }
 
 }

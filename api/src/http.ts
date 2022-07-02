@@ -30,21 +30,16 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     // /favicon.ico
     server.register(fastifyFavicon, { path: path.join(rootPath, 'dist'), name: 'favicon.ico' });
 
-    // /catalog/user/list
     server.get('/catalog/users', catalog.getUsers.bind(catalog));
-    // /catalog/config
     server.get('/catalog/config', catalog.getConfig.bind(catalog));
-    // /catalog/movies/*
     server.get('/catalog/movies/list', catalog.getMovies.bind(catalog));
     server.get('/catalog/movies/:movieId', catalog.getMovie.bind(catalog));
-    // /catalog/credits/*
     server.get('/catalog/credits/list', catalog.getCredits.bind(catalog));
-    // /catalog/set_status
     server.post('/catalog/set_status', catalog.setStatus.bind(catalog));
-    // /catalog/set_audience
     server.post('/catalog/set_audience', catalog.setAudience.bind(catalog));
-    // /catalog/set_position
     server.post('/catalog/set_position', catalog.setPosition.bind(catalog));
+    server.post('/catalog/parse_filename', catalog.parseFilename.bind(catalog));
+    server.post('/catalog/fix_metadata', catalog.fixMetadata.bind(catalog));
 
 
     await server.listen(3000, '0.0.0.0');

@@ -16,6 +16,7 @@ import Movies from './movies';
 import TvShows from './tvshows';
 import UserSelection from './user-selection';
 import apiClient from './api-client';
+import TmdbClient from './tmdb';
 
 enum AppTab {
   home = "home",
@@ -26,6 +27,7 @@ enum AppTab {
 type AppProps = {};
 type AppState = {
   config: Config;
+  tmdbClient?: TmdbClient;
   users: DbUser[];
   user?: DbUser;
   optionsVisible: boolean;
@@ -38,13 +40,13 @@ export default class App extends React.Component<AppProps, AppState> {
   constructor(props: AppProps) {
     super(props);
     this.state = {
-      config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "" },
+      config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "" },
       users: [],
       optionsVisible: false,
       tab: AppTab.movies
     };
     apiClient.getConfig().then((config) => {
-      this.setState({ config });
+      this.setState({ config, tmdbClient: new TmdbClient(config.tmdbApiKey, 'fr-FR') });
     });
     apiClient.getUsers().then((users) => {
       let userName = localStorage.getItem('userName');
@@ -81,7 +83,7 @@ export default class App extends React.Component<AppProps, AppState> {
     } else if (this.state.tab == AppTab.home) {
       content = <Home />;
     } else if (this.state.tab == AppTab.movies) {
-      content = <Movies config={this.state.config} user={this.state.user} />;
+      content = <Movies config={this.state.config} user={this.state.user} tmdbClient={this.state.tmdbClient} />;
     } else if (this.state.tab == AppTab.tvshows) {
       content = <TvShows />
     }
