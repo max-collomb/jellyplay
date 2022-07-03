@@ -23,8 +23,9 @@ V1.0
 [x] [frontend] filter selon audience
 [x] [frontend+api] corriger l'audience d'un film
 [x] [frontend+api] corriger l'identification d'un film
-[ ] [frontend+api] renommer un fichier
+[x] [frontend+api] renommer un fichier
 [ ] [frontend+api] supprimer un fichier
+[ ] [frontend] tri des films (alpha ^v, année ^v, ajout ^v)
 [ ] [frontend] recherche de film par texte / nom de réal ou d'acteur / genre / pays
 [ ] [frontend] lazy loading des images
 [ ] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)

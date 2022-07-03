@@ -131,6 +131,19 @@ class ApiClient {
       });
     });
   }
+
+  renameFile(oldFilename: string, newFilename: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/rename_file', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ oldFilename, newFilename })
+      }).then(async (response) => {
+        let json = await response.json();
+        resolve(json.newFilename);
+      });
+    });
+  }
 }
 
 const apiClient: ApiClient = new ApiClient();

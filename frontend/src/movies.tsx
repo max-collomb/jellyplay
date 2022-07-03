@@ -8,6 +8,7 @@ import { AudioInfo, Config, DbCredit, DbMovie, DbUser, UserMovieStatus, VideoInf
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
 import FixMetadataForm from './fix-metadata-form';
+import RenamingForm from './renaming-form';
 
 type MoviesProps = {
   config: Config;
@@ -18,6 +19,8 @@ type MoviesState = {
   movies: DbMovie[];
   credits: DbCredit[];
   selection?: DbMovie;
+  fixingMetadata: boolean;
+  renaming: boolean;
   tabKey: string;
 };
 
@@ -55,6 +58,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       movies: [],
       credits: [],
       tabKey: "cast",
+      fixingMetadata: false,
+      renaming: false,
     };
     apiClient.getMovies().then(movies => this.setState({ movies }));
     apiClient.getCredits().then(credits => this.setState({ credits }));
@@ -170,8 +175,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
     evt.preventDefault();
   }
 
-  handleFixMetadata(movie: DbMovie, evt: React.MouseEvent<HTMLElement>): void {
-    this.setState({ fixingMovie: movie });
+  handleFixMetadataClick(evt: React.MouseEvent<HTMLElement>): void {
+    this.setState({ fixingMetadata: true });
     evt.preventDefault();
   }
 
@@ -181,7 +186,16 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       movies.push(movie);
       this.setState({ movies, selection: movie });
     }
-    this.setState({ fixingMovie: undefined });
+    this.setState({ fixingMetadata: false });
+  }
+
+  handleRenameClick(evt: React.MouseEvent<HTMLElement>): void {
+    this.setState({ renaming: true });
+    evt.preventDefault();
+  }
+
+  handleRenamingFormClose(): void {
+    this.setState({ renaming: false });
   }
 
   renderList(): JSX.Element {
@@ -299,7 +313,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
                   { [0,10,12,16,18,999].map(a => <a key={a} className={"audience-link p-2" + (this.props.user.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, movie, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
                 </Dropdown.Item>
                 <Dropdown.Divider/>
-                <Dropdown.Item onClick={this.handleFixMetadata.bind(this, movie)} disabled={! this.props.user.admin}>Corriger les métadonnées ...</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! this.props.user.admin}>Corriger les métadonnées ...</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleRenameClick.bind(this)} disabled={! this.props.user.admin}>Renommer le fichier ...</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
           </div>
@@ -361,10 +376,14 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   }
 
   render(): JSX.Element {
-    if (this.state.fixingMovie) {
-      return <FixMetadataForm {...this.props} movie={this.state.fixingMovie} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
-    } else if (this.state.selection) {
-      return this.renderDetails();
+    if (this.state.selection) {
+      if (this.state.fixingMetadata) {
+        return <FixMetadataForm {...this.props} movie={this.state.selection} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
+      } else  if (this.state.renaming) {
+        return <RenamingForm {...this.props} movie={this.state.selection} onClose={this.handleRenamingFormClose.bind(this)}/>;
+      } else {
+        return this.renderDetails();
+      }
     } else {
       return this.renderList();
     }

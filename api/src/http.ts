@@ -40,6 +40,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.post('/catalog/set_position', catalog.setPosition.bind(catalog));
     server.post('/catalog/parse_filename', catalog.parseFilename.bind(catalog));
     server.post('/catalog/fix_metadata', catalog.fixMetadata.bind(catalog));
+    server.post('/catalog/rename_file', catalog.renameFile.bind(catalog));
 
 
     await server.listen(3000, '0.0.0.0');

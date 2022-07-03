@@ -42,7 +42,14 @@ type FixMetadataMessage = {
   tmdbId: number;
 };
 
+type RenameFileMessage = {
+  oldFilename: string;
+  newFilename: string;
+};
+
 const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
+
+const pathExists = async (path: string) => !!(await fs.promises.stat(path).catch(e => false));
 
 export class Catalog {
   moviesPath: string;
@@ -349,6 +356,24 @@ export class Catalog {
       await this.tmdbClient.getMovieData(movie);
     }
     reply.send({ movie });
+  }
+
+  public async renameFile(request: FastifyRequest, reply: FastifyReply) {
+    let newFilename = "";
+    let body: RenameFileMessage = request.body as RenameFileMessage;
+    let movie = this.tables.movies?.findOne({ filename: body.oldFilename });
+    if (movie) {
+      try {
+        if (! await pathExists(path.join(this.moviesPath, body.newFilename))) { // vérifie que le newFilename n'existe pas encore
+          await fs.promises.rename(path.join(this.moviesPath, body.oldFilename), path.join(this.moviesPath, body.newFilename));
+          movie.filename = body.newFilename;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+      newFilename = movie.filename;
+    }
+    reply.send({ newFilename });
   }
 
 }
