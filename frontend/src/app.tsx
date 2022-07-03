@@ -36,6 +36,7 @@ type AppState = {
   tab: AppTab;
   selection?: number;
   orderBy: OrderBy;
+  search: string;
 };
 
 export default class App extends React.Component<AppProps, AppState> {
@@ -49,6 +50,7 @@ export default class App extends React.Component<AppProps, AppState> {
       optionsVisible: false,
       tab: AppTab.movies,
       orderBy,
+      search: "",
     };
     apiClient.getConfig().then((config) => {
       this.setState({ config, tmdbClient: new TmdbClient(config.tmdbApiKey, 'fr-FR') });
@@ -63,6 +65,11 @@ export default class App extends React.Component<AppProps, AppState> {
       }
       this.setState({ users, user });
     });
+  }
+
+  componentDidMount() {
+    // l'événement "search" n'est pas géré par FormControl => on se replie sur du vanillaJS
+    document?.getElementById("search-input")?.addEventListener("search", (evt) => this.setState({ search: (evt?.target as HTMLInputElement).value || "" }));
   }
 
   handleOptionsToggle(isVisible: boolean): void {
@@ -84,6 +91,20 @@ export default class App extends React.Component<AppProps, AppState> {
     this.setState({ orderBy, optionsVisible: false });
   }
 
+  handleSearchKeyDown(evt: React.KeyboardEvent<HTMLInputElement>): void {
+    if (evt.key === 'Enter') {
+      const input: HTMLElement|null = document.getElementById("search-input");
+      this.setState({ search: input ? (input as HTMLInputElement).value : "" });
+      evt.preventDefault();
+      evt.stopPropagation();
+    }
+  }
+
+  handleSearchClick(evt: React.MouseEvent<HTMLButtonElement>): void {
+      const input: HTMLElement|null = document.getElementById("search-input");
+      this.setState({ search: input ? (input as HTMLInputElement).value : "" });
+  }
+
   render(): JSX.Element {
     let content: JSX.Element = <div/>;
     if (! this.state.users.length) {
@@ -93,7 +114,11 @@ export default class App extends React.Component<AppProps, AppState> {
     } else if (this.state.tab == AppTab.home) {
       content = <Home />;
     } else if (this.state.tab == AppTab.movies) {
-      content = <Movies config={this.state.config} user={this.state.user} tmdbClient={this.state.tmdbClient} orderBy={this.state.orderBy} />;
+      content = <Movies config={this.state.config}
+                        user={this.state.user}
+                        tmdbClient={this.state.tmdbClient}
+                        orderBy={this.state.orderBy}
+                        search={this.state.search}/>;
     } else if (this.state.tab == AppTab.tvshows) {
       content = <TvShows />
     }
@@ -126,11 +151,13 @@ export default class App extends React.Component<AppProps, AppState> {
             <Form className="d-flex">
               <InputGroup>
                 <FormControl
+                  id="search-input"
                   type="search"
-                  placeholder="Search"
-                  aria-label="Search"
+                  placeholder="Recherche"
+                  autoComplete="off"
+                  onKeyDown={ this.handleSearchKeyDown.bind(this) }
                 />
-                <Button variant="dark" style={{ lineHeight: "18px" }}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg></Button>
+                <Button variant="dark" style={{ lineHeight: "18px" }} onClick={ this.handleSearchClick.bind(this) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg></Button>
               </InputGroup>
               <Button variant="dark" className="ms-1" style={{ lineHeight: "18px" }} onClick={ this.handleOptionsToggle.bind(this, true) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16"><path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg></Button>
               {this.state.user ? <div style={{ cursor: "pointer" }} onClick={this.handleUserSelected.bind(this, undefined)}><img src={`/images/users/${this.state.user.name}.svg`} width="36" className="ms-3"/></div> : null}

@@ -65,6 +65,7 @@ export type DbMovie = {
   backdropPath: string;
   posterPath: string;
   userStatus: UserMovieStatus[];
+  searchableContent: string
 };
 
 export type DbTvshow = {

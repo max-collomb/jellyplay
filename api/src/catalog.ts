@@ -202,6 +202,7 @@ export class Catalog {
           audio: [],
           subtitles: [],
           userStatus: [],
+          searchableContent: "",
         };
         const credits: DbCredit[] = await this.tmdbClient.autoIdentifyMovie(newMovie);
         await mediaInfo(newMovie, path.join(this.moviesPath, newMovie.filename));

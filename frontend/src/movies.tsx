@@ -15,6 +15,7 @@ type MoviesProps = {
   user: DbUser;
   tmdbClient?: TmdbClient;
   orderBy: OrderBy;
+  search: string;
 };
 type MoviesState = {
   movies: DbMovie[];
@@ -34,6 +35,7 @@ interface CustomToggleProps {
   children?: React.ReactNode;
   onClick: (evt: React.MouseEvent<HTMLAnchorElement>) => void;
 }
+
 const MoreToggle = React.forwardRef<HTMLAnchorElement, CustomToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLAnchorElement>) => (
   <a href="" ref={ref} className="link-light me-3" onClick={(e) => {
       e.preventDefault();
@@ -50,6 +52,9 @@ const MultiItem = React.forwardRef<HTMLElement, CustomToggleProps>(({ children, 
   },
 );
 
+function cleanString(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
 
 export default class Movies extends React.Component<MoviesProps, MoviesState> {
 
@@ -211,6 +216,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   }
 
   renderList(): JSX.Element {
+    let movies: DbMovie[] = this.state.movies;
     if (this.lastOrderBy != this.props.orderBy) {
       this.lastOrderBy = this.props.orderBy;
       let sortFn: (a: DbMovie, b: DbMovie) => number;
@@ -234,11 +240,22 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
           sortFn = (a: DbMovie, b: DbMovie) => a.year - b.year;
           break;
       }
-      this.state.movies.sort(sortFn);
+      movies.sort(sortFn);
+    }
+    if (this.props.search) {
+      movies = movies.filter(m => {
+        if (! m.searchableContent) {
+          m.searchableContent = cleanString(m.title + " " + 
+            (m.title == m.originalTitle ? "" : m.originalTitle + " ") +
+            m.genres.join(" ") + " " +
+            m.countries.join(" ")
+          );
+        }
+        return m.searchableContent.includes(cleanString(this.props.search));
+      })
     }
     return <div className="d-flex flex-wrap justify-content-evenly mt-3">{
-      this.state.movies
-      .filter(m => m.audience <= this.props.user.audience)
+      movies.filter(m => m.audience <= this.props.user.audience)
       .map((movie, idx) => {
         const userStatus = this.getUserStatus(movie);
         return <div key={idx} className="movie-card" onClick={this.handleMovieClick.bind(this, movie, MovieAction.open)}>
