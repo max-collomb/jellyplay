@@ -25,9 +25,9 @@ V1.0
 [x] [frontend+api] corriger l'identification d'un film
 [x] [frontend+api] renommer un fichier
 [x] [frontend+api] supprimer un fichier
-[ ] [frontend] tri des films (alpha ^v, année ^v, ajout ^v)
+[x] [frontend] tri des films (alpha ^v, année ^v, ajout ^v)
+[x] [frontend] lazy loading des images
 [ ] [frontend] recherche de film par texte / nom de réal ou d'acteur / genre / pays
-[ ] [frontend] lazy loading des images
 [ ] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)
 [ ] [client] changer URL (127.0.0.1 => 192.168.0.99)
 

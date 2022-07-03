@@ -242,7 +242,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       .map((movie, idx) => {
         const userStatus = this.getUserStatus(movie);
         return <div key={idx} className="movie-card" onClick={this.handleMovieClick.bind(this, movie, MovieAction.open)}>
-          <span className="poster" style={{ backgroundImage: `url(/images/posters_w342${movie.posterPath})` }}>
+          <span className="poster">
+            <img src={`/images/posters_w342${movie.posterPath}`} loading="lazy"/>
             <b onClick={this.handleMovieClick.bind(this, movie, MovieAction.play)}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>

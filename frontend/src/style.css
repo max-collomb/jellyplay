@@ -62,6 +62,8 @@ html.dark .nav-tabs .nav-link:hover { color: #fff; border-bottom: solid 3px #fff
   position: relative;
 }
 
+.poster > img { position: absolute; width: 100%; aspect-ratio: 2/3; }
+
 .movie-card:hover .poster {
   /*opacity: 0.6;*/
 }
@@ -83,7 +85,7 @@ html.dark .nav-tabs .nav-link:hover { color: #fff; border-bottom: solid 3px #fff
   margin-left: 5%;
   margin-top: 2.5%;
 }
-.poster i { display: block;text-align: center; opacity: 0; transition: all linear 0.1s; }
+.poster i { display: block; text-align: center; opacity: 0; transition: all linear 0.1s; position: absolute; left: 0; right: 0; }
 .poster em { padding: 5%; margin-right: 5%; background-color: rgba(0,0,0,0.33); }
 .poster em:hover { background-color: rgba(0, 131, 176, 0.2); color: rgb(50, 203, 255); }
 .poster em.active { color: rgb(209, 71, 71); }
