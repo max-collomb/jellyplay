@@ -33,7 +33,7 @@ type SetMovieAudienceMessage = {
   audience: number;  
 };
 
-type ParseFilenameMessage = {
+type FilenameMessage = {
   filename: string;
 };
 
@@ -157,7 +157,9 @@ export class Catalog {
       for (const filename of filenames) {
         const stat = await fs.promises.lstat(path.join(rootPath, folderPath, filename));
         if (stat.isDirectory()) {
-          await readdir(path.join(folderPath, filename), list);
+          if (! filename.startsWith(".")) {
+            await readdir(path.join(folderPath, filename), list);
+          }
         } else if (videoExts.indexOf(path.extname(filename).toLowerCase()) > -1) {
           list.push(path.join(folderPath, filename));
         }
@@ -337,8 +339,8 @@ export class Catalog {
   }
 
   public parseFilename(request: FastifyRequest, reply: FastifyReply) {
-    let body: ParseFilenameMessage = request.body as ParseFilenameMessage;
-    const data: ParsedFilename = filenameParse(body.filename.split("\\").pop() || body.filename);
+    let body: FilenameMessage = request.body as FilenameMessage;
+    const data: ParsedFilename = filenameParse(body.filename.split(path.sep).pop() || body.filename);
     reply.send({ parsedFilename: { title: data.title, year: data.year }});
   }
 
@@ -374,6 +376,25 @@ export class Catalog {
       newFilename = movie.filename;
     }
     reply.send({ newFilename });
+  }
+
+  public async deleteFile(request: FastifyRequest, reply: FastifyReply) {
+    let newFilename = "";
+    let body: FilenameMessage = request.body as FilenameMessage;
+    let movie = this.tables.movies?.findOne({ filename: body.filename });
+    console.log(path.sep);
+    if (movie) {
+      try {
+        await fs.promises.rename(
+          path.join(this.moviesPath, movie.filename),
+          path.join(this.moviesPath, ".trash", movie.filename.split(path.sep).pop() || movie.filename)
+        );
+        this.tables.movies?.remove(movie);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    reply.send({});
   }
 
 }

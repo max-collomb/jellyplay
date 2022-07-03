@@ -198,6 +198,15 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
     this.setState({ renaming: false });
   }
 
+  async handleDeleteClick(evt: React.MouseEvent<HTMLElement>): void {
+    if (this.state.selection) {
+      await apiClient.deleteFile(this.state.selection.filename);
+      const movies = this.state.movies.filter(m => m.filename !== this.state.selection?.filename)
+      this.setState({ movies, selection: undefined });
+    }
+    evt.preventDefault();
+  }
+
   renderList(): JSX.Element {
     return <div className="d-flex flex-wrap justify-content-evenly mt-3">{
       this.state.movies
@@ -313,8 +322,9 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
                   { [0,10,12,16,18,999].map(a => <a key={a} className={"audience-link p-2" + (this.props.user.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, movie, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
                 </Dropdown.Item>
                 <Dropdown.Divider/>
-                <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! this.props.user.admin}>Corriger les métadonnées ...</Dropdown.Item>
-                <Dropdown.Item onClick={this.handleRenameClick.bind(this)} disabled={! this.props.user.admin}>Renommer le fichier ...</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! this.props.user.admin}>Corriger les métadonnées...</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleRenameClick.bind(this)} disabled={! this.props.user.admin}>Renommer le fichier...</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleDeleteClick.bind(this)} disabled={! this.props.user.admin}>Supprimer</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
           </div>

@@ -80,7 +80,7 @@ class ApiClient {
     });
   }
 
-  setStatus(movie: DbMovie, userName: string, field: string, value: any): Promise<UserMovieStatus[]> {
+  async setStatus(movie: DbMovie, userName: string, field: string, value: any): Promise<UserMovieStatus[]> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/set_status', {
         method: "POST",
@@ -93,7 +93,7 @@ class ApiClient {
     });
   }
 
-  setAudience(movie: DbMovie, audience: number): Promise<number> {
+  async setAudience(movie: DbMovie, audience: number): Promise<number> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/set_audience', {
         method: "POST",
@@ -106,7 +106,7 @@ class ApiClient {
     });
   }
 
-  parseFilename(filename: string): Promise<ParsedFilename> {
+  async parseFilename(filename: string): Promise<ParsedFilename> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/parse_filename', {
         method: "POST",
@@ -119,7 +119,7 @@ class ApiClient {
     });
   }
 
-  fixMetadata(filename: string, tmdbId: number): Promise<DbMovie> {
+  async fixMetadata(filename: string, tmdbId: number): Promise<DbMovie> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/fix_metadata', {
         method: "POST",
@@ -132,7 +132,7 @@ class ApiClient {
     });
   }
 
-  renameFile(oldFilename: string, newFilename: string): Promise<string> {
+  async renameFile(oldFilename: string, newFilename: string): Promise<string> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/rename_file', {
         method: "POST",
@@ -141,6 +141,18 @@ class ApiClient {
       }).then(async (response) => {
         let json = await response.json();
         resolve(json.newFilename);
+      });
+    });
+  }
+
+  async deleteFile(filename: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/delete_file', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ filename })
+      }).then(async () => {
+        resolve();
       });
     });
   }

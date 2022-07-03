@@ -241,7 +241,7 @@ export class TmdbClient {
   }
 
   public async autoIdentifyMovie(movie: DbMovie): Promise<DbCredit[]> {
-    const data: ParsedFilename = filenameParse(movie.filename.split("\\").pop() || movie.filename);
+    const data: ParsedFilename = filenameParse(movie.filename.split(path.sep).pop() || movie.filename);
     const response = await this.movieDb.searchMovie({
       language: this.lang,
       query: data.title,
