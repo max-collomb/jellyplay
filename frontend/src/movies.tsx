@@ -4,7 +4,7 @@ import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-import { AudioInfo, Config, DbCredit, DbMovie, DbUser, UserMovieStatus, VideoInfo } from '../../api/src/types';
+import { AudioInfo, Config, DbCredit, DbMovie, DbUser, OrderBy, UserMovieStatus, VideoInfo } from '../../api/src/types';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
 import FixMetadataForm from './fix-metadata-form';
@@ -14,6 +14,7 @@ type MoviesProps = {
   config: Config;
   user: DbUser;
   tmdbClient?: TmdbClient;
+  orderBy: OrderBy;
 };
 type MoviesState = {
   movies: DbMovie[];
@@ -51,6 +52,8 @@ const MultiItem = React.forwardRef<HTMLElement, CustomToggleProps>(({ children, 
 
 
 export default class Movies extends React.Component<MoviesProps, MoviesState> {
+
+  lastOrderBy?: OrderBy;
 
   constructor(props: MoviesProps) {
     super(props);
@@ -208,6 +211,31 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   }
 
   renderList(): JSX.Element {
+    if (this.lastOrderBy != this.props.orderBy) {
+      this.lastOrderBy = this.props.orderBy;
+      let sortFn: (a: DbMovie, b: DbMovie) => number;
+      switch(this.props.orderBy) {
+        case OrderBy.addedDesc:
+          sortFn = (a: DbMovie, b: DbMovie) => (b.created < a.created) ? -1 : (b.created > a.created) ? 1 : 0;
+          break;
+        case OrderBy.addedAsc:
+          sortFn = (a: DbMovie, b: DbMovie) => (a.created < b.created) ? -1 : (a.created > b.created) ? 1 : 0;
+          break;
+        case OrderBy.titleAsc:
+          sortFn = (a: DbMovie, b: DbMovie) => (a.title.toUpperCase() < b.title.toUpperCase()) ? -1 : 1;
+          break;
+        case OrderBy.titleDesc:
+          sortFn = (a: DbMovie, b: DbMovie) => (b.title.toUpperCase() < a.title.toUpperCase()) ? -1 : 1;
+          break;
+        case OrderBy.yearDesc:
+          sortFn = (a: DbMovie, b: DbMovie) => b.year - a.year;
+          break;
+        case OrderBy.yearAsc:
+          sortFn = (a: DbMovie, b: DbMovie) => a.year - b.year;
+          break;
+      }
+      this.state.movies.sort(sortFn);
+    }
     return <div className="d-flex flex-wrap justify-content-evenly mt-3">{
       this.state.movies
       .filter(m => m.audience <= this.props.user.audience)

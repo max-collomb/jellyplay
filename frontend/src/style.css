@@ -28,6 +28,8 @@ html.dark .nav-tabs .nav-link.active { color: #fff; background-color: transparen
 html.dark .nav-tabs .nav-link { color: rgba(255, 255, 255, 0.5); border-width: 0; }
 html.dark .nav-tabs .nav-link:hover { color: #fff; border-bottom: solid 3px #fff; }
 
+.label-aligned { width: 10rem; padding-top: 0.5rem; }
+
 .movie-card {
   min-width: 150px;
   max-width: 342px;

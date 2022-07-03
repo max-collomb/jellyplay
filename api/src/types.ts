@@ -85,3 +85,12 @@ export type DataTables = {
   tvshows?: Collection<DbTvshow>;
   credits?: Collection<DbCredit>;
 };
+
+export enum OrderBy {
+  addedDesc = "addedDesc",
+  addedAsc  = "addedAsc",
+  titleAsc  = "titleAsc",
+  titleDesc = "titleDesc",
+  yearDesc  = "yearDesc",
+  yearAsc   = "yearAsc",
+};

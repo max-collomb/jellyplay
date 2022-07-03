@@ -1,6 +1,8 @@
 import React from 'react';
 
 import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import FormControl from 'react-bootstrap/FormControl';
@@ -9,7 +11,7 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 
-import { Config, DbUser } from '../../api/src/types';
+import { Config, DbUser, OrderBy } from '../../api/src/types';
 
 import Home from './home';
 import Movies from './movies';
@@ -33,17 +35,20 @@ type AppState = {
   optionsVisible: boolean;
   tab: AppTab;
   selection?: number;
+  orderBy: OrderBy;
 };
 
 export default class App extends React.Component<AppProps, AppState> {
 
   constructor(props: AppProps) {
     super(props);
+    const orderBy = (localStorage.getItem('orderBy') || "addedDesc") as OrderBy;
     this.state = {
       config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "" },
       users: [],
       optionsVisible: false,
-      tab: AppTab.movies
+      tab: AppTab.movies,
+      orderBy,
     };
     apiClient.getConfig().then((config) => {
       this.setState({ config, tmdbClient: new TmdbClient(config.tmdbApiKey, 'fr-FR') });
@@ -74,6 +79,11 @@ export default class App extends React.Component<AppProps, AppState> {
     localStorage.setItem('userName', user ? user.name : "none");
   }
 
+  handleOrderClick(orderBy: OrderBy): void {
+    localStorage.setItem('orderBy', orderBy);
+    this.setState({ orderBy, optionsVisible: false });
+  }
+
   render(): JSX.Element {
     let content: JSX.Element = <div/>;
     if (! this.state.users.length) {
@@ -83,7 +93,7 @@ export default class App extends React.Component<AppProps, AppState> {
     } else if (this.state.tab == AppTab.home) {
       content = <Home />;
     } else if (this.state.tab == AppTab.movies) {
-      content = <Movies config={this.state.config} user={this.state.user} tmdbClient={this.state.tmdbClient} />;
+      content = <Movies config={this.state.config} user={this.state.user} tmdbClient={this.state.tmdbClient} orderBy={this.state.orderBy} />;
     } else if (this.state.tab == AppTab.tvshows) {
       content = <TvShows />
     }
@@ -134,14 +144,31 @@ export default class App extends React.Component<AppProps, AppState> {
             >
               <Offcanvas.Header closeButton>
                 <Offcanvas.Title id={`offcanvasNavbarLabel-expand`}>
-                  Options
+                  Tri
                 </Offcanvas.Title>
               </Offcanvas.Header>
               <Offcanvas.Body>
-                <Nav className="justify-content-end flex-grow-1 pe-3">
-                  <Nav.Link href="#action1">Action 1</Nav.Link>
-                  <Nav.Link href="#action2">Action 2</Nav.Link>
-                </Nav>
+                <ButtonToolbar className="mb-3">
+                  <Form.Label className="label-aligned">Date d'ajout</Form.Label>
+                  <ButtonGroup className="flex-fill">
+                    <Button variant={this.state.orderBy == OrderBy.addedDesc ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.addedDesc)}>+ Récent</Button>
+                    <Button variant={this.state.orderBy == OrderBy.addedAsc  ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.addedAsc) }>+ Ancien</Button>
+                  </ButtonGroup>
+                 </ButtonToolbar>
+                <ButtonToolbar className="mb-3">
+                  <Form.Label className="label-aligned">Titre</Form.Label>
+                  <ButtonGroup className="flex-fill">
+                    <Button variant={this.state.orderBy == OrderBy.titleAsc  ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.titleAsc) }>A &ndash; Z</Button>
+                    <Button variant={this.state.orderBy == OrderBy.titleDesc ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.titleDesc)}>Z &ndash; A</Button>
+                  </ButtonGroup>
+                 </ButtonToolbar>
+                <ButtonToolbar className="mb-3">
+                  <Form.Label className="label-aligned">Année</Form.Label>
+                  <ButtonGroup className="flex-fill">
+                    <Button variant={this.state.orderBy == OrderBy.yearDesc ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.yearDesc)}>+ Récent</Button>
+                    <Button variant={this.state.orderBy == OrderBy.yearAsc  ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.yearAsc) }>+ Ancien</Button>
+                  </ButtonGroup>
+                 </ButtonToolbar>
               </Offcanvas.Body>
             </Offcanvas>
           </Container>
