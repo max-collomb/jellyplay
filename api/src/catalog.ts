@@ -34,6 +34,11 @@ type SetMovieAudienceMessage = {
   audience: number;  
 };
 
+type SetTvshowAudienceMessage = {
+  foldername: string;
+  audience: number;  
+};
+
 type FilenameMessage = {
   filename: string;
 };
@@ -524,13 +529,24 @@ export class Catalog {
     reply.send({});
   }
 
-  public setAudience(request: FastifyRequest, reply: FastifyReply) {
+  public setMovieAudience(request: FastifyRequest, reply: FastifyReply) {
     let body: SetMovieAudienceMessage = request.body as SetMovieAudienceMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
       movie.audience = body.audience;
       this.tables.movies?.update(movie);
       reply.send({ audience: movie.audience });
+    }
+    reply.send({});
+  }
+
+  public setTvshowAudience(request: FastifyRequest, reply: FastifyReply) {
+    let body: SetTvshowAudienceMessage = request.body as SetTvshowAudienceMessage;
+    let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
+    if (tvshow) {
+      tvshow.audience = body.audience;
+      this.tables.tvshows?.update(tvshow);
+      reply.send({ audience: tvshow.audience });
     }
     reply.send({});
   }

@@ -32,13 +32,15 @@ V1.0
 ----------- TVSHOWS --------------
 [x] [api] recupérer toutes les infos tmdb pour chaque série
 [x] [api] récupérer les infos (codec, langue, etc) de chaque fichier 
-[ ] [frontend] affichage détaillé d'une série : lister les saisons / épisodes
+[x] [frontend] affichage détaillé d'une série : lister les saisons / épisodes
 [ ] [frontend+api+client] lancement du lecteur video
 [ ] [api] nettoyer la base après suppression d'un fichier ou d'un dossier (tvshow + credits)
 [ ] [client+frontend+api] enregistrer l'avancement dans un fichier par user + marque comme vu à > 90% + affichage progression dans fiche épisode
 [ ] [client] reprendre la lecture
 [ ] [frontend+api] marquer un épisode comme "vu" 
 [ ] [frontend+api] marquer une série comme "pas intéressé"
+[ ] [frontend] lecture d'une série : déterminer automatiquement l'épisode à lire
+[ ] [api] récupérer audience depuis tmdb
 [ ] [frontend] filter selon audience
 [ ] [frontend+api] corriger l'audience d'une série
 [ ] [frontend+api] corriger l'identification d'une série

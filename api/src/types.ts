@@ -104,6 +104,7 @@ export type Season = {
 
 export type UserTvshowStatus = {
   userName: string;
+  toSee: boolean;
   notInterested: boolean;
   currentFilename: string;
   position: number;

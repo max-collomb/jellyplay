@@ -134,12 +134,25 @@ class ApiClient {
     });
   }
 
-  async setAudience(movie: DbMovie, audience: number): Promise<number> {
+  async setMovieAudience(movie: DbMovie, audience: number): Promise<number> {
     return new Promise((resolve, reject) => {
-      fetch('/catalog/set_audience', {
+      fetch('/catalog/movie/set_audience', {
         method: "POST",
         headers: new Headers({'content-type': 'application/json'}),
         body: JSON.stringify({ filename: movie.filename, audience })
+      }).then(async (response) => {
+        let json = await response.json();
+        resolve(json.audience);
+      });
+    });
+  }
+
+  async setTvshowAudience(tvshow: DbTvshow, audience: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/tvshow/set_audience', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ foldername: tvshow.foldername, audience })
       }).then(async (response) => {
         let json = await response.json();
         resolve(json.audience);

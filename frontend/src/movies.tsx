@@ -146,7 +146,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
 
   handleSetAudience(movie: DbMovie, audience: number, evt: React.MouseEvent<HTMLElement>): void {
     if (this.props.user.admin) {
-      apiClient.setAudience(movie, audience).then((aud: number) => {
+      apiClient.setMovieAudience(movie, audience).then((aud: number) => {
         movie.audience = aud;
         this.setState({ movies: this.state.movies });
       });
@@ -280,7 +280,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
     }
     const movie: DbMovie = this.state.selection;
     const userStatus = this.getUserStatus(movie);
-    return <div className="movie-details" style={{background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat`}}>
+    return <div className="media-details movie" style={{background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat`}}>
       <div style={{ margin: "1em" }}>
         <a href="#" className="link-light" onClick={this.handleCloseDetails.bind(this)}>
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
@@ -288,7 +288,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
           </svg>
         </a>
       </div>
-      <div className="movie-poster">
+      <div className="media-poster">
         <span className="poster" style={{ backgroundImage: `url(/images/posters_w780${movie.posterPath})` }}>
           <b onClick={this.handleMovieClick.bind(this, movie, ItemAction.play)}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
@@ -348,7 +348,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
         </div>
       </div>
       <div className="content-bar">
-        <div className="d-flex align-items-start mb-5">
+        <div className="d-flex align-items-start mb-3">
           <div className="flex-grow-1 pe-5">
             <p><span className="dd">{movie.filename}</span></p>
             <p><span className="dt">Genre</span><span className="dd">{movie.genres.join(', ')}</span></p>
@@ -374,10 +374,10 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
             }
           </div>
         </div>
-        <div className="d-flex align-items-start mb-5">
+        <div className="d-flex align-items-start mb-3">
           <p className="synopsis">{movie.synopsys}</p>
         </div>
-        <Tabs id="controlled-tab-example" activeKey={this.state.tabKey} onSelect={(tabKey) => this.setState({ tabKey: tabKey || "cast" })}>
+        <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={(tabKey) => this.setState({ tabKey: tabKey || "cast" })} className="constrained-width">
           <Tab eventKey="cast" title="Casting">
             <div className="d-flex flex-wrap mt-3">{
               movie.cast.map((role, idx) => {

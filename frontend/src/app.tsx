@@ -48,7 +48,7 @@ export default class App extends React.Component<AppProps, AppState> {
       config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "" },
       users: [],
       optionsVisible: false,
-      tab: AppTab.movies,
+      tab: AppTab.tvshows,
       orderBy,
       search: "",
     };

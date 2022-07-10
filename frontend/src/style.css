@@ -28,6 +28,10 @@ html.dark .nav-tabs .nav-link.active { color: #fff; background-color: transparen
 html.dark .nav-tabs .nav-link { color: rgba(255, 255, 255, 0.5); border-width: 0; }
 html.dark .nav-tabs .nav-link:hover { color: #fff; border-bottom: solid 3px #fff; }
 
+html.dark .tooltip-inner { text-align: start; max-width: 400px; background: #000; color: #fff; }
+html.dark .tooltip.show { opacity: 1 }
+html.dark .bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before, html.dark .bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: #000; }
+
 input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
   height: 16px;
@@ -77,7 +81,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .media-card .poster,
-.movie-poster .poster {
+.media-poster .poster {
   display: block;
   background-position: center center;
   background-size: cover;
@@ -85,12 +89,13 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .media-card.movie .poster,
-.movie-poster .poster {aspect-ratio: 2/3;}
+.media-poster .poster {aspect-ratio: 2/3;}
 .media-card.tvshow .poster { aspect-ratio: 16/9; }
 
 .poster > img { position: absolute; width: 100%; aspect-ratio: 2/3; }
 .movie .poster > img { aspect-ratio: 2/3; }
 .tvshow .poster > img { aspect-ratio: 16/9; }
+.episode-card .poster { position: relative; min-width: 300px; width: 300px; height: 169px; }
 
 .media-card:hover .poster {
   /*opacity: 0.6;*/
@@ -109,6 +114,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 50%;
   padding: 5%;
 }
+.episode-card .poster b { top: 23.3%; width: 30%; } /* (1 - 30/100 * 16/9) / 2 = 23.3 */
 .poster b svg {
   margin-left: 5%;
   margin-top: 2.5%;
@@ -120,13 +126,15 @@ input[type="search"]::-webkit-search-cancel-button {
 /*.poster em svg { width: 20px; }*/
 .media-card:hover .poster i { opacity: 1; }
 
-.movie-poster:hover .poster b,
-.media-card:hover .poster b {
+.media-poster:hover .poster b,
+.media-card:hover .poster b,
+.episode-card:hover .poster b {
   opacity: 0.33;
 }
 
-.movie-poster:hover .poster b:hover,
-.media-card:hover .poster b:hover {
+.media-poster:hover .poster b:hover,
+.media-card:hover .poster b:hover,
+.episode-card:hover .poster b:hover {
   opacity: 1;
   color: rgb(50, 203, 255);
   background: rgba(0, 131, 176, 0.2);
@@ -168,7 +176,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 4px;
 }
 
-.movie-details {
+.media-details {
   position: fixed;
   top: 56px;
   bottom: 0;
@@ -178,15 +186,16 @@ input[type="search"]::-webkit-search-cancel-button {
   overflow: auto;
 }
 
-.movie-poster {
+.media-poster {
   min-width: 300px;
   max-width: 780px;
-  width: 25vw;
-  margin: 5vh 3vw 0 3vw;
+  width: 20vw;
   float: left;
   border-radius: 0.5vw;
   overflow: hidden;
 }
+.movie .media-poster { margin: 2vh 3vw 0 3vw; }
+.tvshow .media-poster { margin: 0 3vw; }
 
 span.poster .progress-bar,
 div.media-card .progress-bar {
@@ -204,11 +213,9 @@ div.media-card .progress-bar {
   background: #32cbff;
 }
 
-.title-bar {
-  padding: 1em;
-  background: rgba(0,0,0,0.75);
-  margin-top: 10vh;
-}
+.title-bar { padding: 1em; background: rgba(0,0,0,0.75); }
+.movie .title-bar { margin-top: 6vh; }
+.tvshow .title-bar { margin-top: 2rem; }
 
 .title-bar h2 { font-weight: bold; }
 .title-bar h6 { font-weight: bold; opacity: 0.6; }
@@ -224,7 +231,7 @@ div.media-card .progress-bar {
 
 .content-bar .dt { display: inline-block; width: 110px; }
 .content-bar .dd { font-weight: bold; }
-.content-bar .synopsis { max-width: 600px; }
+.content-bar .synopsis { max-width: 1000px; }
 
 .cast-card {
   width: 185px;
@@ -264,3 +271,10 @@ div.media-card .progress-bar {
 .audience-link { transition: all linear 0.15s; border-radius: 0.25rem; }
 .audience-link.disabled { cursor: not-allowed; }
 .audience-link:hover { background: rgba(255,255,255,0.1); }
+
+.constrained-width + .tab-content { display: flex; flex-grow: 1; }
+.air-date { opacity: 0.5; font-size: 80%; }
+.episode-title { background-color: rgba(0,0,0,0.75); }
+.file-details { text-align: left; }
+.file-details .dt { display: inline-block; width: 90px; }
+.file-details .dd { font-weight: bold; }
