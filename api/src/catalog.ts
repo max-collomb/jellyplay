@@ -6,7 +6,7 @@ import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
 import { filenameParse, ParsedFilename } from '@ctrl/video-filename-parser';
 
-import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, UserMovieStatus } from './types';
+import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, Season,UserMovieStatus } from './types';
 import { TmdbClient, mediaInfo } from './tmdb';
 
 type CatalogOptions = {
@@ -15,7 +15,8 @@ type CatalogOptions = {
   rootPath: string;
 };
 
-type SetPositionMessage = {
+type SetMoviePositionMessage = {
+  type: string;
   filename: string;
   userName: string;
   position: number;
@@ -89,8 +90,13 @@ export class Catalog {
   }
 
   private initSchemas(): void {
+    // this.db.removeCollection('users');
+    // this.db.removeCollection('movies');
+    // this.db.removeCollection('tvshows');
+    // this.db.removeCollection('credits');
+
     this.tables.users = this.db.getCollection('users');
-    if (this.tables.users === null) {
+    if (! this.tables.users) {
       this.tables.users = this.db.addCollection(
         'users',
         {
@@ -106,7 +112,7 @@ export class Catalog {
     }
 
     this.tables.movies = this.db.getCollection('movies');
-    if (this.tables.movies === null) {
+    if (! this.tables.movies) {
       this.tables.movies = this.db.addCollection(
         'movies',
         {
@@ -118,7 +124,7 @@ export class Catalog {
     }
 
     this.tables.tvshows = this.db.getCollection('tvshows');
-    if (this.tables.tvshows === null) {
+    if (! this.tables.tvshows) {
       this.tables.tvshows = this.db.addCollection(
         'tvshows',
         {
@@ -130,7 +136,7 @@ export class Catalog {
     }
 
     this.tables.credits = this.db.getCollection('credits');
-    if (this.tables.credits === null) {
+    if (! this.tables.credits) {
       this.tables.credits = this.db.addCollection(
         'credits',
         {
@@ -145,8 +151,20 @@ export class Catalog {
   public async load(): Promise<void> {
     console.log("catalog_load begin");
     await this.dbReady;
-    this.scanMovies(1_000); // TODO 10_000
-    this.scanTvshows(2_000); // TODO 20_000
+    const creditSet: Set<number> = new Set<number>();
+    await new Promise(resolve => setTimeout(resolve, 1_000));
+    await this.scanMovies(creditSet);
+    await new Promise(resolve => setTimeout(resolve, 1_000));
+    await this.scanTvshows(creditSet);
+    if (this.tables.credits) {
+      for (const credit of this.tables.credits.find()) {
+        if (! creditSet.has(credit.tmdbid)) {
+          console.log(`credit has no reference anymore ${credit.name}`);
+          await this.tmdbClient.unlinkProfileImage(credit);
+          this.tables.credits.remove(credit);
+        }
+      }
+    }
     console.log("catalog_load end");
   }
 
@@ -169,10 +187,21 @@ export class Catalog {
     return pathes;
   }
 
-  private async scanMovies(delay: number) {
+  private async readDirectories(rootPath: string): Promise<string[]> {
+    const pathes: string[] = [];
+    const filenames = await fs.promises.readdir(rootPath);
+    for (const filename of filenames) {
+      const stat = await fs.promises.lstat(path.join(rootPath, filename));
+      if (stat.isDirectory() && ! filename.startsWith(".")) {
+        pathes.push(filename)
+      }
+    }
+    return pathes;
+  }
+
+  private async scanMovies(creditSet: Set<number>) {
     console.log("scanMovies begin");
-    await new Promise(resolve => setTimeout(resolve, delay));
-    // scanner dossier pour détecter changements
+    // scanne le dossier pour détecter changements
     const filenames: string[] = await this.recursiveReaddir(this.moviesPath);
     const filenameSet: Set<string> = new Set<string>();
     for (const filename of filenames) {
@@ -215,7 +244,6 @@ export class Catalog {
         }
       }
     }
-    const creditSet: Set<number> = new Set<number>();
     if (this.tables.movies) {
       for (const movie of this.tables.movies.find()) {
         if (filenameSet.has(movie.filename)) {
@@ -227,27 +255,133 @@ export class Catalog {
           await this.tmdbClient.unlinkMovieImages(movie);
           this.tables.movies.remove(movie);
         }
-        if (! movie.userStatus) {
-          movie.userStatus = [];
-          this.tables.movies.update(movie);
-        }
-      }
-    }
-    if (this.tables.credits) {
-      for (const credit of this.tables.credits.find()) {
-        if (! creditSet.has(credit.tmdbid)) {
-          console.log(`credit has no reference anymore ${credit.name}`);
-          await this.tmdbClient.unlinkProfileImage(credit);
-          this.tables.credits.remove(credit);
-        }
       }
     }
     console.log("scanMovies end");
   }
 
-  private async scanTvshows(delay: number) {
-    await new Promise(resolve => setTimeout(resolve, delay));
-    // scanner dossier pour détecter changements
+  private async scanTvshows(creditSet: Set<number>) {
+    console.log("scanTvshows start");
+    // scanne le dossier pour détecter changements
+    const foldernames: string[] = await this.readDirectories(this.tvshowsPath);
+    const foldernameSet: Set<string> = new Set<string>();
+    for (const foldername of foldernames) {
+      foldernameSet.add(foldername);
+      const folderpath: string = path.join(this.tvshowsPath, foldername);
+      let result = this.tables.tvshows?.findOne({ foldername });
+      let tvshow: DbTvshow;
+      if (result) {
+        tvshow = result;
+      } else {
+        console.log(`new folder detected ${foldername}`);
+        tvshow = {
+          foldername,
+          tmdbid: -1,
+          title: "",
+          originalTitle: "",
+          synopsys: "",
+          genres: [],
+          countries: [],
+          audience: 999,
+          backdropPath: "",
+          posterPath: "",
+          userStatus: [],
+          searchableContent: "",
+          seasons: [],
+          episodes: [],
+          createdMin: "",
+          createdMax: "",
+          airDateMin: "",
+          airDateMax: "",
+        };
+        await this.tmdbClient.autoIdentifyTvshow(tvshow);
+        this.tables.tvshows?.insert(tvshow);
+      }
+
+      const filenames: string[] = await this.recursiveReaddir(folderpath);
+      const filenameSet: Set<string> = new Set<string>();
+      for (const filename of filenames) {
+        filenameSet.add(filename);
+        const filepath: string = path.join(folderpath, filename);
+        if (tvshow.episodes.filter(e => e.filename == path.join(foldername, filename)).length === 0) {
+          console.log(`new file detected ${filename}`);
+          const episode: Episode = {
+            filename,
+            seasonNumber: -1,
+            episodeNumbers: [],
+            tmdbid: -1,
+            title: "",
+            airDate: "",
+            duration: -1,
+            synopsys: "",
+            stillPath: "",
+            created: "",
+            filesize: -1,
+            video: { width: -1, height: -1, codec: "" },
+            audio: [],
+            subtitles: [],
+            userStatus: [],
+          };
+          // episode
+          await this.tmdbClient.addTvshowEpisode(tvshow, episode);
+          await mediaInfo(episode, path.join(folderpath, episode.filename));
+          // season
+          if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
+            const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
+            for (const credit of credits) {
+              if (this.tables.credits?.find({ tmdbid: credit.tmdbid }).length === 0) {
+                await this.tmdbClient.downloadProfileImage(credit);
+                this.tables.credits.insert(credit);
+              }
+            }
+          }
+          tvshow.episodes.push(episode);
+        }
+      }
+
+      // nettoyage des épisodes
+      const seasonNumberSet: Set<number> = new Set<number>();
+      for (const episode of tvshow.episodes) {
+        if (filenameSet.has(episode.filename)) {
+          seasonNumberSet.add(episode.seasonNumber);
+        } else {
+          console.log(`file doesn't exist anymore ${episode.filename}`);
+          await this.tmdbClient.unlinkEpisodeImages(episode);
+          episode.filename = "";
+        }
+      }
+      tvshow.episodes = tvshow.episodes.filter(e => e.filename !== "");
+
+      // nettoyage des saisons
+      for (const season of tvshow.seasons) {
+        if (seasonNumberSet.has(season.seasonNumber)) {
+          season.cast.forEach(c => creditSet.add(c.tmdbid));
+        } else {
+          console.log(`season doesn't exist anymore ${season.seasonNumber}`);
+          await this.tmdbClient.unlinkSeasonImages(season);
+        }
+      }
+      tvshow.seasons = tvshow.seasons.filter(s => seasonNumberSet.has(s.seasonNumber));
+      tvshow.createdMin = tvshow.episodes.map(e => e.created).sort().shift() || "";
+      tvshow.createdMax = tvshow.episodes.map(e => e.created).sort().pop() || "";
+      tvshow.airDateMin = tvshow.episodes.map(e => e.airDate).sort().shift() || "";
+      tvshow.airDateMax = tvshow.episodes.map(e => e.airDate).sort().pop() || "";
+
+      this.tables.tvshows?.update(tvshow);
+    }
+    if (this.tables.tvshows) {
+      for (const tvshow of this.tables.tvshows.find()) {
+        if (foldernameSet.has(tvshow.foldername)) {
+          tvshow.seasons.forEach(s => s.cast.forEach(c => creditSet.add(c.tmdbid)));
+        } else {
+          console.log(`folder doesn't exist anymore ${tvshow.foldername}`);
+          await this.tmdbClient.unlinkTvshowImages(tvshow);
+          this.tables.tvshows.remove(tvshow);
+        }
+      }
+    }
+    // nettoyer tvshow.episodes et tvshow.seasons et les images
+    console.log("scanTvshows end");
   }
 
   public getConfig(request: FastifyRequest, reply: FastifyReply) {
@@ -266,13 +400,17 @@ export class Catalog {
     reply.send({ movie: this.tables.movies?.find({ tmdbid: (request.params as any).movieId }) });
   }
 
+  public getTvshows(request: FastifyRequest, reply: FastifyReply) {
+    reply.send({ list: this.tables.tvshows?.find() });
+  }
+
   public getCredits(request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.credits?.find() });
   }
 
-  public setPosition(request: FastifyRequest, reply: FastifyReply) {
-    let body: SetPositionMessage = request.body as SetPositionMessage;
-    console.log("set_position ", body.filename, body.userName, body.position);
+  public setMoviePosition(request: FastifyRequest, reply: FastifyReply) {
+    let body: SetMoviePositionMessage = request.body as SetMoviePositionMessage;
+    console.log("set_position ", body.type, body.filename, body.userName, body.position);
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
       let userStatus: UserMovieStatus | undefined = undefined;
@@ -303,7 +441,40 @@ export class Catalog {
     reply.send({});
   }
 
-  public setStatus(request: FastifyRequest, reply: FastifyReply) {
+  public setEpisodePosition(request: FastifyRequest, reply: FastifyReply) {
+    // let body: SetMoviePositionMessage = request.body as SetMoviePositionMessage;
+    // console.log("set_position ", body.type, body.filename, body.userName, body.position);
+    // let movie = this.tables.movies?.findOne({ filename: body.filename });
+    // if (movie) {
+    //   let userStatus: UserMovieStatus | undefined = undefined;
+    //   for (let us of movie.userStatus) {
+    //     if (us.userName == body.userName) {
+    //       userStatus = us;
+    //       break;
+    //     }
+    //   }
+    //   if (! userStatus) {
+    //     userStatus = { userName: body.userName, position: 0, seen: [], toSee: false, notInterested: false };
+    //     movie.userStatus.push(userStatus);
+    //   }
+    //   userStatus.position = body.position;
+    //   if (body.position > movie.duration * 0.9) {
+    //     console.log("> 90 %");
+    //     userStatus.position = 0;
+    //     userStatus.toSee = false;
+    //     let timestamp: number = Date.now();
+    //     if (! userStatus.seen.length || timestamp - userStatus.seen[userStatus.seen.length - 1] > 24 * 60 * 60 * 1_000) {
+    //       console.log("adding TS to seen array");
+    //       userStatus.seen.push(timestamp);
+    //     }
+    //   }
+    //   this.tables.movies?.update(movie);
+    //   reply.send({ userStatus: movie.userStatus });
+    // }
+    reply.send({});
+  }
+
+  public setMovieStatus(request: FastifyRequest, reply: FastifyReply) {
     let body: SetMovieStatusMessage = request.body as SetMovieStatusMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
@@ -325,6 +496,31 @@ export class Catalog {
       this.tables.movies?.update(movie);
       reply.send({ userStatus: movie.userStatus });
     }
+    reply.send({});
+  }
+
+  public setTvshowStatus(request: FastifyRequest, reply: FastifyReply) {
+    // let body: SetMovieStatusMessage = request.body as SetMovieStatusMessage;
+    // let movie = this.tables.movies?.findOne({ filename: body.filename });
+    // if (movie) {
+    //   let userStatus: UserMovieStatus | undefined = undefined;
+    //   for (let us of movie.userStatus) {
+    //     if (us.userName == body.userName) {
+    //       userStatus = us;
+    //       break;
+    //     }
+    //   }
+    //   if (! userStatus) {
+    //     userStatus = { userName: body.userName, position: 0, seen: [], toSee: false, notInterested: false };
+    //     movie.userStatus.push(userStatus);
+    //   }
+    //   if (body.field == "toSee")
+    //     userStatus.toSee = body.value as boolean;
+    //   else if (body.field == "notInterested")
+    //     userStatus.notInterested = body.value as boolean;
+    //   this.tables.movies?.update(movie);
+    //   reply.send({ userStatus: movie.userStatus });
+    // }
     reply.send({});
   }
 

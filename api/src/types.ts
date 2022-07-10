@@ -65,14 +65,69 @@ export type DbMovie = {
   backdropPath: string;
   posterPath: string;
   userStatus: UserMovieStatus[];
-  searchableContent: string
+  searchableContent: string; // title + originalTitle + year + genre + countries => toLowerCase + removeAccent
+};
+
+export type UserEpisodeStatus = {
+  userName: string;
+  seen: number[];
+  position: number;
+};
+
+export type Episode = {
+  tmdbid: number;
+  filename: string;
+  seasonNumber: number;
+  episodeNumbers: number[];
+  title: string;
+  airDate: string;
+  synopsys: string;
+  duration: number;
+  stillPath: string;
+  created: string; // date de création du fichier
+  filesize: number;
+  video: VideoInfo;
+  audio: AudioInfo[];
+  subtitles: string[];
+  userStatus: UserEpisodeStatus[];
+};
+
+export type Season = {
+  tmdbid: number;
+  seasonNumber: number;
+  episodeCount: number;
+  year: number;
+  synopsys: string;
+  posterPath: string;
+  cast: Cast[];
+};
+
+export type UserTvshowStatus = {
+  userName: string;
+  notInterested: boolean;
+  currentFilename: string;
+  position: number;
 };
 
 export type DbTvshow = {
   foldername: string;
   tmdbid: number;
   title: string;
-  filenames: string[];
+  originalTitle: string;
+  countries: string[];
+  synopsys: string;
+  genres: string[];
+  audience: number;
+  backdropPath: string;
+  posterPath: string;
+  seasons: Season[];
+  episodes: Episode[];
+  userStatus: UserTvshowStatus[];
+  createdMin: string;
+  createdMax: string;
+  airDateMin: string;
+  airDateMax: string;
+  searchableContent: string; // title + originalTitle + genre + countries => toLowerCase + removeAccent
 };
 
 export type ParsedFilename = {

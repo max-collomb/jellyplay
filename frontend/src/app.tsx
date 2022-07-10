@@ -120,7 +120,11 @@ export default class App extends React.Component<AppProps, AppState> {
                         orderBy={this.state.orderBy}
                         search={this.state.search}/>;
     } else if (this.state.tab == AppTab.tvshows) {
-      content = <TvShows />
+      content = <TvShows config={this.state.config}
+                        user={this.state.user}
+                        tmdbClient={this.state.tmdbClient}
+                        orderBy={this.state.orderBy}
+                        search={this.state.search}/>
     }
 
     return (

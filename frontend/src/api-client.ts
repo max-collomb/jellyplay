@@ -1,9 +1,10 @@
-import { Config, DbUser, DbMovie, DbCredit, ParsedFilename, UserMovieStatus } from '../../api/src/types';
+import { Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, ParsedFilename, UserMovieStatus, UserTvshowStatus } from '../../api/src/types';
 
 const cache = {
   config: null,
   users: null,
   movies: null,
+  tvshows: null,
   credits: null,
 };
 
@@ -53,6 +54,21 @@ class ApiClient {
     });
   }
 
+  async getTvshows(): Promise<DbTvshow[]> {
+    return new Promise((resolve, reject) => {
+      if (cache.tvshows) {
+        resolve(cache.tvshows);
+      } else {
+        fetch('/catalog/tvshows/list')
+        .then(async (response) => {
+          let json = await response.json();
+          cache.tvshows = json.list;
+          resolve(json.list);
+        });
+      }
+    });
+  }
+
   async getCredits(): Promise<DbCredit[]> {
     return new Promise((resolve, reject) => {
       if (cache.credits) {
@@ -68,8 +84,8 @@ class ApiClient {
     });
   }
 
-  setPosition(movie: DbMovie, userName: string, callback: Function, position: number): void {
-    fetch('/catalog/set_position', {
+  setMoviePosition(movie: DbMovie, userName: string, callback: Function, position: number): void {
+    fetch('/catalog/movie/set_position', {
       method: "POST",
       headers: new Headers({'content-type': 'application/json'}),
       body: JSON.stringify({ filename: movie.filename, userName, position })
@@ -80,12 +96,37 @@ class ApiClient {
     });
   }
 
-  async setStatus(movie: DbMovie, userName: string, field: string, value: any): Promise<UserMovieStatus[]> {
+  setEpisodePosition(tvshow: DbTvshow, episode: Episode, userName: string, callback: Function, position: number): void {
+    fetch('/catalog/tvshow/set_position', {
+      method: "POST",
+      headers: new Headers({'content-type': 'application/json'}),
+      body: JSON.stringify({ foldername: tvshow.foldername, filename: episode.filename, userName, position })
+    }).then(async (response) => {
+      let json = await response.json();
+      // episode.userStatus = json.userStatus;
+      callback();
+    });
+  }
+
+  async setMovieStatus(movie: DbMovie, userName: string, field: string, value: any): Promise<UserMovieStatus[]> {
     return new Promise((resolve, reject) => {
-      fetch('/catalog/set_status', {
+      fetch('/catalog/movie/set_status', {
         method: "POST",
         headers: new Headers({'content-type': 'application/json'}),
         body: JSON.stringify({ filename: movie.filename, userName, field, value })
+      }).then(async (response) => {
+        let json = await response.json();
+        resolve(json.userStatus);
+      });
+    });
+  }
+
+  async setTvshowStatus(tvshow: DbTvshow, userName: string, field: string, value: any): Promise<UserTvshowStatus[]> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/tvshow/set_status', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ foldername: tvshow.foldername, userName, field, value })
       }).then(async (response) => {
         let json = await response.json();
         resolve(json.userStatus);

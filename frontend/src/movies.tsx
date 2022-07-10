@@ -5,6 +5,7 @@ import Tab from 'react-bootstrap/Tab';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 import { AudioInfo, Config, DbCredit, DbMovie, DbUser, OrderBy, UserMovieStatus, VideoInfo } from '../../api/src/types';
+import { ItemAction, CustomToggleProps, MoreToggle, MultiItem, cleanString } from './common';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
 import FixMetadataForm from './fix-metadata-form';
@@ -25,36 +26,6 @@ type MoviesState = {
   renaming: boolean;
   tabKey: string;
 };
-
-enum MovieAction {
-  play = "play",
-  open = "open",
-};
-
-interface CustomToggleProps {
-  children?: React.ReactNode;
-  onClick: (evt: React.MouseEvent<HTMLAnchorElement>) => void;
-}
-
-const MoreToggle = React.forwardRef<HTMLAnchorElement, CustomToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLAnchorElement>) => (
-  <a href="" ref={ref} className="link-light me-3" onClick={(e) => {
-      e.preventDefault();
-      onClick(e);
-    }}>
-    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-    </svg>
-  </a>
-));
-
-const MultiItem = React.forwardRef<HTMLElement, CustomToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLElement>) => {
-    return <span ref={ref} className="d-block text-nowrap p-2" onClick={onClick}>{children}</span>;
-  },
-);
-
-function cleanString(s: string): string {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
 
 export default class Movies extends React.Component<MoviesProps, MoviesState> {
 
@@ -142,16 +113,16 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
     return <React.Fragment>{audios.map((audio, idx) => <React.Fragment key={idx}>{audio.lang} {audio.ch}ch {audio.codec} &emsp;</React.Fragment>)}</React.Fragment>;
   }
 
-  handleMovieClick(movie: DbMovie, action: MovieAction, evt: React.MouseEvent<HTMLElement>): void {
+  handleMovieClick(movie: DbMovie, action: ItemAction, evt: React.MouseEvent<HTMLElement>): void {
     evt.stopPropagation();
     switch (action) {
-      case MovieAction.open:
+      case ItemAction.open:
         this.setState({ selection: movie, tabKey: "cast" });
         break;
-      case MovieAction.play:
+      case ItemAction.play:
         const path = `${this.props.config.moviesRemotePath}/${movie.filename}`;
         if (window._mpvSchemeSupported) {
-          window._setPosition = apiClient.setPosition.bind(apiClient, movie, this.props.user.name, this.forceUpdate.bind(this));
+          window._setPosition = apiClient.setMoviePosition.bind(apiClient, movie, this.props.user.name, this.forceUpdate.bind(this));
           document.location.href = `mpv://${path}?pos=${this.getPosition(movie)}`;
         } else {
           navigator.clipboard.writeText(path).then(function() {
@@ -165,7 +136,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   }
 
   handleToggleStatus(movie: DbMovie, field: string, value: any, evt: React.MouseEvent<HTMLElement>): void {
-    apiClient.setStatus(movie, this.props.user.name, field, value).then((userStatus: UserMovieStatus[]) => {
+    apiClient.setMovieStatus(movie, this.props.user.name, field, value).then((userStatus: UserMovieStatus[]) => {
       movie.userStatus = userStatus;
       this.setState({ movies: this.state.movies });
     });
@@ -206,7 +177,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
     this.setState({ renaming: false });
   }
 
-  async handleDeleteClick(evt: React.MouseEvent<HTMLElement>): void {
+  async handleDeleteClick(evt: React.MouseEvent<HTMLElement>): Promise<void> {
     if (this.state.selection) {
       await apiClient.deleteFile(this.state.selection.filename);
       const movies = this.state.movies.filter(m => m.filename !== this.state.selection?.filename)
@@ -258,10 +229,10 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       movies.filter(m => m.audience <= this.props.user.audience)
       .map((movie, idx) => {
         const userStatus = this.getUserStatus(movie);
-        return <div key={idx} className="movie-card" onClick={this.handleMovieClick.bind(this, movie, MovieAction.open)}>
+        return <div key={idx} className="media-card movie" onClick={this.handleMovieClick.bind(this, movie, ItemAction.open)}>
           <span className="poster">
             <img src={`/images/posters_w342${movie.posterPath}`} loading="lazy"/>
-            <b onClick={this.handleMovieClick.bind(this, movie, MovieAction.play)}>
+            <b onClick={this.handleMovieClick.bind(this, movie, ItemAction.play)}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
               </svg>
@@ -319,7 +290,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       </div>
       <div className="movie-poster">
         <span className="poster" style={{ backgroundImage: `url(/images/posters_w780${movie.posterPath})` }}>
-          <b onClick={this.handleMovieClick.bind(this, movie, MovieAction.play)}>
+          <b onClick={this.handleMovieClick.bind(this, movie, ItemAction.play)}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
             </svg>
@@ -335,7 +306,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
             <div>{movie.year} &emsp; {this.getDuration(movie)} &emsp; <img src={`/images/classification/${movie.audience}.svg`} width="18px"/></div>
           </div>
           <div className="actions">
-            <a href="#" className="link-light me-3" onClick={this.handleMovieClick.bind(this, movie, MovieAction.play)}>
+            <a href="#" className="link-light me-3" onClick={this.handleMovieClick.bind(this, movie, ItemAction.play)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
               </svg>
@@ -424,8 +395,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
               })
             }</div>
           </Tab>
-          <Tab eventKey="similar" title="Recommandations">
-          </Tab>
+          {/*<Tab eventKey="similar" title="Recommandations">
+          </Tab>*/}
         </Tabs>
       </div>
     </div>;
