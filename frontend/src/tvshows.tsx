@@ -149,10 +149,11 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
           // }
         }
         if (episode) {
-          const path = `${this.props.config.tvshowsRemotePath}/${episode.filename}`;
+          const path = `${this.props.config.tvshowsRemotePath}/${tvshow.foldername}/${episode.filename}`;
+          console.log("path", encodeURIComponent(path));
           if (window._mpvSchemeSupported) {
             window._setPosition = apiClient.setEpisodePosition.bind(apiClient, tvshow, episode, this.props.user.name, this.forceUpdate.bind(this));
-            document.location.href = `mpv://${path}?pos=${this.getPosition(episode)}`;
+            document.location.href = `mpv://${encodeURIComponent(path)}?pos=${this.getPosition(episode)}`;
           } else {
             navigator.clipboard.writeText(path).then(function() {
               alert(`Le chemin a été copié dans le presse-papier`);
@@ -245,14 +246,16 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
               </svg>
             </b>*/}
             <i>
-              <em title="Vu"
-                  className={/*(! userStatus?.toSee && userStatus?.seen.length ? "active" : "") + */(userStatus?.notInterested /*|| ! userStatus?.seen.length*/ ? " d-none" : "")}
-                  onClick={this.handleToggleStatus.bind(this, tvshow, "toSee", ! userStatus?.toSee)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="20" height="20" viewBox="0 0 16 16">
-                  <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-                </svg>
-              </em>
+            {
+//              <em title="Vu"
+//                  className={/*(! userStatus?.toSee && userStatus?.seen.length ? "active" : "") + */(userStatus?.notInterested /*|| ! userStatus?.seen.length*/ ? " d-none" : "")}
+//                  onClick={this.handleToggleStatus.bind(this, tvshow, "toSee", ! userStatus?.toSee)}
+//              >
+//                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="20" height="20" viewBox="0 0 16 16">
+//                  <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+//                </svg>
+//              </em>
+            }
               <em title="Pas intéressé"
                   className={(userStatus?.notInterested ? "active" : "") /*+ (userStatus?.seen.length ? " d-none" : "")*/}
                   onClick={this.handleToggleStatus.bind(this, tvshow, "notInterested", ! userStatus?.notInterested)}

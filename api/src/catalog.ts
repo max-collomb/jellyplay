@@ -308,7 +308,7 @@ export class Catalog {
       for (const filename of filenames) {
         filenameSet.add(filename);
         const filepath: string = path.join(folderpath, filename);
-        if (tvshow.episodes.filter(e => e.filename == path.join(foldername, filename)).length === 0) {
+        if (tvshow.episodes.filter(e => e.filename == filename).length === 0) {
           console.log(`new file detected ${filename}`);
           const episode: Episode = {
             filename,
@@ -381,6 +381,8 @@ export class Catalog {
         } else {
           console.log(`folder doesn't exist anymore ${tvshow.foldername}`);
           await this.tmdbClient.unlinkTvshowImages(tvshow);
+          tvshow.episodes.forEach(async episode => await this.tmdbClient.unlinkEpisodeImages(episode));
+          tvshow.seasons.forEach(async season => await this.tmdbClient.unlinkSeasonImages(season));
           this.tables.tvshows.remove(tvshow);
         }
       }

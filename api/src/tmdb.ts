@@ -21,7 +21,7 @@ const downloadImage = async (url: string, dest: string): Promise<string> => {
       resolve(dest);
       return;
     }
-    console.log("downloading " + url + " => " + dest);
+    console.log("downloading " + dest);
     https
       .get(url, {}, (res) => {
         if (res.statusCode !== 200) {
@@ -108,7 +108,7 @@ export class TmdbClient {
       language: this.lang,
       append_to_response: 'casts,trailers,release_dates',
     });
-    console.log("movieInfo", movieInfo);
+    // console.log("movieInfo", movieInfo);
     if (movieInfo.release_date) {
       movie.year = parseFloat(movieInfo.release_date);
     }
@@ -423,7 +423,7 @@ export class TmdbClient {
           season_number: data.seasons[0],
         });
         if (response.id) {
-          console.log("episode found", response);
+          // console.log("episode found", response);
           episode.tmdbid = response.id;
           episode.seasonNumber = data.seasons[0];
           episode.episodeNumbers = data.episodeNumbers;
@@ -476,10 +476,10 @@ export class TmdbClient {
             `${this.baseUrl}w780${response.poster_path}`,
             path.join(this.imagePath, 'posters_w780', response.poster_path)
           );
-          await downloadImage(
-            `${this.baseUrl}w342${response.poster_path}`,
-            path.join(this.imagePath, 'posters_w342', response.poster_path)
-          );
+          // await downloadImage(
+          //   `${this.baseUrl}w342${response.poster_path}`,
+          //   path.join(this.imagePath, 'posters_w342', response.poster_path)
+          // );
           newSeason.posterPath = response.poster_path;
         }
         const credit = await this.movieDb.seasonCredits({
@@ -510,11 +510,11 @@ export class TmdbClient {
   public async unlinkSeasonImages(season: Season) {
     let filepath: string;
     if (season.posterPath) {
-      filepath = path.join(this.imagePath, 'posters_w342', season.posterPath);
-      await fs.promises.access(filepath).then(async () => {
-        console.log(`deleting file ${filepath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
+      // filepath = path.join(this.imagePath, 'posters_w342', season.posterPath);
+      // await fs.promises.access(filepath).then(async () => {
+      //   console.log(`deleting file ${filepath}`);
+      //   await fs.promises.unlink(filepath);
+      // }).catch(() => {});
       filepath = path.join(this.imagePath, 'posters_w780', season.posterPath);
       await fs.promises.access(filepath).then(async () => {
         console.log(`deleting file ${filepath}`);

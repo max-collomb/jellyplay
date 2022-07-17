@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -43,7 +44,7 @@ namespace client
       if (match.Success)
       {
         args.Cancel = true;
-        string path = match.Groups[1].Value;
+        string path = HttpUtility.UrlDecode(match.Groups[1].Value);
         int position = int.Parse(match.Groups[2].Value);
         Debug.WriteLine("path = " + path);
         Debug.WriteLine("position = " + position);
