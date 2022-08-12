@@ -29,38 +29,52 @@ V1.0
 [x] [frontend] tri des films (alpha ^v, année ^v, ajout ^v)
 [x] [frontend] lazy loading des images
 [x] [frontend] recherche de film par texte / nom de réal ou d'acteur / genre / pays
+[x] [frontend+api] utiliser le type SeenStatus pour les films
 ----------- TVSHOWS --------------
 [x] [api] recupérer toutes les infos tmdb pour chaque série
 [x] [api] récupérer les infos (codec, langue, etc) de chaque fichier 
 [x] [frontend] affichage détaillé d'une série : lister les saisons / épisodes
 [x] [frontend+api+client] lancement du lecteur video
 [x] [api] nettoyer la base après suppression d'un fichier ou d'un dossier (tvshow + credits)
-[ ] [client+frontend+api] enregistrer l'avancement dans un fichier par user + marque comme vu à > 90% + affichage progression dans fiche épisode
-[ ] [client] reprendre la lecture
-[ ] [frontend+api] marquer un épisode comme "vu" 
-[ ] [frontend+api] marquer une série comme "pas intéressé"
-[ ] [frontend] lecture d'une série : déterminer automatiquement l'épisode à lire
-[ ] [api] récupérer audience depuis tmdb
-[ ] [frontend] filter selon audience
-[ ] [frontend+api] corriger l'audience d'une série
-[ ] [frontend+api] corriger l'identification d'une série
-[ ] [frontend] tri des séries (alpha ^v, ?? année ^v ??, ajout ^v)
-[ ] ranger les séries en 3 catégories anime, série, émission
-[ ] [frontend] lazy loading des images
-[ ] [frontend] recherche de série par texte
+[x] [client+frontend+api] enregistrer l'avancement dans un fichier par user + marque comme vu à > 90% + affichage progression dans fiche épisode
+[x] [client] reprendre la lecture
+[x] [frontend+api] marquer un épisode comme "vu" 
+[x] [frontend+api] marquer une série comme "pas intéressé"
+[x] [api] récupérer audience depuis tmdb
+[x] [frontend] filter selon audience
+[x] [frontend+api] corriger l'audience d'une série
+[x] [frontend] mettre en évidence les séries avec une audience non spécifiée
+[x] [frontend] tri des séries (alpha ^v, ?? année ^v ??, ajout ^v)
+[x] [frontend] lazy loading des images
+[x] [frontend] recherche de série par texte
+[x] [frontend+api] corriger l'identification d'une série
+[x] [frontend] lecture d'une série : déterminer automatiquement l'épisode à lire
+[x] [frontend] ouvrir une fiche série sur le bon onglet "saison" en fonction de l'avancement
+[x] ranger les séries en 3 catégories anime, série, émission
+[x] nombre d'épisodes en dessous du nom de la saison
 ----------- HOME -----------------
 [ ] [frontend] liste des lectures en cours (films + séries)
 [ ] [frontend] Nouveautés (films) + scroll horizontal ?
 [ ] [frontend] Nouveautés (séries) + scroll horizontal ?
 [ ] [frontend+api] Lancer un scan manuel pour détecter les nouveautés
 ----------- DEPLOY ---------------
+[ ] renommer les dossiers "[émission]" et "[anime]"
+[ ] tester sur la collection complète
 [ ] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)
 [ ] [client] changer URL (127.0.0.1 => 192.168.0.99)
 
+[ ] [BUG frontend] changer l'ordre en vue films ne s'applique pas lorsqu'on va dans les séries et vice-versa
+
 V1.1
+[ ] afficher les animes avant les séries pour Thomas
 [ ] [frontend] recherche de gens (réal, acteur, ect.)
 [ ] [frontend/api] nom de réal / auteur / casting cliquable pour effectuer une recherche (+ recherche externe tmdb via api)
 [ ] [frontend/api] recommandation dans fiche film (tmdb via api)
 [ ] [frontend/api] recommandation ou recherche tmdb => demander le film
 [ ] [api] supprimer les images qui ne sont pas référencées (movies/tvshows/credits)
+[ ] [api] intégration du script de téléchargement depuis la seedbox
 [ ] [frontend/api] importer les fichiers depuis \\192.168.0.99\share\download
+[ ] intégrer les spéctacles / concerts
+[ ] suppression collaborative (admin demande l'autorisation de supprimer ? validation par tous les membres ?)
+[ ] comment gérer "Flo + Max" et "En famille" ?
+[ ] recherche ygg + téléchargement

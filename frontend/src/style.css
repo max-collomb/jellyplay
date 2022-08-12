@@ -19,8 +19,8 @@ html.dark #navbar ::placeholder { color: #fff6 }
 html.dark #navbar .nav-link.active { background-color: #fff1 }
 html.dark .form-control:focus { box-shadow: 0 0 0 .25rem #77777740; }
 
-html.dark .link-light:hover,
-html.dark .link-light:focus { color: rgb(50,203,255); }
+/*html.dark .link-light:focus,*/
+html.dark .link-light:hover { color: rgb(50,203,255); }
 
 html.dark .nav-tabs { border-bottom: none; }
 html.dark .nav-tabs .nav-item.show .nav-link,
@@ -31,6 +31,8 @@ html.dark .nav-tabs .nav-link:hover { color: #fff; border-bottom: solid 3px #fff
 html.dark .tooltip-inner { text-align: start; max-width: 400px; background: #000; color: #fff; }
 html.dark .tooltip.show { opacity: 1 }
 html.dark .bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before, html.dark .bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: #000; }
+
+.fs-80pc { font-size: 80% !important; }
 
 input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
@@ -64,6 +66,9 @@ input[type="search"]::-webkit-search-cancel-button {
   min-width: 300px;
   max-width: 780px;
   width: 20vw;
+}
+.media-card.audience-not-set {
+  border: 6px solid #cb2b2b;
 }
 
 .media-card:hover {
@@ -114,6 +119,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 50%;
   padding: 5%;
 }
+.tvshow .poster b { left: 40%; width: 20%; }
 .episode-card .poster b { top: 23.3%; width: 30%; } /* (1 - 30/100 * 16/9) / 2 = 23.3 */
 .poster b svg {
   margin-left: 5%;
@@ -220,9 +226,9 @@ div.media-card .progress-bar {
 .title-bar h2 { font-weight: bold; }
 .title-bar h6 { font-weight: bold; opacity: 0.6; }
 
-.title-bar .actions .active,
-.title-bar .actions .active:focus,
-.title-bar .actions .active:hover { color: rgb(209, 71, 71); }
+.media-details .actions .active,
+.media-details .actions .active:focus,
+.media-details .actions .active:hover { color: rgb(209, 71, 71); }
 
 .content-bar {
   background: rgba(0,0,0,0.5);
@@ -278,3 +284,4 @@ div.media-card .progress-bar {
 .file-details { text-align: left; }
 .file-details .dt { display: inline-block; width: 90px; }
 .file-details .dd { font-weight: bold; }
+

@@ -1,3 +1,5 @@
+import { SeenStatus } from './enums';
+
 export type Config = {
   moviesLocalPath: string;
   moviesRemotePath: string;
@@ -37,9 +39,11 @@ export type AudioInfo = {
 
 export type UserMovieStatus = {
   userName: string;
-  seen: number[];
-  toSee: boolean;
-  notInterested: boolean;
+  seenTs: number[];
+  currentStatus: SeenStatus;
+  // seen: number[];
+  // toSee: boolean;
+  // notInterested: boolean;
   position: number;
 };
 
@@ -70,7 +74,8 @@ export type DbMovie = {
 
 export type UserEpisodeStatus = {
   userName: string;
-  seen: number[];
+  seenTs: number[];
+  currentStatus: SeenStatus;
   position: number;
 };
 
@@ -104,10 +109,7 @@ export type Season = {
 
 export type UserTvshowStatus = {
   userName: string;
-  toSee: boolean;
-  notInterested: boolean;
-  currentFilename: string;
-  position: number;
+  currentStatus: SeenStatus;
 };
 
 export type DbTvshow = {
@@ -141,13 +143,4 @@ export type DataTables = {
   movies?: Collection<DbMovie>;
   tvshows?: Collection<DbTvshow>;
   credits?: Collection<DbCredit>;
-};
-
-export enum OrderBy {
-  addedDesc = "addedDesc",
-  addedAsc  = "addedAsc",
-  titleAsc  = "titleAsc",
-  titleDesc = "titleDesc",
-  yearDesc  = "yearDesc",
-  yearAsc   = "yearAsc",
 };

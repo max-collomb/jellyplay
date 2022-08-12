@@ -1,5 +1,5 @@
 import { MovieDb } from 'moviedb-promise';
-import { MovieResult } from 'moviedb-promise/dist/request-types';
+import { MovieResult, TvResult } from 'moviedb-promise/dist/request-types';
 
 import { DbMovie, DbTvshow, DbCredit, ParsedFilename } from '../../api/src/types';
 
@@ -27,12 +27,21 @@ export default class TmdbClient {
     }
   }
 
-  public async getCandidates(title: string, year: string): Promise<MovieResult[]> {
+  public async getMovieCandidates(title: string, year: string): Promise<MovieResult[]> {
     await this.initMovieDb();
     const response = await this.movieDb?.searchMovie({
        language: this.lang,
        query: title,
        year: year ? parseFloat(year) : undefined,
+    });
+    return response?.results || [];
+  }
+
+  public async getTvCandidates(title: string): Promise<TvResult[]> {
+    await this.initMovieDb();
+    const response = await this.movieDb?.searchTv({
+       language: this.lang,
+       query: title,
     });
     return response?.results || [];
   }

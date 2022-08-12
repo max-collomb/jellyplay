@@ -6,7 +6,8 @@ import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
 import { filenameParse, ParsedFilename } from '@ctrl/video-filename-parser';
 
-import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, Season,UserMovieStatus } from './types';
+import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, Season, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from './types';
+import { SeenStatus } from './enums';
 import { TmdbClient, mediaInfo } from './tmdb';
 
 type CatalogOptions = {
@@ -15,18 +16,18 @@ type CatalogOptions = {
   rootPath: string;
 };
 
-type SetMoviePositionMessage = {
-  type: string;
+type SetPositionMessage = {
+  foldername?: string;
   filename: string;
   userName: string;
   position: number;
 };
 
-type SetMovieStatusMessage = {
+type SetStatusMessage = {
+  foldername?: string;
   filename: string;
   userName: string;
-  field: string;
-  value: any;  
+  status: SeenStatus;
 };
 
 type SetMovieAudienceMessage = {
@@ -43,8 +44,13 @@ type FilenameMessage = {
   filename: string;
 };
 
-type FixMetadataMessage = {
+type FixMovieMetadataMessage = {
   filename: string;
+  tmdbId: number;
+};
+
+type FixTvshowMetadataMessage = {
+  foldername: string;
   tmdbId: number;
 };
 
@@ -95,7 +101,7 @@ export class Catalog {
   }
 
   private initSchemas(): void {
-    // this.db.removeCollection('users');
+    this.db.removeCollection('users');
     // this.db.removeCollection('movies');
     // this.db.removeCollection('tvshows');
     // this.db.removeCollection('credits');
@@ -112,7 +118,7 @@ export class Catalog {
        );
       this.tables.users.insert({ name: 'max',    audience: 999, admin: true  });
       this.tables.users.insert({ name: 'flo',    audience: 999, admin: false });
-      this.tables.users.insert({ name: 'amélie', audience: 12,  admin: false });
+      this.tables.users.insert({ name: 'amélie', audience: 16,  admin: false });
       this.tables.users.insert({ name: 'thomas', audience: 12,  admin: false });
     }
 
@@ -416,8 +422,8 @@ export class Catalog {
   }
 
   public setMoviePosition(request: FastifyRequest, reply: FastifyReply) {
-    let body: SetMoviePositionMessage = request.body as SetMoviePositionMessage;
-    console.log("set_position ", body.type, body.filename, body.userName, body.position);
+    let body: SetPositionMessage = request.body as SetPositionMessage;
+    console.log("set_position ", body.filename, body.userName, body.position);
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
       let userStatus: UserMovieStatus | undefined = undefined;
@@ -428,18 +434,18 @@ export class Catalog {
         }
       }
       if (! userStatus) {
-        userStatus = { userName: body.userName, position: 0, seen: [], toSee: false, notInterested: false };
+        userStatus = { userName: body.userName, position: 0, seenTs: [], currentStatus: SeenStatus.unknown };
         movie.userStatus.push(userStatus);
       }
       userStatus.position = body.position;
       if (body.position > movie.duration * 0.9) {
         console.log("> 90 %");
         userStatus.position = 0;
-        userStatus.toSee = false;
+        userStatus.currentStatus = SeenStatus.seen;
         let timestamp: number = Date.now();
-        if (! userStatus.seen.length || timestamp - userStatus.seen[userStatus.seen.length - 1] > 24 * 60 * 60 * 1_000) {
+        if (! userStatus.seenTs.length || timestamp - userStatus.seenTs[userStatus.seenTs.length - 1] > 24 * 60 * 60 * 1_000) {
           console.log("adding TS to seen array");
-          userStatus.seen.push(timestamp);
+          userStatus.seenTs.push(timestamp);
         }
       }
       this.tables.movies?.update(movie);
@@ -449,40 +455,43 @@ export class Catalog {
   }
 
   public setEpisodePosition(request: FastifyRequest, reply: FastifyReply) {
-    // let body: SetMoviePositionMessage = request.body as SetMoviePositionMessage;
-    // console.log("set_position ", body.type, body.filename, body.userName, body.position);
-    // let movie = this.tables.movies?.findOne({ filename: body.filename });
-    // if (movie) {
-    //   let userStatus: UserMovieStatus | undefined = undefined;
-    //   for (let us of movie.userStatus) {
-    //     if (us.userName == body.userName) {
-    //       userStatus = us;
-    //       break;
-    //     }
-    //   }
-    //   if (! userStatus) {
-    //     userStatus = { userName: body.userName, position: 0, seen: [], toSee: false, notInterested: false };
-    //     movie.userStatus.push(userStatus);
-    //   }
-    //   userStatus.position = body.position;
-    //   if (body.position > movie.duration * 0.9) {
-    //     console.log("> 90 %");
-    //     userStatus.position = 0;
-    //     userStatus.toSee = false;
-    //     let timestamp: number = Date.now();
-    //     if (! userStatus.seen.length || timestamp - userStatus.seen[userStatus.seen.length - 1] > 24 * 60 * 60 * 1_000) {
-    //       console.log("adding TS to seen array");
-    //       userStatus.seen.push(timestamp);
-    //     }
-    //   }
-    //   this.tables.movies?.update(movie);
-    //   reply.send({ userStatus: movie.userStatus });
-    // }
+    let body: SetPositionMessage = request.body as SetPositionMessage;
+    console.log("set_position ", body.foldername, body.filename, body.userName, body.position);
+    let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
+    if (tvshow) {
+      let episode = tvshow.episodes.filter(e => e.filename == body.filename).pop();
+      if (episode) {
+        let userStatus: UserEpisodeStatus | undefined = undefined;
+        for (let us of episode.userStatus) {
+          if (us.userName == body.userName) {
+            userStatus = us;
+            break;
+          }
+        }
+        if (! userStatus) {
+          userStatus = { userName: body.userName, position: 0, seenTs: [], currentStatus: SeenStatus.unknown };
+          episode.userStatus.push(userStatus);
+        }
+        userStatus.position = body.position;
+        if (body.position > episode.duration * 0.9) {
+          console.log("> 90 %");
+          userStatus.position = 0;
+          userStatus.currentStatus = SeenStatus.seen;
+          let timestamp: number = Date.now();
+          if (! userStatus.seenTs.length || timestamp - userStatus.seenTs[userStatus.seenTs.length - 1] > 24 * 60 * 60 * 1_000) {
+            console.log("adding TS to seen array");
+            userStatus.seenTs.push(timestamp);
+          }
+        }
+        this.tables.tvshows?.update(tvshow);
+        reply.send({ userStatus: episode.userStatus });
+      }
+    }
     reply.send({});
   }
 
   public setMovieStatus(request: FastifyRequest, reply: FastifyReply) {
-    let body: SetMovieStatusMessage = request.body as SetMovieStatusMessage;
+    let body: SetStatusMessage = request.body as SetStatusMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
       let userStatus: UserMovieStatus | undefined = undefined;
@@ -493,13 +502,10 @@ export class Catalog {
         }
       }
       if (! userStatus) {
-        userStatus = { userName: body.userName, position: 0, seen: [], toSee: false, notInterested: false };
+        userStatus = { userName: body.userName, position: 0, seenTs: [], currentStatus: SeenStatus.unknown };
         movie.userStatus.push(userStatus);
       }
-      if (body.field == "toSee")
-        userStatus.toSee = body.value as boolean;
-      else if (body.field == "notInterested")
-        userStatus.notInterested = body.value as boolean;
+      userStatus.currentStatus = body.status;
       this.tables.movies?.update(movie);
       reply.send({ userStatus: movie.userStatus });
     }
@@ -507,27 +513,50 @@ export class Catalog {
   }
 
   public setTvshowStatus(request: FastifyRequest, reply: FastifyReply) {
-    // let body: SetMovieStatusMessage = request.body as SetMovieStatusMessage;
-    // let movie = this.tables.movies?.findOne({ filename: body.filename });
-    // if (movie) {
-    //   let userStatus: UserMovieStatus | undefined = undefined;
-    //   for (let us of movie.userStatus) {
-    //     if (us.userName == body.userName) {
-    //       userStatus = us;
-    //       break;
-    //     }
-    //   }
-    //   if (! userStatus) {
-    //     userStatus = { userName: body.userName, position: 0, seen: [], toSee: false, notInterested: false };
-    //     movie.userStatus.push(userStatus);
-    //   }
-    //   if (body.field == "toSee")
-    //     userStatus.toSee = body.value as boolean;
-    //   else if (body.field == "notInterested")
-    //     userStatus.notInterested = body.value as boolean;
-    //   this.tables.movies?.update(movie);
-    //   reply.send({ userStatus: movie.userStatus });
-    // }
+    let body: SetStatusMessage = request.body as SetStatusMessage;
+    let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
+    if (tvshow) {
+      let userStatus: UserTvshowStatus | undefined = undefined;
+      for (let us of tvshow.userStatus) {
+        if (us.userName == body.userName) {
+          userStatus = us;
+          break;
+        }
+      }
+      if (! userStatus) {
+        userStatus = { userName: body.userName, currentStatus: SeenStatus.unknown };
+        tvshow.userStatus.push(userStatus);
+      }
+      userStatus.currentStatus = body.status as SeenStatus;
+      this.tables.tvshows?.update(tvshow);
+      reply.send({ userStatus: tvshow.userStatus });
+    }
+    reply.send({});
+  }
+
+  public setEpisodeStatus(request: FastifyRequest, reply: FastifyReply) {
+    let body: SetStatusMessage = request.body as SetStatusMessage;
+    let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
+    if (tvshow) {
+      let episode = tvshow.episodes.filter(e => e.filename == body.filename).pop();
+      if (episode) {
+        let userStatus: UserEpisodeStatus | undefined = undefined;
+        for (let us of episode.userStatus) {
+          if (us.userName == body.userName) {
+            userStatus = us;
+            break;
+          }
+        }
+        if (! userStatus) {
+          userStatus = { userName: body.userName, position: 0, seenTs: [], currentStatus: SeenStatus.unknown };
+          episode.userStatus.push(userStatus);
+        }
+        userStatus.currentStatus = body.status as SeenStatus;
+        this.tables.tvshows?.update(tvshow);
+        console.log("episode.userStatus", episode.userStatus);
+        reply.send({ userStatus: episode.userStatus });
+      }
+    }
     reply.send({});
   }
 
@@ -559,8 +588,8 @@ export class Catalog {
     reply.send({ parsedFilename: { title: data.title, year: data.year }});
   }
 
-  public async fixMetadata(request: FastifyRequest, reply: FastifyReply) {
-    let body: FixMetadataMessage = request.body as FixMetadataMessage;
+  public async fixMovieMetadata(request: FastifyRequest, reply: FastifyReply) {
+    let body: FixMovieMetadataMessage = request.body as FixMovieMetadataMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
       movie.tmdbid = body.tmdbId;
@@ -573,6 +602,23 @@ export class Catalog {
       await this.tmdbClient.getMovieData(movie);
     }
     reply.send({ movie });
+  }
+
+  public async fixTvshowMetadata(request: FastifyRequest, reply: FastifyReply) {
+    let body: FixTvshowMetadataMessage = request.body as FixTvshowMetadataMessage;
+    let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
+    if (tvshow) {
+      tvshow.tmdbid = body.tmdbId;
+      tvshow.episodes = [];
+      tvshow.seasons = [];
+      tvshow.genres = [];
+      tvshow.countries = [];
+
+      await this.tmdbClient.getTvshowData(tvshow);
+      await this.scanTvshows(new Set<number>());
+      // pas de ménage des données de l'ancienne série => sera fait lors du prochain scan complet
+    }
+    reply.send({ tvshow });
   }
 
   public async renameFile(request: FastifyRequest, reply: FastifyReply) {

@@ -1,4 +1,4 @@
-import { Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, ParsedFilename, UserMovieStatus, UserTvshowStatus } from '../../api/src/types';
+import { Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, ParsedFilename, SeenStatus, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from '../../api/src/types';
 
 const cache = {
   config: null,
@@ -103,17 +103,17 @@ class ApiClient {
       body: JSON.stringify({ foldername: tvshow.foldername, filename: episode.filename, userName, position })
     }).then(async (response) => {
       let json = await response.json();
-      // episode.userStatus = json.userStatus;
+      episode.userStatus = json.userStatus;
       callback();
     });
   }
 
-  async setMovieStatus(movie: DbMovie, userName: string, field: string, value: any): Promise<UserMovieStatus[]> {
+  async setMovieStatus(movie: DbMovie, userName: string, status: SeenStatus): Promise<UserMovieStatus[]> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/movie/set_status', {
         method: "POST",
         headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ filename: movie.filename, userName, field, value })
+        body: JSON.stringify({ filename: movie.filename, userName, status })
       }).then(async (response) => {
         let json = await response.json();
         resolve(json.userStatus);
@@ -121,12 +121,25 @@ class ApiClient {
     });
   }
 
-  async setTvshowStatus(tvshow: DbTvshow, userName: string, field: string, value: any): Promise<UserTvshowStatus[]> {
+  async setTvshowStatus(tvshow: DbTvshow, userName: string, status: SeenStatus): Promise<UserTvshowStatus[]> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/tvshow/set_status', {
         method: "POST",
         headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ foldername: tvshow.foldername, userName, field, value })
+        body: JSON.stringify({ foldername: tvshow.foldername, userName, status })
+      }).then(async (response) => {
+        let json = await response.json();
+        resolve(json.userStatus);
+      });
+    });
+  }
+
+  async setEpisodeStatus(tvshow: DbTvshow, episode: Episode, userName: string, status: SeenStatus): Promise<UserEpisodeStatus[]> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/tvshow/set_episode_status', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ foldername: tvshow.foldername, filename: episode.filename, userName, status })
       }).then(async (response) => {
         let json = await response.json();
         resolve(json.userStatus);
@@ -173,15 +186,28 @@ class ApiClient {
     });
   }
 
-  async fixMetadata(filename: string, tmdbId: number): Promise<DbMovie> {
+  async fixMovieMetadata(filename: string, tmdbId: number): Promise<DbMovie> {
     return new Promise((resolve, reject) => {
-      fetch('/catalog/fix_metadata', {
+      fetch('/catalog/movie/fix_metadata', {
         method: "POST",
         headers: new Headers({'content-type': 'application/json'}),
         body: JSON.stringify({ filename, tmdbId })
       }).then(async (response) => {
         let json = await response.json();
         resolve(json.movie);
+      });
+    });
+  }
+
+  async fixTvshowMetadata(foldername: string, tmdbId: number): Promise<DbTvshow> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/tvshow/fix_metadata', {
+        method: "POST",
+        headers: new Headers({'content-type': 'application/json'}),
+        body: JSON.stringify({ foldername, tmdbId })
+      }).then(async (response) => {
+        let json = await response.json();
+        resolve(json.tvshow);
       });
     });
   }

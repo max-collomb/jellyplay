@@ -7,11 +7,12 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
-import { AudioInfo, Config, DbCredit, DbTvshow, DbUser, Episode, OrderBy, Season, UserEpisodeStatus, UserTvshowStatus, VideoInfo } from '../../api/src/types';
+import { AudioInfo, Config, DbCredit, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus, VideoInfo } from '../../api/src/types';
+import { OrderBy, SeenStatus } from '../../api/src/enums';
 import { ItemAction, CustomToggleProps, MoreToggle, MultiItem, cleanString } from './common';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
-// import FixMetadataForm from './fix-metadata-form';
+import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
 // import RenamingForm from './renaming-form';
 
 type TvShowsProps = {
@@ -25,7 +26,7 @@ type TvShowsState = {
   tvshows: DbTvshow[];
   credits: DbCredit[];
   selection?: DbTvshow;
-  // fixingMetadata: boolean;
+  fixingMetadata: boolean;
   // renaming: boolean;
   tabSeason: number;
   tabKey: string;
@@ -48,6 +49,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       credits: [],
       tabSeason: 0,
       tabKey: "cast",
+      fixingMetadata: false,
     };
     apiClient.getTvshows().then(tvshows => this.setState({ tvshows }));
     apiClient.getCredits().then(credits => this.setState({ credits }));
@@ -117,6 +119,36 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
     return userStatus?.position || 0;
   }
 
+  getProgress(episode: Episode): JSX.Element {
+    let position: number = this.getPosition(episode);
+    return position > 0 ? <div className="progress-bar"><div style={{ width: Math.round(100 * position / episode.duration) + '%' }}></div></div> : <></>;
+  }
+
+  selectCurrentEpisode(tvshow: DbTvshow): Episode|undefined {
+    return tvshow.episodes
+            .slice(0)
+            .filter(e => {
+              const us: UserEpisodeStatus|null = this.getEpisodeUserStatus(e);
+              return !us || (us && (us.seenTs.length == 0) && (us.currentStatus != SeenStatus.seen));
+            })
+            .sort((a, b) => {
+              if (a.seasonNumber == b.seasonNumber)
+                return (a.episodeNumbers[0] || 0) - (b.episodeNumbers[0] || 0);
+              else
+                return (a.seasonNumber == -1 ? 999 : a.seasonNumber) - (b.seasonNumber == -1 ? 999 : b.seasonNumber);
+            })
+            .shift();
+  }
+
+  selectCurrentSeason(tvshow: DbTvshow): number {
+    const currentEpisode = this.selectCurrentEpisode(tvshow);
+    if (currentEpisode) {
+      return currentEpisode.seasonNumber;
+    } else {
+      return tvshow.seasons[0]?.seasonNumber || -1;
+    }
+  }
+
   renderFileSize(size: number): string {
     var i = Math.floor(Math.log(size) / Math.log(1024));
     return (size / Math.pow(1024, i)).toFixed(1) + ' ' + ['o', 'ko', 'Mo', 'Go', 'To'][i];
@@ -130,27 +162,22 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
     return <React.Fragment>{audios.map((audio, idx, all) => <React.Fragment key={idx}>{audio.lang} {audio.ch}ch {audio.codec} {idx < all.length - 1 ? ", " : null}</React.Fragment>)}</React.Fragment>;
   }
 
-  handleTvshowClick(tvshow: DbTvshow, episode: Episode|null, action: ItemAction, evt: React.MouseEvent<HTMLElement>): void {
+  handleTvshowClick(tvshow: DbTvshow, episode: Episode|undefined, action: ItemAction, evt: React.MouseEvent<HTMLElement>): void {
     evt.stopPropagation();
     switch (action) {
       case ItemAction.open:
         this.setState({
           selection: tvshow,
-          tabSeason: tvshow.seasons[0]?.seasonNumber || -1,
+          tabSeason: this.selectCurrentSeason(tvshow),
           tabKey: "cast"
         });
         break;
       case ItemAction.play:
         if (! episode) {
-          // TODO selectionner le bon épisode
-          // const userStatus = this.getTvshowUserStatus(tvshow);
-          // if (userStatus?.currentFilename) {
-          //   episode = tvshow.episodes.filter(e => e.filename == userStatus.currentFilename).pop();
-          // }
+          episode = this.selectCurrentEpisode(tvshow);
         }
         if (episode) {
           const path = `${this.props.config.tvshowsRemotePath}/${tvshow.foldername}/${episode.filename}`;
-          console.log("path", encodeURIComponent(path));
           if (window._mpvSchemeSupported) {
             window._setPosition = apiClient.setEpisodePosition.bind(apiClient, tvshow, episode, this.props.user.name, this.forceUpdate.bind(this));
             document.location.href = `mpv://${encodeURIComponent(path)}?pos=${this.getPosition(episode)}`;
@@ -166,22 +193,22 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
     }
   }
 
-  handleToggleStatus(tvshow: DbTvshow, field: string, value: any, evt: React.MouseEvent<HTMLElement>): void {
-    apiClient.setTvshowStatus(tvshow, this.props.user.name, field, value).then((userStatus: UserTvshowStatus[]) => {
-      // tvshow.userStatus = userStatus;
+  handleToggleStatus(tvshow: DbTvshow, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
+    apiClient.setTvshowStatus(tvshow, this.props.user.name, status).then((userStatus: UserTvshowStatus[]) => {
+      tvshow.userStatus = userStatus;
       this.setState({ tvshows: this.state.tvshows });
     });
     evt.stopPropagation();
     evt.preventDefault();
   }
 
-  handleToggleEpisodeStatus(tvshow: DbTvshow, episode: Episode, field: string, value: any, evt: React.MouseEvent<HTMLElement>): void {
-    // apiClient.setTvshowStatus(tvshow, this.props.user.name, field, value).then((userStatus: UserTvshowStatus[]) => {
-    //   // tvshow.userStatus = userStatus;
-    //   this.setState({ tvshows: this.state.tvshows });
-    // });
-    // evt.stopPropagation();
-    // evt.preventDefault();
+  handleToggleEpisodeStatus(tvshow: DbTvshow, episode: Episode, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
+    apiClient.setEpisodeStatus(tvshow, episode, this.props.user.name, status).then((userStatus: UserEpisodeStatus[]) => {
+      episode.userStatus = userStatus;
+      this.setState({ tvshows: this.state.tvshows });
+    });
+    evt.stopPropagation();
+    evt.preventDefault();
   }
 
   handleSetAudience(tvshow: DbTvshow, audience: number, evt: React.MouseEvent<HTMLElement>): void {
@@ -194,11 +221,26 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
     evt.preventDefault();
   }
 
+  handleFixMetadataClick(evt: React.MouseEvent<HTMLElement>): void {
+    this.setState({ fixingMetadata: true });
+    evt.preventDefault();
+  }
+
+  handleFixingMetadataFormClose(tvshow?: DbTvshow): void {
+    if (tvshow) {
+      const tvshows = this.state.tvshows.filter(m => m.foldername !== tvshow.foldername)
+      tvshows.push(tvshow);
+      this.setState({ tvshows, selection: tvshow });
+    }
+    this.setState({ fixingMetadata: false });
+  }
+
   renderList(): JSX.Element {
     let tvshows: DbTvshow[] = this.state.tvshows;
     if (this.lastOrderBy != this.props.orderBy) {
       this.lastOrderBy = this.props.orderBy;
       let sortFn: (a: DbTvshow, b: DbTvshow) => number;
+      sortFn = (a: DbTvshow, b: DbTvshow) => (a.title.toUpperCase() < b.title.toUpperCase()) ? -1 : 1;
       switch(this.props.orderBy) {
         case OrderBy.addedDesc:
           sortFn = (a: DbTvshow, b: DbTvshow) => (b.createdMax < a.createdMax) ? -1 : (b.createdMax > a.createdMax) ? 1 : 0;
@@ -207,7 +249,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
           sortFn = (a: DbTvshow, b: DbTvshow) => (a.createdMin < b.createdMin) ? -1 : (a.createdMin > b.createdMin) ? 1 : 0;
           break;
         case OrderBy.titleAsc:
-          sortFn = (a: DbTvshow, b: DbTvshow) => (a.title.toUpperCase() < b.title.toUpperCase()) ? -1 : 1;
+          // valeur par défaut
           break;
         case OrderBy.titleDesc:
           sortFn = (a: DbTvshow, b: DbTvshow) => (b.title.toUpperCase() < a.title.toUpperCase()) ? -1 : 1;
@@ -222,61 +264,69 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       tvshows.sort(sortFn);
     }
     if (this.props.search) {
-      tvshows = tvshows.filter(m => {
-        if (! m.searchableContent) {
-          m.searchableContent = cleanString(m.title + " " + 
-            (m.title == m.originalTitle ? "" : m.originalTitle + " ") +
-            m.genres.join(" ") + " " +
-            m.countries.join(" ")
+      tvshows = tvshows.filter(s => {
+        if (! s.searchableContent) {
+          s.searchableContent = cleanString(s.title + " " + 
+            (s.title == s.originalTitle ? "" : s.originalTitle + " ") +
+            s.genres.join(" ") + " " +
+            s.countries.join(" ")
           );
         }
-        return m.searchableContent.includes(cleanString(this.props.search));
+        return s.searchableContent.includes(cleanString(this.props.search));
       })
     }
-    return <div className="d-flex flex-wrap justify-content-evenly mt-3">{
-      tvshows.filter(m => m.audience <= this.props.user.audience)
-      .map((tvshow, idx) => {
-        const userStatus = this.getTvshowUserStatus(tvshow);
-        return <div key={idx} className="media-card tvshow" onClick={this.handleTvshowClick.bind(this, tvshow, null, ItemAction.open)}>
-          <span className="poster">
-            <img src={`/images/backdrops_w780${tvshow.backdropPath}`} loading="lazy"/>
-            {/*<b onClick={this.handleTvshowClick.bind(this, tvshow, null, ItemAction.play)}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
-                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-              </svg>
-            </b>*/}
-            <i>
-            {
-//              <em title="Vu"
-//                  className={/*(! userStatus?.toSee && userStatus?.seen.length ? "active" : "") + */(userStatus?.notInterested /*|| ! userStatus?.seen.length*/ ? " d-none" : "")}
-//                  onClick={this.handleToggleStatus.bind(this, tvshow, "toSee", ! userStatus?.toSee)}
-//              >
-//                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="20" height="20" viewBox="0 0 16 16">
-//                  <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-//                </svg>
-//              </em>
-            }
-              <em title="Pas intéressé"
-                  className={(userStatus?.notInterested ? "active" : "") /*+ (userStatus?.seen.length ? " d-none" : "")*/}
-                  onClick={this.handleToggleStatus.bind(this, tvshow, "notInterested", ! userStatus?.notInterested)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="20" height="20" viewBox="0 0 16 16">
-                  <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
-                  <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
-                  <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
-                </svg>
-              </em>
-            </i>
-          </span>
-          <span className="title">{tvshow.title}</span>
-          <span className="infos d-flex justify-content-between">
-            <span className="year">{this.getSeasonCount(tvshow)}</span>
-            <span className="duration">{this.getEpisodeCount(tvshow)}</span>
-          </span>
-          {/*this.getProgress(movie)*/}
-        </div>;
-      })
-    }</div>;
+    const typeTitles = ["Séries", "Emissions", "Animes"];
+    let tvshowsByType: DbTvshow[][] = [ [], [], [] ];
+    tvshows.forEach(t => {
+      if (t.foldername.startsWith('[émission]'))
+        tvshowsByType[1].push(t);
+      else if (t.foldername.startsWith('[anime]'))
+        tvshowsByType[2].push(t);
+      else 
+        tvshowsByType[0].push(t);
+    });
+    return <>{tvshowsByType.map((tvshows, idx0) => {
+      return <React.Fragment key={idx0}><hr className={idx0 == 0 ? "d-none" : ""}/><h4 className="section-title p-2 mt-3 text-center">{typeTitles[idx0]}</h4>
+        <div className="d-flex flex-wrap justify-content-evenly mt-2">{
+          tvshows.filter(t => t.audience <= this.props.user.audience)
+          .map((tvshow, idx) => {
+            const userStatus = this.getTvshowUserStatus(tvshow);
+            return /*<React.Fragment>*/<div
+              key={idx}
+              className={"media-card tvshow" + (tvshow.audience == 999 ? " audience-not-set" : "")}
+              onClick={this.handleTvshowClick.bind(this, tvshow, undefined, ItemAction.open)}
+            >
+              <span className="poster">
+                <img src={`/images/backdrops_w780${tvshow.backdropPath}`} loading="lazy"/>
+                <b onClick={this.handleTvshowClick.bind(this, tvshow, undefined, ItemAction.play)}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
+                    <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                  </svg>
+                </b>
+                <i>
+                  <em title="Pas intéressé"
+                      className={(userStatus?.currentStatus == SeenStatus.wontSee ? "active" : "") /*+ (userStatus?.seen.length ? " d-none" : "")*/}
+                      onClick={this.handleToggleStatus.bind(this, tvshow, userStatus?.currentStatus == SeenStatus.wontSee ? SeenStatus.unknown : SeenStatus.wontSee)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="20" height="20" viewBox="0 0 16 16">
+                      <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
+                      <path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
+                      <path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
+                    </svg>
+                  </em>
+                </i>
+              </span>
+              <span className="title">{tvshow.title}</span>
+              <span className="infos d-flex justify-content-between">
+                <span className="year">{this.getSeasonCount(tvshow)}</span>
+                <span className="duration">{this.getEpisodeCount(tvshow)}</span>
+              </span>
+              {/*this.getProgress(movie)*/}
+            </div>/*<div style={{flexBasis: "100%", height: 0}}></div></React.Fragment>*/;
+          })
+        }
+      </div></React.Fragment>;
+    })}</>;
   }
 
   handleCloseDetails(evt: React.MouseEvent<HTMLElement>): void {
@@ -290,10 +340,11 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
         <span className="poster">
           <img src={`/images/stills_w300${episode.stillPath}`}/>
             <b onClick={this.handleTvshowClick.bind(this, tvshow, episode, ItemAction.play)}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
-                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-              </svg>
-            </b>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
+              <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+            </svg>
+          </b>
+          {this.getProgress(episode)}
         </span> :
         null
       }
@@ -334,10 +385,10 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
               }
             >
               <a href="#" className={"link-light me-3"} onClick={(e) => e.preventDefault()}>
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-info" viewBox="0 0 16 16">
-  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-  <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-</svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-info" viewBox="0 0 16 16">
+                  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                  <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                </svg>
               </a>
             </OverlayTrigger>
             <a href="#" className="link-light me-3" onClick={this.handleTvshowClick.bind(this, tvshow, episode, ItemAction.play)}>
@@ -346,8 +397,8 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
               </svg>
             </a>
             <a href="#"
-               className={"link-light me-3" + /*(! userStatus?.toSee && userStatus?.seen.length ? " active" : "") + */(userStatus?.notInterested /*|| ! userStatus?.seen.length*/ ? " d-none" : "")}
-               onClick={this.handleToggleEpisodeStatus.bind(this, tvshow, episode, "seen", Date.now())}
+               className={"link-light me-3" + (userStatus?.currentStatus == SeenStatus.seen || (userStatus?.currentStatus != SeenStatus.toSee && userStatus?.seenTs?.length) ? " active" : "") + (userStatus?.currentStatus == SeenStatus.wontSee ? " d-none" : "")}
+               onClick={this.handleToggleEpisodeStatus.bind(this, tvshow, episode, userStatus?.currentStatus == SeenStatus.seen ? SeenStatus.toSee : SeenStatus.seen)}
                title="Vu"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
@@ -383,7 +434,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       </div>
       <div className="media-poster">
         <span className="poster" style={{ backgroundImage: `url(/images/posters_w780${selectedSeason?.posterPath || tvshow.posterPath})` }}>
-          <b onClick={this.handleTvshowClick.bind(this, tvshow, null, ItemAction.play)}>
+          <b onClick={this.handleTvshowClick.bind(this, tvshow, undefined, ItemAction.play)}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
             </svg>
@@ -399,23 +450,14 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
             <div>{this.getSeasonCount(tvshow)} &emsp; {this.getEpisodeCount(tvshow)} &emsp; <img src={`/images/classification/${tvshow.audience}.svg`} width="18px"/></div>
           </div>
           <div className="actions">
-            <a href="#" className="link-light me-3" onClick={this.handleTvshowClick.bind(this, tvshow, null, ItemAction.play)}>
+            <a href="#" className="link-light me-3" onClick={this.handleTvshowClick.bind(this, tvshow, undefined, ItemAction.play)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
               </svg>
             </a>
             <a href="#"
-               className={"link-light me-3" + /*(! userStatus?.toSee /&& userStatus?.seen.length ? " active" : "") +*/ (userStatus?.notInterested /*|| ! userStatus?.seen.length*/ ? " d-none" : "")}
-               onClick={this.handleToggleStatus.bind(this, tvshow, "toSee", ! userStatus?.toSee)}
-               title="Vu"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-              </svg>
-            </a>
-            <a href="#"
-               className={"link-light me-3" + (userStatus?.notInterested ? " active" : "") /*+ (userStatus?.seen.length ? " d-none" : "")*/}
-               onClick={this.handleToggleStatus.bind(this, tvshow, "notInterested", ! userStatus?.notInterested)}
+               className={"link-light me-3" + (userStatus?.currentStatus == SeenStatus.wontSee ? " active" : "")}
+               onClick={this.handleToggleStatus.bind(this, tvshow, userStatus?.currentStatus == SeenStatus.wontSee ? SeenStatus.unknown : SeenStatus.wontSee)}
                title="Pas intéressé"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
@@ -432,7 +474,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
                   { [0,10,12,16,18,999].map(a => <a key={a} className={"audience-link p-2" + (this.props.user.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, tvshow, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
                 </Dropdown.Item>
                 <Dropdown.Divider/>
-                {/*<Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! this.props.user.admin}>Corriger les métadonnées...</Dropdown.Item>*/}
+                <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! this.props.user.admin}>Corriger les métadonnées...</Dropdown.Item>
                 {/*<Dropdown.Item onClick={this.handleRenameClick.bind(this)} disabled={! this.props.user.admin}>Renommer le fichier...</Dropdown.Item>*/}
                 {/*<Dropdown.Item onClick={this.handleDeleteClick.bind(this)} disabled={! this.props.user.admin}>Supprimer</Dropdown.Item>*/}
               </Dropdown.Menu>
@@ -454,7 +496,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
               key={idx}
               tabClassName="position-relative"
               className="flex-grow-1"
-              title={<>{title}<span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary">{season.episodeCount} <span className="visually-hidden">épisodes</span></span></>}
+              title={<>{title}<span className="d-block fst-italic fs-80pc">{season.episodeCount} épisodes</span></>}
             >
               {tvshow.episodes.filter(e => e.seasonNumber == season.seasonNumber).map(episode => this.renderEpisode(tvshow, episode))}
             </Tab>;
@@ -487,14 +529,13 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
 
   render(): JSX.Element {
     if (this.state.selection) {
-      // if (this.state.fixingMetadata) {
-      //   return <FixMetadataForm {...this.props} movie={this.state.selection} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
+      if (this.state.fixingMetadata) {
+        return <FixTvshowMetadataForm {...this.props} tvshow={this.state.selection} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
       // } else  if (this.state.renaming) {
       //   return <RenamingForm {...this.props} movie={this.state.selection} onClose={this.handleRenamingFormClose.bind(this)}/>;
-      // } else {
-      //   return this.renderDetails();
-      // }
-      return this.renderDetails();
+      } else {
+        return this.renderDetails();
+      }
     } else {
       return this.renderList();
     }

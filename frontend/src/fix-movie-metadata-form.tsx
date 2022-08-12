@@ -14,23 +14,23 @@ import { Config, DbMovie, DbUser } from '../../api/src/types';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
 
-type FixMetadataFormProps = {
+type FixMovieMetadataFormProps = {
   config: Config;
   user: DbUser;
   tmdbClient?: TmdbClient;
   movie: DbMovie;
   onClose: (movie?: DbMovie) => void;
 };
-type FixMetadataFormState = {
+type FixMovieMetadataFormState = {
   title: string;
   year: string;
   candidates?: MovieResult[];
   updating: boolean;
 };
 
-export default class FixMetadataForm extends React.Component<FixMetadataFormProps, FixMetadataFormState> {
+export default class FixMovieMetadataForm extends React.Component<FixMovieMetadataFormProps, FixMovieMetadataFormState> {
 
-  constructor(props: FixMetadataFormProps) {
+  constructor(props: FixMovieMetadataFormProps) {
     super(props);
     this.state = {
       title: "",
@@ -49,7 +49,7 @@ export default class FixMetadataForm extends React.Component<FixMetadataFormProp
     this.setState({ year: evt.target.value });
   }
 
-  handleClearYear(evt: React.ChangeEvent<HTMLButtonElement>): void {
+  handleClearYear(evt: React.MouseEvent<HTMLButtonElement>): void {
     this.setState({ candidates: undefined, year: "" }, this.handleSearchClick.bind(this));
     evt.preventDefault();
   }
@@ -58,7 +58,7 @@ export default class FixMetadataForm extends React.Component<FixMetadataFormProp
     this.setState({ updating: true });
     let movie: DbMovie = this.props.movie;
     if (candidate.id) {
-      movie = await apiClient.fixMetadata(this.props.movie.filename, candidate.id);
+      movie = await apiClient.fixMovieMetadata(this.props.movie.filename, candidate.id);
     }
     this.props.onClose(movie);
     evt.preventDefault();
@@ -68,7 +68,7 @@ export default class FixMetadataForm extends React.Component<FixMetadataFormProp
     if (evt) {
       evt.preventDefault();
     }
-    const candidates: MovieResult[] | undefined = await this.props.tmdbClient?.getCandidates(this.state.title, this.state.year);
+    const candidates: MovieResult[] | undefined = await this.props.tmdbClient?.getMovieCandidates(this.state.title, this.state.year);
     this.setState({ candidates });
   }
 
@@ -86,7 +86,7 @@ export default class FixMetadataForm extends React.Component<FixMetadataFormProp
       candidates = <p className="text-muted">Aucun résultat</p>;
     } else if (this.state.candidates && this.state.candidates.length > 0) {
       candidates = <div className="d-flex flex-wrap justify-content-evenly mt-3">
-        {this.state.candidates.map((candidate, idx) => <div key={idx} className="movie-card" onClick={this.handleCandidateClick.bind(this, candidate)}>
+        {this.state.candidates.map((candidate, idx) => <div key={idx} className="media-card movie" onClick={this.handleCandidateClick.bind(this, candidate)}>
           <span className="poster" style={{ backgroundImage: `url(${this.props.tmdbClient?.baseUrl}w342${candidate.poster_path})` }}></span>
           <span className="title">{candidate.title}</span>
           <span className="infos d-flex justify-content-between">

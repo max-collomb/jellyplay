@@ -4,11 +4,12 @@ import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-import { AudioInfo, Config, DbCredit, DbMovie, DbUser, OrderBy, UserMovieStatus, VideoInfo } from '../../api/src/types';
+import { AudioInfo, Config, DbCredit, DbMovie, DbUser, UserMovieStatus, VideoInfo } from '../../api/src/types';
+import { OrderBy, SeenStatus } from '../../api/src/enums';
 import { ItemAction, CustomToggleProps, MoreToggle, MultiItem, cleanString } from './common';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
-import FixMetadataForm from './fix-metadata-form';
+import FixMovieMetadataForm from './fix-movie-metadata-form';
 import RenamingForm from './renaming-form';
 
 type MoviesProps = {
@@ -135,8 +136,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
     }
   }
 
-  handleToggleStatus(movie: DbMovie, field: string, value: any, evt: React.MouseEvent<HTMLElement>): void {
-    apiClient.setMovieStatus(movie, this.props.user.name, field, value).then((userStatus: UserMovieStatus[]) => {
+  handleToggleStatus(movie: DbMovie, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
+    apiClient.setMovieStatus(movie, this.props.user.name, status).then((userStatus: UserMovieStatus[]) => {
       movie.userStatus = userStatus;
       this.setState({ movies: this.state.movies });
     });
@@ -191,9 +192,10 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
     if (this.lastOrderBy != this.props.orderBy) {
       this.lastOrderBy = this.props.orderBy;
       let sortFn: (a: DbMovie, b: DbMovie) => number;
+      sortFn = (a: DbMovie, b: DbMovie) => (b.created < a.created) ? -1 : (b.created > a.created) ? 1 : 0;
       switch(this.props.orderBy) {
         case OrderBy.addedDesc:
-          sortFn = (a: DbMovie, b: DbMovie) => (b.created < a.created) ? -1 : (b.created > a.created) ? 1 : 0;
+          // valeur par défaut
           break;
         case OrderBy.addedAsc:
           sortFn = (a: DbMovie, b: DbMovie) => (a.created < b.created) ? -1 : (a.created > b.created) ? 1 : 0;
@@ -229,7 +231,11 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       movies.filter(m => m.audience <= this.props.user.audience)
       .map((movie, idx) => {
         const userStatus = this.getUserStatus(movie);
-        return <div key={idx} className="media-card movie" onClick={this.handleMovieClick.bind(this, movie, ItemAction.open)}>
+        return <div
+          key={idx}
+          className={"media-card movie" + (movie.audience == 999 ? " audience-not-set" : "")}
+          onClick={this.handleMovieClick.bind(this, movie, ItemAction.open)}
+        >
           <span className="poster">
             <img src={`/images/posters_w342${movie.posterPath}`} loading="lazy"/>
             <b onClick={this.handleMovieClick.bind(this, movie, ItemAction.play)}>
@@ -239,16 +245,16 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
             </b>
             <i>
               <em title="Vu"
-                  className={(! userStatus?.toSee && userStatus?.seen.length ? "active" : "") + (userStatus?.notInterested || ! userStatus?.seen.length ? " d-none" : "")}
-                  onClick={this.handleToggleStatus.bind(this, movie, "toSee", ! userStatus?.toSee)}
+                  className={(userStatus?.currentStatus == SeenStatus.seen || (userStatus?.currentStatus != SeenStatus.toSee && userStatus?.seenTs?.length) ? "active" : "") + (userStatus?.currentStatus == SeenStatus.wontSee ? " d-none" : "")}
+                  onClick={this.handleToggleStatus.bind(this, movie, userStatus?.currentStatus == SeenStatus.seen ? SeenStatus.toSee : SeenStatus.seen)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="20" height="20" viewBox="0 0 16 16">
                   <path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
                 </svg>
               </em>
               <em title="Pas intéressé"
-                  className={(userStatus?.notInterested ? "active" : "") + (userStatus?.seen.length ? " d-none" : "")}
-                  onClick={this.handleToggleStatus.bind(this, movie, "notInterested", ! userStatus?.notInterested)}
+                  className={(userStatus?.currentStatus == SeenStatus.wontSee ? " active" : "") + (userStatus?.seenTs.length ? " d-none" : "")}
+                  onClick={this.handleToggleStatus.bind(this, movie, userStatus?.currentStatus == SeenStatus.wontSee ? SeenStatus.unknown : SeenStatus.wontSee)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="20" height="20" viewBox="0 0 16 16">
                   <path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
@@ -312,8 +318,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
               </svg>
             </a>
             <a href="#"
-               className={"link-light me-3" + (! userStatus?.toSee && userStatus?.seen.length ? " active" : "") + (userStatus?.notInterested || ! userStatus?.seen.length ? " d-none" : "")}
-               onClick={this.handleToggleStatus.bind(this, movie, "toSee", ! userStatus?.toSee)}
+               className={"link-light me-3" + (userStatus?.currentStatus == SeenStatus.seen || (userStatus?.currentStatus != SeenStatus.toSee && userStatus?.seenTs?.length) ? "active" : "") + (userStatus?.currentStatus == SeenStatus.wontSee ? " d-none" : "")}
+               onClick={this.handleToggleStatus.bind(this, movie, userStatus?.currentStatus == SeenStatus.seen ? SeenStatus.toSee : SeenStatus.seen)}
                title="Vu"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
@@ -321,8 +327,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
               </svg>
             </a>
             <a href="#"
-               className={"link-light me-3" + (userStatus?.notInterested ? " active" : "") + (userStatus?.seen.length ? " d-none" : "")}
-               onClick={this.handleToggleStatus.bind(this, movie, "notInterested", ! userStatus?.notInterested)}
+               className={"link-light me-3" + (userStatus?.currentStatus == SeenStatus.wontSee ? " active" : "") + (userStatus?.seenTs.length ? " d-none" : "")}
+               onClick={this.handleToggleStatus.bind(this, movie, userStatus?.currentStatus == SeenStatus.wontSee ? SeenStatus.unknown : SeenStatus.wontSee)}
                title="Pas intéressé"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
@@ -405,7 +411,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   render(): JSX.Element {
     if (this.state.selection) {
       if (this.state.fixingMetadata) {
-        return <FixMetadataForm {...this.props} movie={this.state.selection} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
+        return <FixMovieMetadataForm {...this.props} movie={this.state.selection} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
       } else  if (this.state.renaming) {
         return <RenamingForm {...this.props} movie={this.state.selection} onClose={this.handleRenamingFormClose.bind(this)}/>;
       } else {

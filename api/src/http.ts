@@ -38,12 +38,14 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.get('/catalog/credits/list', catalog.getCredits.bind(catalog));
     server.post('/catalog/movie/set_status', catalog.setMovieStatus.bind(catalog));
     server.post('/catalog/tvshow/set_status', catalog.setTvshowStatus.bind(catalog));
+    server.post('/catalog/tvshow/set_episode_status', catalog.setEpisodeStatus.bind(catalog));
     server.post('/catalog/movie/set_audience', catalog.setMovieAudience.bind(catalog));
     server.post('/catalog/tvshow/set_audience', catalog.setTvshowAudience.bind(catalog));
     server.post('/catalog/movie/set_position', catalog.setMoviePosition.bind(catalog));
     server.post('/catalog/tvshow/set_position', catalog.setEpisodePosition.bind(catalog));
     server.post('/catalog/parse_filename', catalog.parseFilename.bind(catalog));
-    server.post('/catalog/fix_metadata', catalog.fixMetadata.bind(catalog));
+    server.post('/catalog/movie/fix_metadata', catalog.fixMovieMetadata.bind(catalog));
+    server.post('/catalog/tvshow/fix_metadata', catalog.fixTvshowMetadata.bind(catalog));
     server.post('/catalog/rename_file', catalog.renameFile.bind(catalog));
     server.post('/catalog/delete_file', catalog.deleteFile.bind(catalog));
 
