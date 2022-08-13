@@ -10,8 +10,10 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
+import Spinner from 'react-bootstrap/Spinner';
 
-import { Config, DbUser, OrderBy } from '../../api/src/types';
+import { Config, DbUser } from '../../api/src/types';
+import { OrderBy } from '../../api/src/enums';
 
 import Home from './home';
 import Movies from './movies';
@@ -19,6 +21,8 @@ import TvShows from './tvshows';
 import UserSelection from './user-selection';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
+
+const SCAN_POLL_INTERVAL: number = 1000;
 
 enum AppTab {
   home = "home",
@@ -37,6 +41,8 @@ type AppState = {
   selection?: number;
   orderBy: OrderBy;
   search: string;
+  scanning: boolean;
+  scanLogs: string;
 };
 
 export default class App extends React.Component<AppProps, AppState> {
@@ -48,12 +54,20 @@ export default class App extends React.Component<AppProps, AppState> {
       config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "" },
       users: [],
       optionsVisible: false,
-      tab: AppTab.tvshows,
+      tab: AppTab.home,
       orderBy,
       search: "",
+      scanning: false,
+      scanLogs: "",
     };
     apiClient.getConfig().then((config) => {
       this.setState({ config, tmdbClient: new TmdbClient(config.tmdbApiKey, 'fr-FR') });
+    });
+    apiClient.getScanProgress(0).then((status) => {
+      this.setState({ scanning: ! status.finished, scanLogs: status.logs });
+      if (! status.finished) {
+        setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
+      }
     });
     apiClient.getUsers().then((users) => {
       let userName = localStorage.getItem('userName');
@@ -70,6 +84,15 @@ export default class App extends React.Component<AppProps, AppState> {
   componentDidMount() {
     // l'événement "search" n'est pas géré par FormControl => on se replie sur du vanillaJS
     document?.getElementById("search-input")?.addEventListener("search", (evt) => this.setState({ search: (evt?.target as HTMLInputElement).value || "" }));
+  }
+
+  pollScanProgress() {
+    apiClient.getScanProgress(this.state.scanLogs.length).then((status) => {
+      this.setState({ scanning: ! status.finished, scanLogs: this.state.scanLogs + status.logs });
+      if (! status.finished) {
+        setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
+      }
+    });
   }
 
   handleOptionsToggle(isVisible: boolean): void {
@@ -101,8 +124,17 @@ export default class App extends React.Component<AppProps, AppState> {
   }
 
   handleSearchClick(evt: React.MouseEvent<HTMLButtonElement>): void {
-      const input: HTMLElement|null = document.getElementById("search-input");
-      this.setState({ search: input ? (input as HTMLInputElement).value : "" });
+    const input: HTMLElement|null = document.getElementById("search-input");
+    this.setState({ search: input ? (input as HTMLInputElement).value : "" });
+  }
+
+  handleScanClick(evt: React.MouseEvent<HTMLButtonElement>): void {
+    apiClient.scanNow().then((status) => {
+      this.setState({ scanning: ! status.finished, scanLogs: status.logs });
+      if (! status.finished) {
+        setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
+      }
+    });
   }
 
   render(): JSX.Element {
@@ -112,7 +144,11 @@ export default class App extends React.Component<AppProps, AppState> {
     } else if (! this.state.user) {
       content = <UserSelection users={this.state.users} onValidation={this.handleUserSelected.bind(this)}/>
     } else if (this.state.tab == AppTab.home) {
-      content = <Home />;
+      content = <Home config={this.state.config}
+                      user={this.state.user}
+                      tmdbClient={this.state.tmdbClient}
+                      orderBy={this.state.orderBy}
+                      search={this.state.search}/>;
     } else if (this.state.tab == AppTab.movies) {
       content = <Movies config={this.state.config}
                         user={this.state.user}
@@ -121,10 +157,10 @@ export default class App extends React.Component<AppProps, AppState> {
                         search={this.state.search}/>;
     } else if (this.state.tab == AppTab.tvshows) {
       content = <TvShows config={this.state.config}
-                        user={this.state.user}
-                        tmdbClient={this.state.tmdbClient}
-                        orderBy={this.state.orderBy}
-                        search={this.state.search}/>
+                         user={this.state.user}
+                         tmdbClient={this.state.tmdbClient}
+                         orderBy={this.state.orderBy}
+                         search={this.state.search}/>
     }
 
     return (
@@ -174,9 +210,7 @@ export default class App extends React.Component<AppProps, AppState> {
               onHide={ this.handleOptionsToggle.bind(this, false) }
             >
               <Offcanvas.Header closeButton>
-                <Offcanvas.Title id={`offcanvasNavbarLabel-expand`}>
-                  Tri
-                </Offcanvas.Title>
+                <Offcanvas.Title>Tri</Offcanvas.Title>
               </Offcanvas.Header>
               <Offcanvas.Body>
                 <ButtonToolbar className="mb-3">
@@ -199,13 +233,22 @@ export default class App extends React.Component<AppProps, AppState> {
                     <Button variant={this.state.orderBy == OrderBy.yearDesc ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.yearDesc)}>+ Récent</Button>
                     <Button variant={this.state.orderBy == OrderBy.yearAsc  ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.yearAsc) }>+ Ancien</Button>
                   </ButtonGroup>
-                 </ButtonToolbar>
+                </ButtonToolbar>
+                <hr/>
+                <Offcanvas.Title>Actions</Offcanvas.Title>
+                <ButtonToolbar className="my-3">
+                  <Button variant="outline-secondary" className={"flex-fill" + (this.state.user?.admin && ! this.state.scanning ? "" : " disabled")} onClick={this.handleScanClick.bind(this)}>Scanner la bibliothèque</Button>
+                  <Spinner animation="border" role="status" className={this.state.scanning ? "ms-3" : "d-none"} />
+                </ButtonToolbar>
+                <div className="overflow-auto" style={{height: "400px"}}>
+                  <pre>{this.state.scanLogs}</pre>
+                </div>
               </Offcanvas.Body>
             </Offcanvas>
           </Container>
         </Navbar>
         <div className="mt-5 p-2">{content}</div>
       </>
-    );    
+    );
   }
 }

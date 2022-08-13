@@ -53,17 +53,25 @@ V1.0
 [x] ranger les séries en 3 catégories anime, série, émission
 [x] nombre d'épisodes en dessous du nom de la saison
 ----------- HOME -----------------
-[ ] [frontend] liste des lectures en cours (films + séries)
-[ ] [frontend] Nouveautés (films) + scroll horizontal ?
-[ ] [frontend] Nouveautés (séries) + scroll horizontal ?
-[ ] [frontend+api] Lancer un scan manuel pour détecter les nouveautés
+[x] [frontend] refactoring movie-card et movie-details pour utilisation depuis la home
+[x] [frontend] refactoring tvshow-card et tvshow-details pour utilisation depuis la home
+[x] [frontend] affichage des détails d'un film depuis la home
+[x] [frontend] affichage des détails d'une série depuis la home
+[x] [frontend] refactoring : factoriser le rendu des crédits dans un fichier credit-card.tsx
+[x] [frontend] liste des lectures en cours (films + séries)
+[x] [frontend] Nouveautés (films)
+[x] [frontend] Nouveautés (séries)
+[x] [frontend] scroll horizontal sur les nouveautés séries et films
+[x] [frontend+api] Lancer un scan manuel pour détecter les nouveautés
 ----------- DEPLOY ---------------
-[ ] renommer les dossiers "[émission]" et "[anime]"
+[x] renommer les dossiers "[émission]" et "[anime]"
 [ ] tester sur la collection complète
 [ ] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)
 [ ] [client] changer URL (127.0.0.1 => 192.168.0.99)
+[ ] effectuer des sauvegardes quotidiennes de la BDD
 
 [ ] [BUG frontend] changer l'ordre en vue films ne s'applique pas lorsqu'on va dans les séries et vice-versa
+[ ] changer la date d'une série lorsque de nouveaux épisodes sont détectés (repasse en premier dans la home)
 
 V1.1
 [ ] afficher les animes avant les séries pour Thomas

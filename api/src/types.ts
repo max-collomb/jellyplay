@@ -20,7 +20,7 @@ export type DbCredit = {
   profilePath: string;
 };
 
-type Cast = {
+export type Cast = {
   tmdbid: number;
   character: string;
 };
@@ -131,6 +131,17 @@ export type DbTvshow = {
   airDateMin: string;
   airDateMax: string;
   searchableContent: string; // title + originalTitle + genre + countries => toLowerCase + removeAccent
+};
+
+export type HomeLists = {
+  inProgress: (DbMovie|DbTvshow)[];
+  recentMovies: DbMovie[];
+  recentTvshows: DbTvshow[];
+};
+
+export type ScanStatus = {
+  logs: string;
+  finished: boolean;
 };
 
 export type ParsedFilename = {

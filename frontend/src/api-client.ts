@@ -1,4 +1,4 @@
-import { Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, ParsedFilename, SeenStatus, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from '../../api/src/types';
+import { Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilename, ScanStatus, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from '../../api/src/types';
 
 const cache = {
   config: null,
@@ -82,6 +82,36 @@ class ApiClient {
         });
       }
     });
+  }
+
+  async getHome(userName: string): Promise<HomeLists> {
+    return new Promise((resolve, reject) => {
+      fetch(`/catalog/home/${userName}`)
+      .then(async (response) => {
+        let json = await response.json();
+        resolve(json.lists);
+      });
+    });
+  }
+
+  async scanNow(): Promise<ScanStatus> {
+    return new Promise((resolve, reject) => {
+      fetch(`/catalog/scan_now`)
+      .then(async (response) => {
+        let json = await response.json();
+        resolve(json);
+      });
+    });    
+  }
+
+  async getScanProgress(offset: number): Promise<ScanStatus> {
+    return new Promise((resolve, reject) => {
+      fetch(`/catalog/get_scan_progress/${offset}`)
+      .then(async (response) => {
+        let json = await response.json();
+        resolve(json);
+      });
+    });    
   }
 
   setMoviePosition(movie: DbMovie, userName: string, callback: Function, position: number): void {

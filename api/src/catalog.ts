@@ -6,7 +6,7 @@ import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
 import { filenameParse, ParsedFilename } from '@ctrl/video-filename-parser';
 
-import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, Season, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from './types';
+import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, Season, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from './types';
 import { SeenStatus } from './enums';
 import { TmdbClient, mediaInfo } from './tmdb';
 
@@ -71,6 +71,8 @@ export class Catalog {
   db: Loki;
   tmdbClient: TmdbClient;
   tables: DataTables = {};
+  scanning: boolean = false;
+  scanLogs: string = "";
 
   constructor(options: CatalogOptions) {
     this.moviesPath = options.moviesPath;
@@ -80,7 +82,7 @@ export class Catalog {
                            .replace(/[\W]+/g,"_") // remplace tous les caractères autre que [a-zA-Z0-9] en _
                            .replace(/_+/g, "_");  // remplace plusieurs _ consécutifs par un seul
     let dbLoaded: () => void;
-    this.dbReady = new Promise((resolve, relject) => {
+    this.dbReady = new Promise((resolve, _reject) => {
       dbLoaded = resolve;
     });
     this.db = new Loki(
@@ -97,14 +99,14 @@ export class Catalog {
         autosaveInterval: 60_000
       }
     );
-    this.tmdbClient = new TmdbClient(global.config.tmdbApiKey, 'fr-FR', path.join(this.rootPath, 'db', 'images'));
+    this.tmdbClient = new TmdbClient(global.config.tmdbApiKey, 'fr-FR', path.join(this.rootPath, 'db', 'images'), this.log.bind(this));
   }
 
   private initSchemas(): void {
     this.db.removeCollection('users');
-    // this.db.removeCollection('movies');
-    // this.db.removeCollection('tvshows');
-    // this.db.removeCollection('credits');
+    this.db.removeCollection('movies');
+    this.db.removeCollection('tvshows');
+    this.db.removeCollection('credits');
 
     this.tables.users = this.db.getCollection('users');
     if (! this.tables.users) {
@@ -159,8 +161,15 @@ export class Catalog {
     }
   }
 
+  private log(message: string): void {
+    console.log(message);
+    this.scanLogs += message + "\n";
+  }
+
   public async load(): Promise<void> {
-    console.log("catalog_load begin");
+    this.scanning = true;
+    this.scanLogs = "";
+    console.log("begin catalog_load");
     await this.dbReady;
     const creditSet: Set<number> = new Set<number>();
     await new Promise(resolve => setTimeout(resolve, 1_000));
@@ -170,13 +179,14 @@ export class Catalog {
     if (this.tables.credits) {
       for (const credit of this.tables.credits.find()) {
         if (! creditSet.has(credit.tmdbid)) {
-          console.log(`credit has no reference anymore ${credit.name}`);
+          this.log(`[-] credit unreferenced ${credit.name}`);
           await this.tmdbClient.unlinkProfileImage(credit);
           this.tables.credits.remove(credit);
         }
       }
     }
-    console.log("catalog_load end");
+    console.log("end catalog_load");
+    this.scanning = false;
   }
 
   private async recursiveReaddir(rootPath: string): Promise<string[]> {
@@ -211,7 +221,7 @@ export class Catalog {
   }
 
   private async scanMovies(creditSet: Set<number>) {
-    console.log("scanMovies begin");
+    this.log("begin scan_movies");
     // scanne le dossier pour détecter changements
     const filenames: string[] = await this.recursiveReaddir(this.moviesPath);
     const filenameSet: Set<string> = new Set<string>();
@@ -219,7 +229,7 @@ export class Catalog {
       filenameSet.add(filename);
       const filepath: string = path.join(this.moviesPath, filename);
       if (this.tables.movies?.find({ filename }).length === 0) {
-        console.log(`new file detected ${filename}`);
+        this.log(`[+] file added ${filename}`);
         const newMovie: DbMovie = {
           filename,
           tmdbid: -1,
@@ -245,7 +255,7 @@ export class Catalog {
           searchableContent: "",
         };
         const credits: DbCredit[] = await this.tmdbClient.autoIdentifyMovie(newMovie);
-        await mediaInfo(newMovie, path.join(this.moviesPath, newMovie.filename));
+        await mediaInfo(newMovie, path.join(this.moviesPath, newMovie.filename), this.log.bind(this));
         this.tables.movies.insert(newMovie);
         for (const credit of credits) {
           if (this.tables.credits?.find({ tmdbid: credit.tmdbid }).length === 0) {
@@ -262,17 +272,17 @@ export class Catalog {
           movie.writers.forEach(id => creditSet.add(id));
           movie.directors.forEach(id => creditSet.add(id));
         } else {
-          console.log(`file doesn't exist anymore ${movie.filename}`);
+          this.log(`[-] file deleted ${movie.filename}`);
           await this.tmdbClient.unlinkMovieImages(movie);
           this.tables.movies.remove(movie);
         }
       }
     }
-    console.log("scanMovies end");
+    this.log("end scan_movies");
   }
 
   private async scanTvshows(creditSet: Set<number>) {
-    console.log("scanTvshows start");
+    this.log("begin scan_tvshows");
     // scanne le dossier pour détecter changements
     const foldernames: string[] = await this.readDirectories(this.tvshowsPath);
     const foldernameSet: Set<string> = new Set<string>();
@@ -284,7 +294,7 @@ export class Catalog {
       if (result) {
         tvshow = result;
       } else {
-        console.log(`new folder detected ${foldername}`);
+        this.log(`[+] folder added ${foldername}`);
         tvshow = {
           foldername,
           tmdbid: -1,
@@ -315,7 +325,7 @@ export class Catalog {
         filenameSet.add(filename);
         const filepath: string = path.join(folderpath, filename);
         if (tvshow.episodes.filter(e => e.filename == filename).length === 0) {
-          console.log(`new file detected ${filename}`);
+          this.log(`[+] file added ${filename}`);
           const episode: Episode = {
             filename,
             seasonNumber: -1,
@@ -335,7 +345,7 @@ export class Catalog {
           };
           // episode
           await this.tmdbClient.addTvshowEpisode(tvshow, episode);
-          await mediaInfo(episode, path.join(folderpath, episode.filename));
+          await mediaInfo(episode, path.join(folderpath, episode.filename), this.log.bind(this));
           // season
           if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
             const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
@@ -356,7 +366,7 @@ export class Catalog {
         if (filenameSet.has(episode.filename)) {
           seasonNumberSet.add(episode.seasonNumber);
         } else {
-          console.log(`file doesn't exist anymore ${episode.filename}`);
+          this.log(`[-] file deleted ${episode.filename}`);
           await this.tmdbClient.unlinkEpisodeImages(episode);
           episode.filename = "";
         }
@@ -368,7 +378,7 @@ export class Catalog {
         if (seasonNumberSet.has(season.seasonNumber)) {
           season.cast.forEach(c => creditSet.add(c.tmdbid));
         } else {
-          console.log(`season doesn't exist anymore ${season.seasonNumber}`);
+          this.log(`[-] season unreferenced ${season.seasonNumber}`);
           await this.tmdbClient.unlinkSeasonImages(season);
         }
       }
@@ -385,7 +395,7 @@ export class Catalog {
         if (foldernameSet.has(tvshow.foldername)) {
           tvshow.seasons.forEach(s => s.cast.forEach(c => creditSet.add(c.tmdbid)));
         } else {
-          console.log(`folder doesn't exist anymore ${tvshow.foldername}`);
+          this.log(`[-] folder deleted ${tvshow.foldername}`);
           await this.tmdbClient.unlinkTvshowImages(tvshow);
           tvshow.episodes.forEach(async episode => await this.tmdbClient.unlinkEpisodeImages(episode));
           tvshow.seasons.forEach(async season => await this.tmdbClient.unlinkSeasonImages(season));
@@ -394,7 +404,7 @@ export class Catalog {
       }
     }
     // nettoyer tvshow.episodes et tvshow.seasons et les images
-    console.log("scanTvshows end");
+    this.log("end scan_tvshows");
   }
 
   public getConfig(request: FastifyRequest, reply: FastifyReply) {
@@ -419,6 +429,70 @@ export class Catalog {
 
   public getCredits(request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.credits?.find() });
+  }
+
+  public getHome(request: FastifyRequest, reply: FastifyReply) {
+    const RECENT_LENGTH_MAX = 20;
+    const user = this.tables.users?.findOne({ name: (request.params as any).userName });
+    const lists: HomeLists = {
+      inProgress: [],
+      recentMovies: [],
+      recentTvshows: [],
+    };
+    if (user) {
+      if (this.tables.movies) {
+        movieLoop:
+        for (const movie of this.tables.movies.find()) {
+          let userStatus : UserMovieStatus|undefined = undefined;
+          for (const us of movie.userStatus) {
+            if (us.userName == user.name) {
+              userStatus = us;
+            }
+          }
+          if (userStatus && userStatus.position > 0) {
+            lists.inProgress.push(movie);
+            continue movieLoop;
+          } else if (lists.recentMovies.length < RECENT_LENGTH_MAX) {
+            if (userStatus == undefined ||
+                userStatus.currentStatus == SeenStatus.toSee ||
+                (userStatus.currentStatus == SeenStatus.unknown && ! userStatus.seenTs.length)) {
+              lists.recentMovies.unshift(movie);
+              continue movieLoop;
+            }
+          }
+        }
+      }
+      if (this.tables.tvshows) {
+        tvshowLoop:
+        for (const tvshow of this.tables.tvshows.find()) {
+          for (let us of tvshow.userStatus) {
+            if (us.userName == user.name && us.currentStatus == SeenStatus.wontSee) {
+              continue tvshowLoop;
+            }
+          }
+          for(const episode of tvshow.episodes) {
+            let userStatus : UserEpisodeStatus|undefined = undefined;
+            for (let us of episode.userStatus) {
+              if (us.userName == user.name) {
+                userStatus = us;
+              }
+            }            
+            if (userStatus && userStatus.position > 0) {
+              lists.inProgress.push(tvshow);
+              continue tvshowLoop;
+            } else if (lists.recentTvshows.length < RECENT_LENGTH_MAX) {
+              if (! userStatus ||
+                  userStatus.currentStatus == SeenStatus.toSee ||
+                  userStatus.currentStatus == SeenStatus.unknown && ! userStatus.seenTs.length) {
+                lists.recentTvshows.unshift(tvshow);
+                continue tvshowLoop;
+              }
+            }
+          }
+        }
+      }
+    }
+    reply.send({ lists });
   }
 
   public setMoviePosition(request: FastifyRequest, reply: FastifyReply) {
@@ -490,6 +564,17 @@ export class Catalog {
     reply.send({});
   }
 
+  public scanNow(request: FastifyRequest, reply: FastifyReply) {
+    if (! this.scanning) {
+      this.load();
+    }
+    reply.send({ logs: this.scanLogs, finished: ! this.scanning });
+  }
+
+  public getScanProgress(request: FastifyRequest, reply: FastifyReply) {
+    reply.send({ logs: this.scanLogs.substring(parseFloat((request.params as any).offset)), finished: ! this.scanning });
+  }
+
   public setMovieStatus(request: FastifyRequest, reply: FastifyReply) {
     let body: SetStatusMessage = request.body as SetStatusMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
@@ -553,7 +638,6 @@ export class Catalog {
         }
         userStatus.currentStatus = body.status as SeenStatus;
         this.tables.tvshows?.update(tvshow);
-        console.log("episode.userStatus", episode.userStatus);
         reply.send({ userStatus: episode.userStatus });
       }
     }
@@ -643,7 +727,6 @@ export class Catalog {
     let newFilename = "";
     let body: FilenameMessage = request.body as FilenameMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
-    console.log(path.sep);
     if (movie) {
       try {
         await fs.promises.rename(
