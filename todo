@@ -64,16 +64,38 @@ V1.0
 [x] [frontend] scroll horizontal sur les nouveautés séries et films
 [x] [frontend+api] Lancer un scan manuel pour détecter les nouveautés
 ----------- DEPLOY ---------------
+[x] ne pas planter l'api lorsqu'il y a une erreur d'identification / de téléchargement d'un film / d'une série
 [x] renommer les dossiers "[émission]" et "[anime]"
-[ ] tester sur la collection complète
+[x] tester sur la collection complète
+[x] [BUG frontend] corriger les métadonnées ne fonctionne pas sur les séries
+[x] conserver le scroll lors de l'ouverture / de la fermeture de la page de détails d'un film ou d'une série
+[x] eviter les erreurs 404 lorsque pas de poster (comme pour les acteurs : image par défaut)
+[x] [frontend] voir les noms de fichiers dans le (i) des épisodes
+[x] [frontend] X en position fixed pour pouvoir fermer même si la page est scrollée
+[x] [BUG frontend] .media-card > .lang ne pas afficher si vide. idem pour l'année si -1
+[x] [BUG frontend] si film / série non identifié(e) => utiliser le nom de fichier / de dossier
+[x] [BUG frontend] ordre des saisons (ex : candice renoir ou His dark materials)
+[x] [BUG frontend] aucune saison sélectionnée sur Violet Evergarden 
+[x] [BUG api] identification Black mirror s01e02 étrange
+[x] [BUG frontend] l'ordre dans ajouts récent ne semble pas fonctionner
+[x] [BUG frontend] la largeur des .media-card n'est pas adaptative sur la home (sans .flex-wrap)
+[x] [BUG frontend] VFF+VFQ+VOST trop long si taille de vignette mini
+[x] passage sur l'onglet films un peu long. Tenter des optimisations (lazy, virtual, ???)
+[x] ajouter une date min dans DbUser permettant de filtrer tous les films/séries dont created/createdMax inférieurs à cette date sur la home
+[ ] ordre par défaut de la page film incorrect
+[ ] [BUG api] trop d'erreur dans l'identification des films (video-filename-parser à remplacer ?)
+[ ] [BUG] si on renomme un fichier depuis l'appli, il le detecte comme un nouveau fichier au prochain scan. Lié : si on renomme un fichier avant de modifier ses metadata, ça ne fonctionne pas... LokiJs permet-il de modifier une clé primaire ?
+[ ] [BUG frontend] changer l'ordre en vue films ne s'applique pas lorsqu'on va dans les séries et vice-versa
+[ ] comment gérer les épisodes de tintin ? marqueur qui dit de ne pas identifier les épisodes ?
+[ ] reprendre le visionnage d'une série à l'épisode suivant
 [ ] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)
 [ ] [client] changer URL (127.0.0.1 => 192.168.0.99)
 [ ] effectuer des sauvegardes quotidiennes de la BDD
 
-[ ] [BUG frontend] changer l'ordre en vue films ne s'applique pas lorsqu'on va dans les séries et vice-versa
-[ ] changer la date d'une série lorsque de nouveaux épisodes sont détectés (repasse en premier dans la home)
 
 V1.1
+[ ] revoir la méthode de suppression des images lors de la disparition d'un fichier. Exemple : renommage d'un fichier (épisode) => reconnaissance auto puis téléchargement du still puis suppression du still => lien image cassé. Solution 1 : détecter les fichiers supprimés avant de détecter les nouveaux fichiers. Solution 2 : passe globale sur toutes les images pour supprimer celles qui ne sont pas référencées en BDD en fin de process plutôt que de supprimer les images au fur et à mesure
+[ ] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode
 [ ] afficher les animes avant les séries pour Thomas
 [ ] [frontend] recherche de gens (réal, acteur, ect.)
 [ ] [frontend/api] nom de réal / auteur / casting cliquable pour effectuer une recherche (+ recherche externe tmdb via api)

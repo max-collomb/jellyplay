@@ -10,7 +10,7 @@ import { Config, DbCredit, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus,
 import { OrderBy, SeenStatus } from '../../api/src/enums';
 import { MoreToggle, MultiItem, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
 import apiClient from './api-client';
-
+import TmdbClient from './tmdb';
 import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
 import Casting from './casting';
 
@@ -18,6 +18,7 @@ type TvShowDetailsProps = {
   tvshow: DbTvshow;
   config: Config;
   user: DbUser;
+  tmdbClient?: TmdbClient;
   onClosed: () => void;
   onChanged: () => void;
   onReplaced: (tvshow: DbTvshow) => void;
@@ -131,6 +132,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
               overlay={
                 <Tooltip>
                   <span className="file-details">
+                    <p>{episode.filename}</p>
                     {episode.video
                       ? <p><span className="dt">Vidéo</span><span className="dd">{renderVideoInfos(episode.video)}</span></p>
                       : null
@@ -184,14 +186,14 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
     }
     const tvshow: DbTvshow = this.props.tvshow;
     let selectedSeason: Season|undefined = tvshow.seasons.filter(s => s.seasonNumber == this.state.tabSeason).shift();
-    const seasons = tvshow.seasons.slice(0);
+    const seasons = tvshow.seasons.slice(0).sort((a, b) => a.seasonNumber - b.seasonNumber);
     const unknownSeasonEpisodeCount: number = tvshow.episodes.filter(e => e.seasonNumber == -1).length; 
     if (unknownSeasonEpisodeCount > 0) {
       seasons.push({tmdbid: -1, seasonNumber: -1, episodeCount: unknownSeasonEpisodeCount, year: 0, synopsys: "", posterPath: "", cast: [] });
     }
     const userStatus = getTvshowUserStatus(tvshow, this.props.user);
-    return <div className="media-details tvshow" style={{background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url(/images/backdrops_w1280${tvshow.backdropPath}) 100% 0% / cover no-repeat`}}>
-      <div style={{ margin: "1em" }}>
+    return <div className="media-details tvshow pt-5" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (tvshow.backdropPath ? `, url(/images/backdrops_w1280${tvshow.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
+      <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
         <a href="#" className="link-light" onClick={this.props.onClosed}>
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
@@ -199,7 +201,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
         </a>
       </div>
       <div className="media-poster">
-        <span className="poster" style={{ backgroundImage: `url(/images/posters_w780${selectedSeason?.posterPath || tvshow.posterPath})` }}>
+        <span className="poster" style={{ backgroundImage: (selectedSeason?.posterPath || tvshow.posterPath ? `url(/images/posters_w780${selectedSeason?.posterPath || tvshow.posterPath})` : '') }}>
           <b onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playTvshow(this.props.config, tvshow, undefined, this.props.user, this.forceUpdate.bind(this)); }}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
@@ -264,7 +266,9 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
               className="flex-grow-1"
               title={<>{title}<span className="d-block fst-italic fs-80pc">{season.episodeCount} épisodes</span></>}
             >
-              {tvshow.episodes.filter(e => e.seasonNumber == season.seasonNumber).map(episode => this.renderEpisode(tvshow, episode))}
+              {tvshow.episodes.filter(e => e.seasonNumber == season.seasonNumber)
+                              .sort((a, b) => a.episodeNumbers[0] - b.episodeNumbers[0])
+                              .map(episode => this.renderEpisode(tvshow, episode))}
             </Tab>;
           })}
         </Tabs>

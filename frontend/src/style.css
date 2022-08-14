@@ -85,8 +85,14 @@ input[type="search"]::-webkit-search-cancel-button {
   min-width: 400px; /* 150 (min-width film) * 3/2 (ratio poster film) * 16/9 (ratio poster série) */
   width: 26.6667vw; /* 10 (width film) * 3/2 (ratio poster film) * 16/9 (ratio poster série) */
 }
-.media-card.audience-not-set {
-  border: 6px solid #cb2b2b;
+.media-card.audience-not-set:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border: 4px solid #cb2b2b;
 }
 
 .media-card:hover {
@@ -115,10 +121,19 @@ input[type="search"]::-webkit-search-cancel-button {
 .media-poster .poster {aspect-ratio: 2/3;}
 .media-card.tvshow .poster { aspect-ratio: 16/9; }
 
-.poster > img { position: absolute; width: 100%; aspect-ratio: 2/3; }
+.poster > img { position: absolute; width: 100%; height: auto; aspect-ratio: 2/3; }
 .movie .poster > img { aspect-ratio: 2/3; }
 .tvshow .poster > img { aspect-ratio: 16/9; }
 .episode-card .poster { position: relative; min-width: 300px; width: 300px; height: 169px; }
+.poster .no-poster-picture {
+  position: absolute;
+  width: 100%;
+  padding-top: 50px;
+  text-align: center;
+  opacity: 0.25;
+}
+/*.audience-not-set .poster .no-poster-picture { width: calc(100% - 12px); }  problème de centrage si taille mini des vignettes */
+
 
 .media-card:hover .poster {
   /*opacity: 0.6;*/
@@ -194,10 +209,14 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .media-card .lang {
   display: inline-block;
-  padding: 0 0.2rem;
+  padding: 0 0.1rem;
+  margin: 0 0.1rem;
   background: #666;
   color: #222;
   border-radius: 4px;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .media-details {

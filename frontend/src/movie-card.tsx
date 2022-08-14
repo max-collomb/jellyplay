@@ -32,12 +32,18 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
 
   render(): JSX.Element {
     const userStatus = getUserMovieStatus(this.props.movie, this.props.user);
+    const lang = getMovieLanguage(this.props.movie);
     return <div
-      className={"media-card movie" + (this.props.movie.audience == 999 ? " audience-not-set" : "")}
+      className={"flex-shrink-0 media-card movie" + (this.props.movie.audience == 999 ? " audience-not-set" : "")}
       onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); this.props.onSelected(this.props.movie); }}
     >
       <span className="poster">
-        <img src={`/images/posters_w342${this.props.movie.posterPath}`} loading="lazy"/>
+        { this.props.movie.posterPath ?
+            <img src={`/images/posters_w342${this.props.movie.posterPath}`} width="780" height="1170" loading="lazy"/> :
+            <span className="no-poster-picture"><svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="currentColor" className="bi bi-film" viewBox="0 0 16 16">
+              <path d="M0 1a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V1zm4 0v6h8V1H4zm8 8H4v6h8V9zM1 1v2h2V1H1zm2 3H1v2h2V4zM1 7v2h2V7H1zm2 3H1v2h2v-2zm-2 3v2h2v-2H1zM15 1h-2v2h2V1zm-2 3v2h2V4h-2zm2 3h-2v2h2V7zm-2 3v2h2v-2h-2zm2 3h-2v2h2v-2z"/>
+            </svg></span>
+        }
         <b onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playMovie(this.props.config, this.props.movie, this.props.user, this.forceUpdate.bind(this)); }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
             <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
@@ -64,10 +70,10 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
           </em>
         </i>
       </span>
-      <span className="title">{this.props.movie.title}</span>
+      <span className="title">{this.props.movie.title || this.props.movie.filename}</span>
       <span className="infos d-flex justify-content-between">
-        <span className="year">{this.props.movie.year}</span>
-        <span className="lang">{getMovieLanguage(this.props.movie)}</span>
+        <span className={"year" + (this.props.movie.year < 0 ? " invisible" : "")}>{this.props.movie.year}</span>
+        <span className={"lang" + (lang ? "" : " invisible")} title={lang}>{lang}</span>
         <span className="duration">{getMovieDuration(this.props.movie)}</span>
       </span>
       {getMovieProgress(this.props.movie, this.props.user)}

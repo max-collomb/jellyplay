@@ -163,7 +163,7 @@ export function selectCurrentEpisode(tvshow: DbTvshow, user: DbUser): Episode|un
 export function selectCurrentSeason(tvshow: DbTvshow, user: DbUser): number {
   const currentEpisode = selectCurrentEpisode(tvshow, user);
   if (currentEpisode) {
-    return currentEpisode.seasonNumber;
+    return currentEpisode.seasonNumber || -1;
   } else {
     return tvshow.seasons[0]?.seasonNumber || -1;
   }

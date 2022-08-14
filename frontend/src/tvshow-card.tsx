@@ -33,11 +33,16 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
   render(): JSX.Element {
     const userStatus = getTvshowUserStatus(this.props.tvshow, this.props.user);
     return /*<React.Fragment>*/<div
-      className={"media-card tvshow" + (this.props.tvshow.audience == 999 ? " audience-not-set" : "")}
+      className={"flex-shrink-0 media-card tvshow" + (this.props.tvshow.audience == 999 ? " audience-not-set" : "")}
       onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); this.props.onSelected(this.props.tvshow); }}
     >
       <span className="poster">
-        <img src={`/images/backdrops_w780${this.props.tvshow.backdropPath}`} loading="lazy"/>
+        { this.props.tvshow.backdropPath ?
+            <img src={`/images/backdrops_w780${this.props.tvshow.backdropPath}`} width="780" height="439" loading="lazy"/> :
+            <span className="no-poster-picture"><svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="currentColor" className="bi bi-film" viewBox="0 0 16 16">
+              <path d="M0 1a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V1zm4 0v6h8V1H4zm8 8H4v6h8V9zM1 1v2h2V1H1zm2 3H1v2h2V4zM1 7v2h2V7H1zm2 3H1v2h2v-2zm-2 3v2h2v-2H1zM15 1h-2v2h2V1zm-2 3v2h2V4h-2zm2 3h-2v2h2V7zm-2 3v2h2v-2h-2zm2 3h-2v2h2v-2z"/>
+            </svg></span>
+        }
         <b onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playTvshow(this.props.config, this.props.tvshow, undefined, this.props.user, this.forceUpdate.bind(this)); }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
             <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
@@ -56,7 +61,7 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
           </em>
         </i>
       </span>
-      <span className="title">{this.props.tvshow.title}</span>
+      <span className="title">{this.props.tvshow.title || this.props.tvshow.foldername}</span>
       <span className="infos d-flex justify-content-between">
         <span className="year">{getSeasonCount(this.props.tvshow)}</span>
         <span className="duration">{getEpisodeCount(this.props.tvshow)}</span>

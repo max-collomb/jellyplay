@@ -125,8 +125,8 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     }
     const movie: DbMovie = this.props.movie;
     const userStatus = getUserMovieStatus(movie, this.props.user);
-    return <div className="media-details movie" style={{background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)), url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat`}}>
-      <div style={{ margin: "1em" }}>
+    return <div className="media-details movie pt-5" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdropPath ? `, url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
+      <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
         <a href="#" className="link-light" onClick={this.props.onClosed}>
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
@@ -134,7 +134,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
         </a>
       </div>
       <div className="media-poster">
-        <span className="poster" style={{ backgroundImage: `url(/images/posters_w780${movie.posterPath})` }}>
+        <span className="poster" style={{ backgroundImage: movie.posterPath ? `url(/images/posters_w780${movie.posterPath})` : '' }}>
           <b onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playMovie(this.props.config, movie, this.props.user, this.forceUpdate.bind(this)); }}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
@@ -148,7 +148,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
           <div className="flex-grow-1">
             <h2>{movie.title}</h2>
             {movie.originalTitle && movie.originalTitle != movie.title ? <h6>{movie.originalTitle}</h6> : null}
-            <div>{movie.year} &emsp; {getMovieDuration(movie)} &emsp; <img src={`/images/classification/${movie.audience}.svg`} width="18px"/></div>
+            <div>{movie.year > 0 ? movie.year : ""} &emsp; {getMovieDuration(movie)} &emsp; <img src={`/images/classification/${movie.audience}.svg`} width="18px"/></div>
           </div>
           <div className="actions">
             <a href="#" className="link-light me-3" onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playMovie(this.props.config, movie, this.props.user, this.forceUpdate.bind(this)); }}>

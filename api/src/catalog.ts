@@ -104,9 +104,9 @@ export class Catalog {
 
   private initSchemas(): void {
     this.db.removeCollection('users');
-    this.db.removeCollection('movies');
-    this.db.removeCollection('tvshows');
-    this.db.removeCollection('credits');
+    // this.db.removeCollection('movies');
+    // this.db.removeCollection('tvshows');
+    // this.db.removeCollection('credits');
 
     this.tables.users = this.db.getCollection('users');
     if (! this.tables.users) {
@@ -118,10 +118,10 @@ export class Catalog {
           indices: ['name'],
         }
        );
-      this.tables.users.insert({ name: 'max',    audience: 999, admin: true  });
-      this.tables.users.insert({ name: 'flo',    audience: 999, admin: false });
-      this.tables.users.insert({ name: 'amélie', audience: 16,  admin: false });
-      this.tables.users.insert({ name: 'thomas', audience: 12,  admin: false });
+      this.tables.users.insert({ name: 'max',    audience: 999, admin: true,  created: "UTC 2022-04-25 00:00:00.000" });
+      this.tables.users.insert({ name: 'flo',    audience: 999, admin: false, created: "UTC 2022-08-01 00:00:00.000" });
+      this.tables.users.insert({ name: 'amélie', audience: 16,  admin: false, created: "UTC 2022-08-01 00:00:00.000" });
+      this.tables.users.insert({ name: 'thomas', audience: 12,  admin: false, created: "UTC 2022-08-01 00:00:00.000" });
     }
 
     this.tables.movies = this.db.getCollection('movies');
@@ -230,38 +230,43 @@ export class Catalog {
       const filepath: string = path.join(this.moviesPath, filename);
       if (this.tables.movies?.find({ filename }).length === 0) {
         this.log(`[+] file added ${filename}`);
-        const newMovie: DbMovie = {
-          filename,
-          tmdbid: -1,
-          title: "",
-          originalTitle: "",
-          year: -1,
-          duration: -1,
-          directors: [],
-          writers: [],
-          cast: [],
-          genres: [],
-          countries: [],
-          audience: 999,
-          synopsys: "",
-          backdropPath: "",
-          posterPath: "",
-          created: "",
-          filesize: -1,
-          video: { width: -1, height: -1, codec: "" },
-          audio: [],
-          subtitles: [],
-          userStatus: [],
-          searchableContent: "",
-        };
-        const credits: DbCredit[] = await this.tmdbClient.autoIdentifyMovie(newMovie);
-        await mediaInfo(newMovie, path.join(this.moviesPath, newMovie.filename), this.log.bind(this));
-        this.tables.movies.insert(newMovie);
-        for (const credit of credits) {
-          if (this.tables.credits?.find({ tmdbid: credit.tmdbid }).length === 0) {
-            await this.tmdbClient.downloadProfileImage(credit);
-            this.tables.credits.insert(credit);
+        try {
+          const newMovie: DbMovie = {
+            filename,
+            tmdbid: -1,
+            title: "",
+            originalTitle: "",
+            year: -1,
+            duration: -1,
+            directors: [],
+            writers: [],
+            cast: [],
+            genres: [],
+            countries: [],
+            audience: 999,
+            synopsys: "",
+            backdropPath: "",
+            posterPath: "",
+            created: "",
+            filesize: -1,
+            video: { width: -1, height: -1, codec: "" },
+            audio: [],
+            subtitles: [],
+            userStatus: [],
+            searchableContent: "",
+          };
+          const credits: DbCredit[] = await this.tmdbClient.autoIdentifyMovie(newMovie);
+          await mediaInfo(newMovie, path.join(this.moviesPath, newMovie.filename), this.log.bind(this));
+          this.tables.movies.insert(newMovie);
+          for (const credit of credits) {
+            if (this.tables.credits?.find({ tmdbid: credit.tmdbid }).length === 0) {
+              await this.tmdbClient.downloadProfileImage(credit);
+              this.tables.credits.insert(credit);
+            }
           }
+        } catch (e) {
+          console.error(e);
+          this.log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
         }
       }
     }
@@ -290,105 +295,117 @@ export class Catalog {
       foldernameSet.add(foldername);
       const folderpath: string = path.join(this.tvshowsPath, foldername);
       let result = this.tables.tvshows?.findOne({ foldername });
-      let tvshow: DbTvshow;
+      let tvshow: DbTvshow|undefined = undefined;
       if (result) {
         tvshow = result;
       } else {
-        this.log(`[+] folder added ${foldername}`);
-        tvshow = {
-          foldername,
-          tmdbid: -1,
-          title: "",
-          originalTitle: "",
-          synopsys: "",
-          genres: [],
-          countries: [],
-          audience: 999,
-          backdropPath: "",
-          posterPath: "",
-          userStatus: [],
-          searchableContent: "",
-          seasons: [],
-          episodes: [],
-          createdMin: "",
-          createdMax: "",
-          airDateMin: "",
-          airDateMax: "",
-        };
-        await this.tmdbClient.autoIdentifyTvshow(tvshow);
-        this.tables.tvshows?.insert(tvshow);
-      }
-
-      const filenames: string[] = await this.recursiveReaddir(folderpath);
-      const filenameSet: Set<string> = new Set<string>();
-      for (const filename of filenames) {
-        filenameSet.add(filename);
-        const filepath: string = path.join(folderpath, filename);
-        if (tvshow.episodes.filter(e => e.filename == filename).length === 0) {
-          this.log(`[+] file added ${filename}`);
-          const episode: Episode = {
-            filename,
-            seasonNumber: -1,
-            episodeNumbers: [],
+        try {
+          this.log(`[+] folder added ${foldername}`);
+          tvshow = {
+            foldername,
             tmdbid: -1,
             title: "",
-            airDate: "",
-            duration: -1,
+            originalTitle: "",
             synopsys: "",
-            stillPath: "",
-            created: "",
-            filesize: -1,
-            video: { width: -1, height: -1, codec: "" },
-            audio: [],
-            subtitles: [],
+            genres: [],
+            countries: [],
+            audience: 999,
+            backdropPath: "",
+            posterPath: "",
             userStatus: [],
+            searchableContent: "",
+            seasons: [],
+            episodes: [],
+            createdMin: "",
+            createdMax: "",
+            airDateMin: "",
+            airDateMax: "",
           };
-          // episode
-          await this.tmdbClient.addTvshowEpisode(tvshow, episode);
-          await mediaInfo(episode, path.join(folderpath, episode.filename), this.log.bind(this));
-          // season
-          if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
-            const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
-            for (const credit of credits) {
-              if (this.tables.credits?.find({ tmdbid: credit.tmdbid }).length === 0) {
-                await this.tmdbClient.downloadProfileImage(credit);
-                this.tables.credits.insert(credit);
+          await this.tmdbClient.autoIdentifyTvshow(tvshow);
+          this.tables.tvshows?.insert(tvshow);
+        } catch (e) {
+          console.error(e);
+          this.log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
+        }
+      }
+
+      if (tvshow) {
+        try {
+          const filenames: string[] = await this.recursiveReaddir(folderpath);
+          const filenameSet: Set<string> = new Set<string>();
+          for (const filename of filenames) {
+            filenameSet.add(filename);
+            const filepath: string = path.join(folderpath, filename);
+            if (tvshow.episodes.filter(e => e.filename == filename).length === 0) {
+              this.log(`[+] file added ${filename}`);
+              const episode: Episode = {
+                filename,
+                seasonNumber: -1,
+                episodeNumbers: [],
+                tmdbid: -1,
+                title: "",
+                airDate: "",
+                duration: -1,
+                synopsys: "",
+                stillPath: "",
+                created: "",
+                filesize: -1,
+                video: { width: -1, height: -1, codec: "" },
+                audio: [],
+                subtitles: [],
+                userStatus: [],
+              };
+              // episode
+              await this.tmdbClient.addTvshowEpisode(tvshow, episode);
+              await mediaInfo(episode, path.join(folderpath, episode.filename), this.log.bind(this));
+              // season
+              if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
+                const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
+                for (const credit of credits) {
+                  if (this.tables.credits?.find({ tmdbid: credit.tmdbid }).length === 0) {
+                    await this.tmdbClient.downloadProfileImage(credit);
+                    this.tables.credits.insert(credit);
+                  }
+                }
               }
+              tvshow.episodes.push(episode);
             }
           }
-          tvshow.episodes.push(episode);
+          // nettoyage des épisodes
+          const seasonNumberSet: Set<number> = new Set<number>();
+          for (const episode of tvshow.episodes) {
+            if (filenameSet.has(episode.filename)) {
+              seasonNumberSet.add(episode.seasonNumber);
+            } else {
+              this.log(`[-] file deleted ${episode.filename}`);
+              await this.tmdbClient.unlinkEpisodeImages(episode);
+              episode.filename = "";
+            }
+          }
+          tvshow.episodes = tvshow.episodes.filter(e => e.filename !== "");
+
+          // nettoyage des saisons
+          for (const season of tvshow.seasons) {
+            if (seasonNumberSet.has(season.seasonNumber)) {
+              season.cast.forEach(c => creditSet.add(c.tmdbid));
+            } else {
+              this.log(`[-] season unreferenced ${season.seasonNumber}`);
+              await this.tmdbClient.unlinkSeasonImages(season);
+            }
+          }
+          tvshow.seasons = tvshow.seasons.filter(s => seasonNumberSet.has(s.seasonNumber));
+          tvshow.createdMin = tvshow.episodes.map(e => e.created).sort().shift() || "";
+          tvshow.createdMax = tvshow.episodes.map(e => e.created).sort().pop() || "";
+          tvshow.airDateMin = tvshow.episodes.map(e => e.airDate).sort().shift() || "";
+          tvshow.airDateMax = tvshow.episodes.map(e => e.airDate).sort().pop() || "";
+
+          this.tables.tvshows?.update(tvshow);
+        } catch (e) {
+          console.error(e);
+          this.log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
         }
       }
 
-      // nettoyage des épisodes
-      const seasonNumberSet: Set<number> = new Set<number>();
-      for (const episode of tvshow.episodes) {
-        if (filenameSet.has(episode.filename)) {
-          seasonNumberSet.add(episode.seasonNumber);
-        } else {
-          this.log(`[-] file deleted ${episode.filename}`);
-          await this.tmdbClient.unlinkEpisodeImages(episode);
-          episode.filename = "";
-        }
-      }
-      tvshow.episodes = tvshow.episodes.filter(e => e.filename !== "");
-
-      // nettoyage des saisons
-      for (const season of tvshow.seasons) {
-        if (seasonNumberSet.has(season.seasonNumber)) {
-          season.cast.forEach(c => creditSet.add(c.tmdbid));
-        } else {
-          this.log(`[-] season unreferenced ${season.seasonNumber}`);
-          await this.tmdbClient.unlinkSeasonImages(season);
-        }
-      }
-      tvshow.seasons = tvshow.seasons.filter(s => seasonNumberSet.has(s.seasonNumber));
-      tvshow.createdMin = tvshow.episodes.map(e => e.created).sort().shift() || "";
-      tvshow.createdMax = tvshow.episodes.map(e => e.created).sort().pop() || "";
-      tvshow.airDateMin = tvshow.episodes.map(e => e.airDate).sort().shift() || "";
-      tvshow.airDateMax = tvshow.episodes.map(e => e.airDate).sort().pop() || "";
-
-      this.tables.tvshows?.update(tvshow);
     }
     if (this.tables.tvshows) {
       for (const tvshow of this.tables.tvshows.find()) {
@@ -442,7 +459,7 @@ export class Catalog {
     if (user) {
       if (this.tables.movies) {
         movieLoop:
-        for (const movie of this.tables.movies.find()) {
+        for (const movie of this.tables.movies.find().sort((a: DbMovie, b: DbMovie) => (b.created < a.created) ? -1 : (b.created > a.created) ? 1 : 0)) {
           let userStatus : UserMovieStatus|undefined = undefined;
           for (const us of movie.userStatus) {
             if (us.userName == user.name) {
@@ -452,11 +469,11 @@ export class Catalog {
           if (userStatus && userStatus.position > 0) {
             lists.inProgress.push(movie);
             continue movieLoop;
-          } else if (lists.recentMovies.length < RECENT_LENGTH_MAX) {
-            if (userStatus == undefined ||
+          } else if (lists.recentMovies.length < RECENT_LENGTH_MAX && movie.created > user.created) {
+            if (userStatus === undefined ||
                 userStatus.currentStatus == SeenStatus.toSee ||
                 (userStatus.currentStatus == SeenStatus.unknown && ! userStatus.seenTs.length)) {
-              lists.recentMovies.unshift(movie);
+              lists.recentMovies.push(movie);
               continue movieLoop;
             }
           }
@@ -464,7 +481,7 @@ export class Catalog {
       }
       if (this.tables.tvshows) {
         tvshowLoop:
-        for (const tvshow of this.tables.tvshows.find()) {
+        for (const tvshow of this.tables.tvshows.find().sort((a: DbTvshow, b: DbTvshow) => (b.createdMax < a.createdMax) ? -1 : (b.createdMax > a.createdMax) ? 1 : 0)) {
           for (let us of tvshow.userStatus) {
             if (us.userName == user.name && us.currentStatus == SeenStatus.wontSee) {
               continue tvshowLoop;
@@ -480,11 +497,11 @@ export class Catalog {
             if (userStatus && userStatus.position > 0) {
               lists.inProgress.push(tvshow);
               continue tvshowLoop;
-            } else if (lists.recentTvshows.length < RECENT_LENGTH_MAX) {
+            } else if (lists.recentTvshows.length < RECENT_LENGTH_MAX && tvshow.createdMax > user.created) {
               if (! userStatus ||
                   userStatus.currentStatus == SeenStatus.toSee ||
                   userStatus.currentStatus == SeenStatus.unknown && ! userStatus.seenTs.length) {
-                lists.recentTvshows.unshift(tvshow);
+                lists.recentTvshows.push(tvshow);
                 continue tvshowLoop;
               }
             }

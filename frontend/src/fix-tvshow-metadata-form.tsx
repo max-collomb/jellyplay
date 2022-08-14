@@ -40,7 +40,7 @@ export default class FixTvshowMetadataForm extends React.Component<FixTvshowMeta
                let title = data.title;
                if (title.startsWith('['))
                  title = title.substring(title.indexOf(']') + 1).trim();
-               this.setState({ title }, this.handleSearchClick.bind(this))
+               this.setState({ title }, this.handleSearchClick.bind(this));
              });
   }
 

@@ -26,6 +26,9 @@ type HomeProps = {
 type HomeState = {
   lists: HomeLists;
   selection?: DbMovie|DbTvshow;
+  windowScrollPosition: number;
+  moviesScrollPosition: number;
+  tvshowsScrollPosition: number;
 };
 
 export default class Home extends React.Component<HomeProps, HomeState> {
@@ -34,8 +37,24 @@ export default class Home extends React.Component<HomeProps, HomeState> {
     super(props);
     this.state = {
       lists: { inProgress: [], recentMovies: [], recentTvshows: [] },
+      windowScrollPosition: 0,
+      moviesScrollPosition: 0,
+      tvshowsScrollPosition: 0,      
     };
     this.refreshContent(undefined);
+  }
+
+  componentDidUpdate(_prevProps: HomeProps, prevState: HomeState) {
+    if (prevState.selection && ! this.state.selection) {
+      setTimeout(() => {
+        //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
+        window.scrollTo({left: 0, top: this.state.windowScrollPosition, behavior: 'instant'});
+        //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
+        document.getElementById("recent-movies").scrollTo({left: this.state.moviesScrollPosition, top: 0, behavior: 'instant'});
+        //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
+        document.getElementById("recent-tvshows").scrollTo({left: this.state.tvshowsScrollPosition, top: 0, behavior: 'instant'});
+      }, 0);
+    }
   }
 
   refreshContent(selection: DbMovie|DbTvshow|undefined): void {
@@ -85,14 +104,24 @@ export default class Home extends React.Component<HomeProps, HomeState> {
                                   config={this.props.config}
                                   user={this.props.user}
                                   onChanged={this.forceUpdate.bind(this)}
-                                  onSelected={(movie: DbMovie) => this.setState({ selection: movie })}/>;
+                                  onSelected={(movie: DbMovie) => this.setState({
+                                    selection: movie,
+                                    windowScrollPosition: window.pageYOffset,
+                                    moviesScrollPosition: document.getElementById("recent-movies")?.scrollLeft || 0,
+                                    tvshowsScrollPosition: document.getElementById("recent-tvshows")?.scrollLeft || 0
+                                  })}/>;
               } else if (this.isTvshow(item)) {
                 return <TvshowCard  key={idx}
                                     tvshow={item as DbTvshow}
                                     config={this.props.config}
                                     user={this.props.user}
                                     onChanged={this.forceUpdate.bind(this)}
-                                    onSelected={(tvshow: DbTvshow) => this.setState({ selection: tvshow })}/>;
+                                    onSelected={(tvshow: DbTvshow) => this.setState({
+                                      selection: tvshow,
+                                      windowScrollPosition: window.pageYOffset,
+                                      moviesScrollPosition: document.getElementById("recent-movies")?.scrollLeft || 0,
+                                      tvshowsScrollPosition: document.getElementById("recent-tvshows")?.scrollLeft || 0
+                                    })}/>;
               } else {
                 return <div key={idx}>Elément inconnu</div>;
               }

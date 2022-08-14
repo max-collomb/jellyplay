@@ -13,7 +13,7 @@ General_Begin;""general"":{
 General_Middle;
 General_End;}
 ;
-Video;{""width"":%Width%,""height"":%Height%,""codec"":""$if(%Title%,%Title%,%Format%)""}
+Video;{""width"":%Width%,""height"":%Height%,""codec"":""%Format%""}
 Video_Begin;,""video"":[
 Video_Middle;,
 Video_End;]

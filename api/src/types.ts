@@ -12,6 +12,7 @@ export type DbUser = {
   name: string;
   audience: number;
   admin: boolean;
+  created: string;
 };
 
 export type DbCredit = {

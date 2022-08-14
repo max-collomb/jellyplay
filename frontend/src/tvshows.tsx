@@ -23,6 +23,7 @@ type TvShowsState = {
   // renaming: boolean;
   tabSeason: number;
   tabKey: string;
+  scrollPosition: number;
 };
 
 export default class TvShows extends React.Component<TvShowsProps, TvShowsState> {
@@ -37,16 +38,25 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       tabSeason: 0,
       tabKey: "cast",
       fixingMetadata: false,
+      scrollPosition: 0,
     };
     apiClient.getTvshows().then(tvshows => this.setState({ tvshows }));
     apiClient.getCredits().then(credits => this.setState({ credits }));
   }
 
+  componentDidUpdate(_prevProps: TvShowsProps, prevState: TvShowsState) {
+    if (prevState.selection && ! this.state.selection) {
+      setTimeout(() => {
+        //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
+        window.scrollTo({left: 0, top: this.state.scrollPosition, behavior: 'instant'});
+      }, 0);
+    }
+  }
+
   render(): JSX.Element {
     if (this.state.selection) {
-      return <TvshowDetails tvshow={this.state.selection}
-                            config={this.props.config}
-                            user={this.props.user}
+      return <TvshowDetails {...this.props}
+                            tvshow={this.state.selection}
                             onClosed={() => this.setState({ selection: undefined })}
                             onChanged={this.forceUpdate.bind(this)}
                             onReplaced={(tvshow: DbTvshow) => {
@@ -113,7 +123,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
                                               config={this.props.config}
                                               user={this.props.user}
                                               onChanged={this.forceUpdate.bind(this)}
-                                              onSelected={(tvshow: DbTvshow) => this.setState({ selection: tvshow, tabSeason: selectCurrentSeason(tvshow, this.props.user), tabKey: "cast" })}/>)
+                                              onSelected={(tvshow: DbTvshow) => this.setState({ selection: tvshow, tabSeason: selectCurrentSeason(tvshow, this.props.user), tabKey: "cast", scrollPosition: window.pageYOffset })}/>)
           }
         </div></React.Fragment>;
       })}</>;

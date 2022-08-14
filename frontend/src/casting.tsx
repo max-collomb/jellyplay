@@ -13,7 +13,7 @@ import apiClient from './api-client';
 
 import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
 
-type CastingProps = { cast: Cast[] };
+type CastingProps = { cast?: Cast[] };
 type CastingState = { credits: DbCredit[] };
 
 export default class Casting extends React.Component<CastingProps, CastingState> {

@@ -18,6 +18,7 @@ type MoviesProps = {
 type MoviesState = {
   movies: DbMovie[];
   selection?: DbMovie;
+  scrollPosition: number;
 };
 
 export default class Movies extends React.Component<MoviesProps, MoviesState> {
@@ -28,8 +29,18 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
     super(props);
     this.state = {
       movies: [],
+      scrollPosition: 0,
     };
     apiClient.getMovies().then(movies => this.setState({ movies }));
+  }
+
+  componentDidUpdate(_prevProps: MoviesProps, prevState: MoviesState) {
+    if (prevState.selection && ! this.state.selection) {
+      setTimeout(() => {
+        //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
+        window.scrollTo({left: 0, top: this.state.scrollPosition, behavior: 'instant'});
+      }, 0);
+    }
   }
 
   render(): JSX.Element {
@@ -94,7 +105,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
                                         config={this.props.config}
                                         user={this.props.user}
                                         onChanged={this.forceUpdate.bind(this)}
-                                        onSelected={(movie: DbMovie) => this.setState({ selection: movie })}/>)
+                                        onSelected={(movie: DbMovie) => this.setState({ selection: movie, scrollPosition: window.pageYOffset })}/>)
       }</div>;
     }
   }

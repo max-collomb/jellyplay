@@ -49,32 +49,32 @@ export const mediaInfo = async (movie: DbMovie|Episode, filename: string, log: (
     childProcess.exec(
       `${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`,
       function(error, stdout, stderr) {
-        var json = null;
         if (error) {
           resolve({});
         } else {
           try {
-            json = JSON.parse(stdout);
-          } catch (e) {
-            log((e instanceof Error) ? `[error] ${e.message}` : 'Unknown Error');
-            json = null;
-          }
-          // mediainfo sous linux ne semble pas réussir à récupérer la date de creation du fichier
-          if (json && json.general && ! json.general.created) {
-            try {
-              json.general.created = statSync(filename).birthtime.getTime();
-            } catch(e) {
-              json.general.created = json.general.modified;
+            const json = JSON.parse(stdout);
+            // mediainfo sous linux ne semble pas réussir à récupérer la date de creation du fichier
+            if (json && json.general && ! json.general.created) {
+              try {
+                json.general.created = statSync(filename).birthtime.getTime();
+              } catch(e) {
+                json.general.created = json.general.modified;
+              }
             }
+            // console.log("media info for " + filename, json);
+            movie.created = json.general.created;
+            movie.filesize = json.general.size;
+            movie.duration = json.general.duration / 1000; // conversion ms => s
+            movie.video = json.video[0];
+            movie.audio = json.audio;
+            movie.subtitles = json.subs || [];
+            resolve(json);
+          } catch (e) {
+            console.error(e);
+            log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
+            resolve(null);
           }
-          // console.log("media info for " + filename, json);
-          movie.created = json.general.created;
-          movie.filesize = json.general.size;
-          movie.duration = json.general.duration / 1000; // conversion ms => s
-          movie.video = json.video[0];
-          movie.audio = json.audio;
-          movie.subtitles = json.subs || [];
-          resolve(json);
         }
       }
     );
@@ -225,19 +225,19 @@ export class TmdbClient {
     if (movie.posterPath) {
       filepath = path.join(this.imagePath, 'posters_w342', movie.posterPath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting movie poster posters_w342/${movie.posterPath}`);
+        this.log(`[-] deleting movie poster posters_w342${movie.posterPath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
       filepath = path.join(this.imagePath, 'posters_w780', movie.posterPath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting movie poster posters_w780/${movie.posterPath}`);
+        this.log(`[-] deleting movie poster posters_w780${movie.posterPath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
     }
     if (movie.backdropPath) {
       filepath = path.join(this.imagePath, 'backdrops_w1280', movie.backdropPath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting movie backdrop backdrops_w1280/${movie.backdropPath}`);
+        this.log(`[-] deleting movie backdrop backdrops_w1280${movie.backdropPath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
     }
@@ -349,19 +349,19 @@ export class TmdbClient {
       // }).catch(() => {});
       filepath = path.join(this.imagePath, 'posters_w780', tvshow.posterPath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting tvshow poster posters_w780/${tvshow.posterPath}`);
+        this.log(`[-] deleting tvshow poster posters_w780${tvshow.posterPath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
     }
     if (tvshow.backdropPath) {
       filepath = path.join(this.imagePath, 'backdrops_w1280', tvshow.backdropPath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting tvshow backdrop backdrops_w1280/${tvshow.backdropPath}`);
+        this.log(`[-] deleting tvshow backdrop backdrops_w1280${tvshow.backdropPath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
       filepath = path.join(this.imagePath, 'backdrops_w780', tvshow.backdropPath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting tvshow backdrop backdrops_w780/${tvshow.backdropPath}`);
+        this.log(`[-] deleting tvshow backdrop backdrops_w780${tvshow.backdropPath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
     }
@@ -404,7 +404,7 @@ export class TmdbClient {
           episode.airDate = response.air_date || "";
           episode.synopsys = response.overview || "";
           if (response.still_path) {
-            this.log(`[+] downloading episode still w33${response.still_path}`);
+            this.log(`[+] downloading episode still w300/${response.still_path}`);
             await downloadImage(
               `${this.baseUrl}w300${response.still_path}`,
               path.join(this.imagePath, 'stills_w300', response.still_path)
@@ -420,7 +420,7 @@ export class TmdbClient {
     if (episode.stillPath) {
       let filepath: string = path.join(this.imagePath, 'stills_w300', episode.stillPath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting episode still stills_w300/${episode.stillPath}`);
+        this.log(`[-] deleting episode still stills_w300${episode.stillPath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
     }
@@ -492,7 +492,7 @@ export class TmdbClient {
       // }).catch(() => {});
       filepath = path.join(this.imagePath, 'posters_w780', season.posterPath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting season poster posters_w780/${season.posterPath}`);
+        this.log(`[-] deleting season poster posters_w780${season.posterPath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
     }
@@ -512,7 +512,7 @@ export class TmdbClient {
     if (credit.profilePath) {
       const filepath: string = path.join(this.imagePath, 'profiles_w185', credit.profilePath);
       await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting cast profile profiles_w185/${credit.profilePath}`);
+        this.log(`[-] deleting cast profile profiles_w185${credit.profilePath}`);
         await fs.promises.unlink(filepath);
       }).catch(() => {});
     }
