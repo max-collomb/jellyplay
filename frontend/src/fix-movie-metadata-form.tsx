@@ -91,6 +91,7 @@ export default class FixMovieMetadataForm extends React.Component<FixMovieMetada
           <span className="title">{candidate.title}</span>
           <span className="infos d-flex justify-content-between">
             <span className="year">{candidate.release_date?.substring(0, 4)}</span>
+            <span className="duration" onClick={evt => evt.stopPropagation()}>id{candidate.id}</span>
           </span>
         </div>)}
       </div>

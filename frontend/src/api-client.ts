@@ -3,9 +3,15 @@ import { Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, Parsed
 const cache = {
   config: null,
   users: null,
+  homeLists: null,
+  homeListsTs: 0,
   movies: null,
+  moviesTs: 0,
   tvshows: null,
+  tvshowsTs: 0,
   credits: null,
+  creditsTs: 0,
+  lastUpdate: 0,
 };
 
 class ApiClient {
@@ -21,6 +27,17 @@ class ApiClient {
           resolve(json.config);
         });
       }
+    });
+  }
+
+  async getLastUpdate(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      fetch(`/catalog/lastupdate`)
+      .then(async (response) => {
+        let json = await response.json();
+        cache.lastUpdate = json.lastUpdate;
+        resolve(json.lastUpdate);
+      });
     });
   }
 
@@ -40,7 +57,15 @@ class ApiClient {
   }
 
   async getMovies(): Promise<DbMovie[]> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      if (cache.movies) {
+        if (cache.moviesTs >= cache.lastUpdate) {
+          cache.lastUpdate = await this.getLastUpdate();
+        }
+        if (cache.moviesTs < cache.lastUpdate) {
+          cache.movies = null;
+        }
+      }
       if (cache.movies) {
         resolve(cache.movies);
       } else {
@@ -48,6 +73,7 @@ class ApiClient {
         .then(async (response) => {
           let json = await response.json();
           cache.movies = json.list;
+          cache.moviesTs = json.lastUpdate;
           resolve(json.list);
         });
       }
@@ -55,7 +81,15 @@ class ApiClient {
   }
 
   async getTvshows(): Promise<DbTvshow[]> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      if (cache.tvshows) {
+        if (cache.tvshowsTs >= cache.lastUpdate) {
+          cache.lastUpdate = await this.getLastUpdate();
+        }
+        if (cache.tvshowsTs < cache.lastUpdate) {
+          cache.tvshows = null;
+        }
+      }
       if (cache.tvshows) {
         resolve(cache.tvshows);
       } else {
@@ -63,6 +97,7 @@ class ApiClient {
         .then(async (response) => {
           let json = await response.json();
           cache.tvshows = json.list;
+          cache.tvshowsTs = json.lastUpdate;
           resolve(json.list);
         });
       }
@@ -70,7 +105,15 @@ class ApiClient {
   }
 
   async getCredits(): Promise<DbCredit[]> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      if (cache.credits) {
+        if (cache.creditsTs >= cache.lastUpdate) {
+          cache.lastUpdate = await this.getLastUpdate();
+        }
+        if (cache.creditsTs < cache.lastUpdate) {
+          cache.credits = null;
+        }
+      }
       if (cache.credits) {
         resolve(cache.credits);
       } else {
@@ -78,6 +121,7 @@ class ApiClient {
         .then(async (response) => {
           let json = await response.json();
           cache.credits = json.list;
+          cache.creditsTs = json.lastUpdate;
           resolve(json.list);
         });
       }
@@ -85,12 +129,26 @@ class ApiClient {
   }
 
   async getHome(userName: string): Promise<HomeLists> {
-    return new Promise((resolve, reject) => {
-      fetch(`/catalog/home/${userName}`)
-      .then(async (response) => {
-        let json = await response.json();
-        resolve(json.lists);
-      });
+    return new Promise(async (resolve, reject) => {
+      if (cache.homeLists) {
+        if (cache.homeListsTs >= cache.lastUpdate) {
+          cache.lastUpdate = await this.getLastUpdate();
+        }
+        if (cache.homeListsTs < cache.lastUpdate) {
+          cache.homeLists = null;
+        }
+      }
+      if (cache.homeLists) {
+        resolve(cache.homeLists);
+      } else {
+        fetch(`/catalog/home/${userName}`)
+        .then(async (response) => {
+          let json = await response.json();
+          cache.homeLists = json.list;
+          cache.homeListsTs = json.lastUpdate;
+          resolve(json.lists);
+        });
+      }
     });
   }
 

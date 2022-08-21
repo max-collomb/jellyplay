@@ -30,6 +30,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     // /favicon.ico
     server.register(fastifyFavicon, { path: path.join(rootPath, 'dist'), name: 'favicon.ico' });
 
+    server.get('/catalog/lastupdate', catalog.getLastUpdate.bind(catalog));
     server.get('/catalog/users', catalog.getUsers.bind(catalog));
     server.get('/catalog/config', catalog.getConfig.bind(catalog));
     server.get('/catalog/movies/list', catalog.getMovies.bind(catalog));

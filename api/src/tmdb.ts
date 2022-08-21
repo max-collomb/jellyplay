@@ -5,10 +5,10 @@ import { createWriteStream, statSync, existsSync } from 'fs';
 import * as https from 'https';
 
 
-import { filenameParse, ParsedFilename, ParsedShow } from '@ctrl/video-filename-parser';
+import { filenameParse, ParsedShow } from '@ctrl/video-filename-parser';
 import { MovieDb } from 'moviedb-promise';
 
-import { DbMovie, DbTvshow, DbCredit, Episode, Season } from './types';
+import { DbMovie, DbTvshow, DbCredit, Episode, ExtractedMovieInfos, Season } from './types';
 
 // https://github.com/grantholle/moviedb-promise pour l'api TMDB
 // api key (v3) : 3b46e3ee8f7f66bf1449b4c85c0b2819
@@ -39,6 +39,26 @@ const downloadImage = async (url: string, dest: string): Promise<string> => {
       .on('error', reject);
   });
 };
+
+export const extractMovieTitle = function(filename: string): ExtractedMovieInfos {
+  filename = filename.split(path.sep).pop() || filename;
+  const yearExecArray: RegExpExecArray|null = /\(([0-9]+)\)/.exec(filename);
+  const idExecArray: RegExpExecArray|null = /\[.*id([0-9]+).*\]/.exec(filename);
+  return {
+    title: filename .replace(/\s*\[.*?\]\s*/g, '')
+                    .replace(/\s*\(.*?\)\s*/g, '')
+                    .replace(/\.(avi|mkv|mp4|m4p|m4v|mpg|mpeg|mp2|mpe|mpv|wmv)/ig, '')
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase(),
+    year: (yearExecArray)
+            ? yearExecArray[1]
+            : null,
+    tmdbid: (idExecArray)
+              ? parseFloat(idExecArray[1])
+              : null,
+  };
+}
 
 export const mediaInfo = async (movie: DbMovie|Episode, filename: string, log: (msg: string) => void): Promise<any> => {
   return new Promise((resolve, reject) => {
@@ -95,7 +115,7 @@ export class TmdbClient {
     this.imagePath = imagePath;
     this.log = log;
     this.movieDb.configuration().then((config) => {
-      console.log('TMDB configuration', config);
+      // console.log('TMDB configuration', config);
       if (config.images.secure_base_url) {
         this.baseUrl = config.images.secure_base_url;
       }
@@ -244,14 +264,20 @@ export class TmdbClient {
   }
 
   public async autoIdentifyMovie(movie: DbMovie): Promise<DbCredit[]> {
-    const data: ParsedFilename = filenameParse(movie.filename.split(path.sep).pop() || movie.filename);
-    const response = await this.movieDb.searchMovie({
-      language: this.lang,
-      query: data.title,
-      year: data.year ? parseFloat(data.year) : undefined,
-    });
-    if (response.results?.length && response.results[0].id) {
-      movie.tmdbid = response.results[0].id;
+    const data: ExtractedMovieInfos = extractMovieTitle(movie.filename);
+    let id: number|null = data.tmdbid;
+    if (! id) {
+      const response = await this.movieDb.searchMovie({
+        language: this.lang,
+        query: data.title,
+        year: data.year ? parseFloat(data.year) : undefined,
+      });
+      if (response.results?.length && response.results[0].id) {
+        id = response.results[0].id;
+      }      
+    }
+    if (id) {
+      movie.tmdbid = id;
       movie.year = (data.year ? parseFloat(data.year) : 0);
       return await this.getMovieData(movie);
     }
@@ -339,6 +365,42 @@ export class TmdbClient {
     }
   }
 
+  public async getCollectionData(tvshow: DbTvshow): Promise<void> {
+    const tvshowInfo = await this.movieDb.collectionInfo({
+      id: tvshow.tmdbid,
+      language: this.lang,
+    });
+    // console.log("tvshowInfo", tvshowInfo);
+    tvshow.tmdbid = tvshowInfo.id || -1;
+    tvshow.title = tvshowInfo.name || "";
+    tvshow.originalTitle = "";
+    tvshow.synopsys = tvshowInfo.overview || "";
+    tvshow.audience = 999;
+    if (! tvshowInfo.backdrop_path && tvshowInfo.parts?.length && tvshowInfo.parts[0].backdrop_path)
+      tvshowInfo.backdrop_path = tvshowInfo.parts[0].backdrop_path;
+    if (tvshowInfo.backdrop_path) {
+      this.log(`[+] downloading tvshow backdrop w1280${tvshowInfo.backdrop_path}`);
+      await downloadImage(
+        `${this.baseUrl}w1280${tvshowInfo.backdrop_path}`,
+        path.join(this.imagePath, 'backdrops_w1280', tvshowInfo.backdrop_path)
+      );
+      this.log(`[+] downloading tvshow backdrop w1780${tvshowInfo.backdrop_path}`);
+      await downloadImage(
+        `${this.baseUrl}w780${tvshowInfo.backdrop_path}`,
+        path.join(this.imagePath, 'backdrops_w780', tvshowInfo.backdrop_path)
+      );
+      tvshow.backdropPath = tvshowInfo.backdrop_path;
+    }
+    if (tvshowInfo.poster_path) {
+      this.log(`[+] downloading tvshow poster w780${tvshowInfo.poster_path}`);
+      await downloadImage(
+        `${this.baseUrl}w780${tvshowInfo.poster_path}`,
+        path.join(this.imagePath, 'posters_w780', tvshowInfo.poster_path)
+      );
+      tvshow.posterPath = tvshowInfo.poster_path;
+    }
+  }
+
   public async unlinkTvshowImages(tvshow: DbTvshow) {
     let filepath: string;
     if (tvshow.posterPath) {
@@ -368,20 +430,30 @@ export class TmdbClient {
   }
 
   public async autoIdentifyTvshow(tvshow: DbTvshow): Promise<void> {
-    let foldername = tvshow.foldername;
-    if (foldername.startsWith('[')) {
-      foldername = foldername.substring(foldername.indexOf(']') + 1);
-    }
-    const data: ParsedFilename = filenameParse(foldername);
-    const response = await this.movieDb.searchTv({
-      language: this.lang,
-      query: data.title,
-    });
-    if (response.results?.length && response.results[0].id) {
-      tvshow.tmdbid = response.results[0].id;
-      await this.getTvshowData(tvshow);
+    const data: ExtractedMovieInfos = extractMovieTitle(tvshow.foldername);
+    if (tvshow.isSaga) {
+      const response = await this.movieDb.searchCollection({
+        language: this.lang,
+        query: data.title,
+      });
+      if (response.results?.length && response.results[0].id) {
+        tvshow.tmdbid = response.results[0].id;
+        await this.getCollectionData(tvshow);
+      } else {
+        this.log("[error] show not found : " + data.title);
+      }      
+
     } else {
-      this.log("[error] show not found : " + data.title);
+      const response = await this.movieDb.searchTv({
+        language: this.lang,
+        query: data.title,
+      });
+      if (response.results?.length && response.results[0].id) {
+        tvshow.tmdbid = response.results[0].id;
+        await this.getTvshowData(tvshow);
+      } else {
+        this.log("[error] show not found : " + data.title);
+      }      
     }
   }
 
@@ -414,6 +486,39 @@ export class TmdbClient {
         }
       } catch(e) {}
     }
+  }
+
+  public async addCollectionEpisode(tvshow: DbTvshow, episode: Episode): Promise<void> {
+    const data: ExtractedMovieInfos = extractMovieTitle(episode.filename);
+    try {
+      const response = await this.movieDb.searchMovie({
+        language: this.lang,
+        query: data.title,
+        year: data.year ? parseFloat(data.year) : undefined,
+      });
+      if (response.results?.length && response.results[0].id) {
+        const movieInfo = await this.movieDb.movieInfo({
+          id: response.results[0].id,
+          language: this.lang,
+          append_to_response: 'casts,trailers,release_dates',
+        });
+        // console.log("episode found", response);
+        episode.tmdbid = movieInfo.id || -1;
+        episode.seasonNumber = -1;
+        episode.episodeNumbers = [];
+        episode.title = movieInfo.title || "";
+        episode.airDate = movieInfo.release_date || "";
+        episode.synopsys = movieInfo.overview || "";
+        if (movieInfo.poster_path) {
+          this.log(`[+] downloading movie backdrop w185${movieInfo.poster_path}`);
+          await downloadImage(
+            `${this.baseUrl}w185${movieInfo.poster_path}`,
+            path.join(this.imagePath, 'stills_w300', movieInfo.poster_path)
+          );
+          episode.stillPath = movieInfo.poster_path;
+        }
+      }
+    } catch(e) {}
   }
 
   public async unlinkEpisodeImages(episode: Episode) {

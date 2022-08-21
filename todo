@@ -63,7 +63,7 @@ V1.0
 [x] [frontend] Nouveautés (séries)
 [x] [frontend] scroll horizontal sur les nouveautés séries et films
 [x] [frontend+api] Lancer un scan manuel pour détecter les nouveautés
------------ DEPLOY ---------------
+----------- STABILISATION ---------------
 [x] ne pas planter l'api lorsqu'il y a une erreur d'identification / de téléchargement d'un film / d'une série
 [x] renommer les dossiers "[émission]" et "[anime]"
 [x] tester sur la collection complète
@@ -82,14 +82,20 @@ V1.0
 [x] [BUG frontend] VFF+VFQ+VOST trop long si taille de vignette mini
 [x] passage sur l'onglet films un peu long. Tenter des optimisations (lazy, virtual, ???)
 [x] ajouter une date min dans DbUser permettant de filtrer tous les films/séries dont created/createdMax inférieurs à cette date sur la home
-[ ] ordre par défaut de la page film incorrect
-[ ] [BUG api] trop d'erreur dans l'identification des films (video-filename-parser à remplacer ?)
-[ ] [BUG] si on renomme un fichier depuis l'appli, il le detecte comme un nouveau fichier au prochain scan. Lié : si on renomme un fichier avant de modifier ses metadata, ça ne fonctionne pas... LokiJs permet-il de modifier une clé primaire ?
-[ ] [BUG frontend] changer l'ordre en vue films ne s'applique pas lorsqu'on va dans les séries et vice-versa
-[ ] comment gérer les épisodes de tintin ? marqueur qui dit de ne pas identifier les épisodes ?
-[ ] reprendre le visionnage d'une série à l'épisode suivant
+[x] ordre par défaut de la page film incorrect
+[x] [BUG frontend] changer l'ordre en vue films ne s'applique pas lorsqu'on va dans les séries et vice-versa
+[x] [BUG api] trop d'erreur dans l'identification des films (video-filename-parser à remplacer ?)
+[x] tri alphabétique : retirer les accents (les à et ô se retrouvent en fin de liste)
+[x] ajouter un tri par nom de fichier afin que les collections soient en groupe
+[x] films mal identifié => idxxx
+[x] [BUG] si on renomme un fichier depuis l'appli, il le detecte comme un nouveau fichier au prochain scan. Lié : si on renomme un fichier avant de modifier ses metadata, ça ne fonctionne pas... LokiJs permet-il de modifier une clé primaire ?
+[x] comment gérer les épisodes de tintin ? marqueur qui dit de ne pas identifier les épisodes ?
+[x] reprendre le visionnage d'une série à l'épisode suivant
+[x] rafraichissement auto des pages (de la home principalement)
+----------- DEPLOY ---------------
 [ ] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)
 [ ] [client] changer URL (127.0.0.1 => 192.168.0.99)
+[ ] [client] définir une icone
 [ ] effectuer des sauvegardes quotidiennes de la BDD
 
 
@@ -102,6 +108,8 @@ V1.1
 [ ] [frontend/api] recommandation dans fiche film (tmdb via api)
 [ ] [frontend/api] recommandation ou recherche tmdb => demander le film
 [ ] [api] supprimer les images qui ne sont pas référencées (movies/tvshows/credits)
+[ ] [frontend] navigation avec les flèches du clavier + entrée + back
+[ ] [frontend] back de la souris pour fermer une fiche de film/série
 [ ] [api] intégration du script de téléchargement depuis la seedbox
 [ ] [frontend/api] importer les fichiers depuis \\192.168.0.99\share\download
 [ ] intégrer les spéctacles / concerts

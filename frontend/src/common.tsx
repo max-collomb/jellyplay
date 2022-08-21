@@ -71,9 +71,10 @@ export function getMovieProgress(movie: DbMovie, user: DbUser): JSX.Element {
 }
 
 export function playMovie(config: Config, movie: DbMovie, user: DbUser, callback: Function): void {
-  const path = `${config.moviesRemotePath}/${movie.filename}`;
+  const path = encodeURIComponent(`${config.moviesRemotePath}/${movie.filename}`);
   if (window._mpvSchemeSupported) {
     window._setPosition = apiClient.setMoviePosition.bind(apiClient, movie, user.name, callback);
+    console.log(`mpv://${path}?pos=${getMoviePosition(movie, user)}`);
     document.location.href = `mpv://${path}?pos=${getMoviePosition(movie, user)}`;
   } else {
     navigator.clipboard.writeText(path).then(function() {
@@ -182,14 +183,14 @@ export function renderAudioInfos(audios: AudioInfo[]): JSX.Element {
   return <React.Fragment>{audios.map((audio, idx, all) => <React.Fragment key={idx}>{audio.lang} {audio.ch}ch {audio.codec} {idx < all.length - 1 ? ", " : null}</React.Fragment>)}</React.Fragment>;
 }
 
-export function playTvshow(config: Config, tvshow: DbTvshow, episode: Episode|undefined, user: DbUser, callback: Function): void {
+export function playTvshow(config: Config, tvshow: DbTvshow, episode: Episode|undefined, user: DbUser, callback: Function): Episode|undefined {
   if (! episode) {
     episode = selectCurrentEpisode(tvshow, user);
   }
   if (episode) {
     const path = `${config.tvshowsRemotePath}/${tvshow.foldername}/${episode.filename}`;
     if (window._mpvSchemeSupported) {
-      window._setPosition = apiClient.setEpisodePosition.bind(apiClient, tvshow, episode, user.name, callback);
+      window._setPosition = apiClient.setEpisodePosition.bind(apiClient, tvshow, episode, user.name, () => callback(episode));
       document.location.href = `mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(episode, user)}`;
     } else {
       navigator.clipboard.writeText(path).then(function() {
@@ -199,4 +200,5 @@ export function playTvshow(config: Config, tvshow: DbTvshow, episode: Episode|un
       });
     }
   }
+  return episode;
 }

@@ -219,14 +219,21 @@ export default class App extends React.Component<AppProps, AppState> {
                     <Button variant={this.state.orderBy == OrderBy.addedDesc ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.addedDesc)}>+ Récent</Button>
                     <Button variant={this.state.orderBy == OrderBy.addedAsc  ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.addedAsc) }>+ Ancien</Button>
                   </ButtonGroup>
-                 </ButtonToolbar>
+                </ButtonToolbar>
                 <ButtonToolbar className="mb-3">
                   <Form.Label className="label-aligned">Titre</Form.Label>
                   <ButtonGroup className="flex-fill">
                     <Button variant={this.state.orderBy == OrderBy.titleAsc  ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.titleAsc) }>A &ndash; Z</Button>
                     <Button variant={this.state.orderBy == OrderBy.titleDesc ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.titleDesc)}>Z &ndash; A</Button>
                   </ButtonGroup>
-                 </ButtonToolbar>
+                </ButtonToolbar>
+                <ButtonToolbar className="mb-3">
+                  <Form.Label className="label-aligned">Nom de fichier</Form.Label>
+                  <ButtonGroup className="flex-fill">
+                    <Button variant={this.state.orderBy == OrderBy.filenameAsc  ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.filenameAsc) }>A &ndash; Z</Button>
+                    <Button variant={this.state.orderBy == OrderBy.filenameDesc ? "secondary" : "outline-secondary"} onClick={this.handleOrderClick.bind(this, OrderBy.filenameDesc)}>Z &ndash; A</Button>
+                  </ButtonGroup>
+                </ButtonToolbar>
                 <ButtonToolbar className="mb-3">
                   <Form.Label className="label-aligned">Année</Form.Label>
                   <ButtonGroup className="flex-fill">

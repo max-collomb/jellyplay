@@ -4,11 +4,10 @@ import fs from 'fs';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
-import { filenameParse, ParsedFilename } from '@ctrl/video-filename-parser';
 
-import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, Season, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from './types';
+import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, ExtractedMovieInfos, HomeLists, Season, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from './types';
 import { SeenStatus } from './enums';
-import { TmdbClient, mediaInfo } from './tmdb';
+import { TmdbClient, mediaInfo, extractMovieTitle } from './tmdb';
 
 type CatalogOptions = {
   moviesPath: string;
@@ -73,6 +72,7 @@ export class Catalog {
   tables: DataTables = {};
   scanning: boolean = false;
   scanLogs: string = "";
+  lastUpdate: number = Date.now();
 
   constructor(options: CatalogOptions) {
     this.moviesPath = options.moviesPath;
@@ -172,9 +172,9 @@ export class Catalog {
     console.log("begin catalog_load");
     await this.dbReady;
     const creditSet: Set<number> = new Set<number>();
-    await new Promise(resolve => setTimeout(resolve, 1_000));
+    //await new Promise(resolve => setTimeout(resolve, 1_000));
     await this.scanMovies(creditSet);
-    await new Promise(resolve => setTimeout(resolve, 1_000));
+    //await new Promise(resolve => setTimeout(resolve, 1_000));
     await this.scanTvshows(creditSet);
     if (this.tables.credits) {
       for (const credit of this.tables.credits.find()) {
@@ -303,6 +303,7 @@ export class Catalog {
           this.log(`[+] folder added ${foldername}`);
           tvshow = {
             foldername,
+            isSaga: foldername.toLowerCase().indexOf('[saga]') > -1,
             tmdbid: -1,
             title: "",
             originalTitle: "",
@@ -356,7 +357,11 @@ export class Catalog {
                 userStatus: [],
               };
               // episode
-              await this.tmdbClient.addTvshowEpisode(tvshow, episode);
+              if (tvshow.isSaga) {
+                await this.tmdbClient.addCollectionEpisode(tvshow, episode);
+              } else {
+                await this.tmdbClient.addTvshowEpisode(tvshow, episode);
+              }
               await mediaInfo(episode, path.join(folderpath, episode.filename), this.log.bind(this));
               // season
               if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
@@ -371,6 +376,7 @@ export class Catalog {
               tvshow.episodes.push(episode);
             }
           }
+
           // nettoyage des épisodes
           const seasonNumberSet: Set<number> = new Set<number>();
           for (const episode of tvshow.episodes) {
@@ -426,14 +432,18 @@ export class Catalog {
 
   public getConfig(request: FastifyRequest, reply: FastifyReply) {
     reply.send({ config: global.config });
-  }  
+  }
+
+  public getLastUpdate(request: FastifyRequest, reply: FastifyReply) {
+    reply.send({ lastUpdate: this.lastUpdate });
+  }
 
   public getUsers(request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.users?.find() });
   }
 
   public getMovies(request: FastifyRequest, reply: FastifyReply) {
-    reply.send({ list: this.tables.movies?.find() });
+    reply.send({ list: this.tables.movies?.find(), lastUpdate: this.lastUpdate });
   }
 
   public getMovie(request: FastifyRequest, reply: FastifyReply) {
@@ -441,11 +451,11 @@ export class Catalog {
   }
 
   public getTvshows(request: FastifyRequest, reply: FastifyReply) {
-    reply.send({ list: this.tables.tvshows?.find() });
+    reply.send({ list: this.tables.tvshows?.find(), lastUpdate: this.lastUpdate });
   }
 
   public getCredits(request: FastifyRequest, reply: FastifyReply) {
-    reply.send({ list: this.tables.credits?.find() });
+    reply.send({ list: this.tables.credits?.find(), lastUpdate: this.lastUpdate });
   }
 
   public getHome(request: FastifyRequest, reply: FastifyReply) {
@@ -487,29 +497,38 @@ export class Catalog {
               continue tvshowLoop;
             }
           }
+          let inProgressCount = 0;
+          let seenCount = 0;
+          let notSeenCount = 0;
           for(const episode of tvshow.episodes) {
             let userStatus : UserEpisodeStatus|undefined = undefined;
             for (let us of episode.userStatus) {
               if (us.userName == user.name) {
                 userStatus = us;
+                console.log(episode.filename, "userStatus", userStatus);
               }
-            }            
+            }
             if (userStatus && userStatus.position > 0) {
-              lists.inProgress.push(tvshow);
+              inProgressCount++;
+            } else if (userStatus && (userStatus.seenTs.length || userStatus.currentStatus == SeenStatus.seen)) {
+              seenCount++;
+            } else if (! userStatus || ((userStatus.seenTs.length == 0) && (userStatus.currentStatus != SeenStatus.wontSee))) {
+              notSeenCount++;
+            } 
+          }
+          console.log(tvshow.title, {inProgressCount, seenCount, notSeenCount});
+          if (inProgressCount > 0 || (seenCount > 0 && notSeenCount > 0)) {
+            lists.inProgress.push(tvshow);
+          } else {
+            if (lists.recentTvshows.length < RECENT_LENGTH_MAX && tvshow.createdMax > user.created && notSeenCount > 0) {
+              lists.recentTvshows.push(tvshow);
               continue tvshowLoop;
-            } else if (lists.recentTvshows.length < RECENT_LENGTH_MAX && tvshow.createdMax > user.created) {
-              if (! userStatus ||
-                  userStatus.currentStatus == SeenStatus.toSee ||
-                  userStatus.currentStatus == SeenStatus.unknown && ! userStatus.seenTs.length) {
-                lists.recentTvshows.push(tvshow);
-                continue tvshowLoop;
-              }
             }
           }
         }
       }
     }
-    reply.send({ lists });
+    reply.send({ lists, lastUpdate: this.lastUpdate });
   }
 
   public setMoviePosition(request: FastifyRequest, reply: FastifyReply) {
@@ -536,6 +555,7 @@ export class Catalog {
         let timestamp: number = Date.now();
         if (! userStatus.seenTs.length || timestamp - userStatus.seenTs[userStatus.seenTs.length - 1] > 24 * 60 * 60 * 1_000) {
           console.log("adding TS to seen array");
+          this.lastUpdate = timestamp;
           userStatus.seenTs.push(timestamp);
         }
       }
@@ -571,6 +591,7 @@ export class Catalog {
           let timestamp: number = Date.now();
           if (! userStatus.seenTs.length || timestamp - userStatus.seenTs[userStatus.seenTs.length - 1] > 24 * 60 * 60 * 1_000) {
             console.log("adding TS to seen array");
+            this.lastUpdate = timestamp;
             userStatus.seenTs.push(timestamp);
           }
         }
@@ -609,6 +630,7 @@ export class Catalog {
       }
       userStatus.currentStatus = body.status;
       this.tables.movies?.update(movie);
+      this.lastUpdate = Date.now();
       reply.send({ userStatus: movie.userStatus });
     }
     reply.send({});
@@ -631,6 +653,7 @@ export class Catalog {
       }
       userStatus.currentStatus = body.status as SeenStatus;
       this.tables.tvshows?.update(tvshow);
+      this.lastUpdate = Date.now();
       reply.send({ userStatus: tvshow.userStatus });
     }
     reply.send({});
@@ -655,6 +678,7 @@ export class Catalog {
         }
         userStatus.currentStatus = body.status as SeenStatus;
         this.tables.tvshows?.update(tvshow);
+        this.lastUpdate = Date.now();
         reply.send({ userStatus: episode.userStatus });
       }
     }
@@ -667,6 +691,7 @@ export class Catalog {
     if (movie) {
       movie.audience = body.audience;
       this.tables.movies?.update(movie);
+      this.lastUpdate = Date.now();
       reply.send({ audience: movie.audience });
     }
     reply.send({});
@@ -678,6 +703,7 @@ export class Catalog {
     if (tvshow) {
       tvshow.audience = body.audience;
       this.tables.tvshows?.update(tvshow);
+      this.lastUpdate = Date.now();
       reply.send({ audience: tvshow.audience });
     }
     reply.send({});
@@ -685,8 +711,7 @@ export class Catalog {
 
   public parseFilename(request: FastifyRequest, reply: FastifyReply) {
     let body: FilenameMessage = request.body as FilenameMessage;
-    const data: ParsedFilename = filenameParse(body.filename.split(path.sep).pop() || body.filename);
-    reply.send({ parsedFilename: { title: data.title, year: data.year }});
+    reply.send({ parsedFilename: extractMovieTitle(body.filename)});
   }
 
   public async fixMovieMetadata(request: FastifyRequest, reply: FastifyReply) {
@@ -701,6 +726,7 @@ export class Catalog {
       movie.countries = [];
 
       await this.tmdbClient.getMovieData(movie);
+      this.lastUpdate = Date.now();
     }
     reply.send({ movie });
   }
@@ -717,6 +743,7 @@ export class Catalog {
 
       await this.tmdbClient.getTvshowData(tvshow);
       await this.scanTvshows(new Set<number>());
+      this.lastUpdate = Date.now();
       // pas de ménage des données de l'ancienne série => sera fait lors du prochain scan complet
     }
     reply.send({ tvshow });
@@ -731,6 +758,8 @@ export class Catalog {
         if (! await pathExists(path.join(this.moviesPath, body.newFilename))) { // vérifie que le newFilename n'existe pas encore
           await fs.promises.rename(path.join(this.moviesPath, body.oldFilename), path.join(this.moviesPath, body.newFilename));
           movie.filename = body.newFilename;
+          this.tables.movies?.update(movie);
+          this.lastUpdate = Date.now();
         }
       } catch (error) {
         console.log(error);
@@ -751,6 +780,7 @@ export class Catalog {
           path.join(this.moviesPath, ".trash", movie.filename.split(path.sep).pop() || movie.filename)
         );
         this.tables.movies?.remove(movie);
+        this.lastUpdate = Date.now();
       } catch (error) {
         console.log(error);
       }

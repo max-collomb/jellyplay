@@ -75,6 +75,11 @@ export default class Home extends React.Component<HomeProps, HomeState> {
       const margin: number = container.querySelector(".media-card:first-child")?.clientWidth || 0;
       container.scrollBy({ left: direction * (container.clientWidth - margin), behavior: "smooth" });
     }
+    evt.preventDefault();
+  }
+
+  handleMediaChanged(): void {
+    this.refreshContent(this.state.selection);
   }
 
   renderList(list: (DbMovie|DbTvshow)[], options: ListOptions): JSX.Element {
@@ -103,7 +108,7 @@ export default class Home extends React.Component<HomeProps, HomeState> {
                                   movie={item as DbMovie}
                                   config={this.props.config}
                                   user={this.props.user}
-                                  onChanged={this.forceUpdate.bind(this)}
+                                  onChanged={this.handleMediaChanged.bind(this)}
                                   onSelected={(movie: DbMovie) => this.setState({
                                     selection: movie,
                                     windowScrollPosition: window.pageYOffset,
@@ -115,7 +120,8 @@ export default class Home extends React.Component<HomeProps, HomeState> {
                                     tvshow={item as DbTvshow}
                                     config={this.props.config}
                                     user={this.props.user}
-                                    onChanged={this.forceUpdate.bind(this)}
+                                    showNext={true}
+                                    onChanged={this.handleMediaChanged.bind(this)}
                                     onSelected={(tvshow: DbTvshow) => this.setState({
                                       selection: tvshow,
                                       windowScrollPosition: window.pageYOffset,
@@ -137,14 +143,14 @@ export default class Home extends React.Component<HomeProps, HomeState> {
         return <MovieDetails  {...this.props}
                               movie={this.state.selection as DbMovie}
                               onClosed={() => this.setState({ selection: undefined })}
-                              onChanged={this.forceUpdate.bind(this)}
+                              onChanged={this.handleMediaChanged.bind(this)}
                               onReplaced={this.refreshContent.bind(this)}
                               onDeleted={this.refreshContent.bind(this)}/>;
       } else if (this.isTvshow(this.state.selection)) {
         return <TvshowDetails {...this.props}
                               tvshow={this.state.selection as DbTvshow}
                               onClosed={() => this.setState({ selection: undefined })}
-                              onChanged={this.forceUpdate.bind(this)}
+                              onChanged={this.handleMediaChanged.bind(this)}
                               onReplaced={this.refreshContent.bind(this)}/>;
       }
     }

@@ -6,10 +6,12 @@ export enum SeenStatus {
 };
 
 export enum OrderBy {
-  addedDesc = "addedDesc",
-  addedAsc  = "addedAsc",
-  titleAsc  = "titleAsc",
-  titleDesc = "titleDesc",
-  yearDesc  = "yearDesc",
-  yearAsc   = "yearAsc",
+  addedDesc    = "addedDesc",
+  addedAsc     = "addedAsc",
+  titleAsc     = "titleAsc",
+  titleDesc    = "titleDesc",
+  yearDesc     = "yearDesc",
+  yearAsc      = "yearAsc",
+  filenameAsc  = "filenameAsc",
+  filenameDesc = "filenameDesc",
 };

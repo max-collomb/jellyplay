@@ -6,7 +6,7 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
-import { Config, DbCredit, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
+import { Config, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
 import { OrderBy, SeenStatus } from '../../api/src/enums';
 import { MoreToggle, MultiItem, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
 import apiClient from './api-client';
@@ -24,10 +24,11 @@ type TvShowDetailsProps = {
   onReplaced: (tvshow: DbTvshow) => void;
 };
 type TvShowDetailsState = {
-  credits: DbCredit[];
   fixingMetadata: boolean;
   tabSeason: number;
   tabKey: string;
+  currentStatus: SeenStatus;
+  percentPos: number;
 };
 
 export default class TvShows extends React.Component<TvShowDetailsProps, TvShowDetailsState> {
@@ -37,21 +38,12 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   constructor(props: TvShowDetailsProps) {
     super(props);
     this.state = {
-      credits: [],
       tabSeason: selectCurrentSeason(this.props.tvshow, this.props.user),
       tabKey: "cast",
       fixingMetadata: false,
+      currentStatus: SeenStatus.unknown,
+      percentPos: 0,
     };
-    apiClient.getCredits().then(credits => this.setState({ credits }));
-  }
-
-  getCredit(id: number): DbCredit|null {
-    for(const credit of this.state.credits) {
-      if (credit.tmdbid == id) {
-        return credit;
-      }
-    }
-    return null;
   }
 
   handleToggleStatus(tvshow: DbTvshow, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
@@ -97,13 +89,38 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
     this.setState({ fixingMetadata: false });
   }
 
+  handlePlayTvshow(episode: Episode|undefined, evt: React.MouseEvent<HTMLElement>): void {
+    const episode2: Episode|undefined = playTvshow(this.props.config, this.props.tvshow, episode, this.props.user, this.handlePlayCallback.bind(this));
+    if (episode2) {
+      const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode2, this.props.user);
+      this.setState({
+        currentStatus: us ? us.currentStatus : SeenStatus.unknown,
+        percentPos: (us && episode2.duration) ? Math.floor(100 * us.position / episode2.duration) : 0,
+      });
+    }
+    evt.stopPropagation();
+    evt.preventDefault();
+  }
+
+  handlePlayCallback(episode: Episode|undefined): void {
+    if (episode) {
+      const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode, this.props.user);
+      const percentPos = (us && episode.duration) ? Math.floor(100 * us.position / episode.duration) : 0;
+      const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
+      if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
+        this.props.onChanged();
+        this.setState({ percentPos, currentStatus });
+      }
+    }
+  }
+
   renderEpisode(tvshow: DbTvshow, episode: Episode): JSX.Element {
     const userStatus = getEpisodeUserStatus(episode, this.props.user);
-    return <div key={episode.filename} className="episode-card d-flex flex-row my-3">
+    return <div key={episode.filename} className={"episode-card d-flex flex-row my-3" + (tvshow.isSaga ? " saga-episode-card" : "")}>
       {episode.stillPath ? 
         <span className="poster">
           <img src={`/images/stills_w300${episode.stillPath}`}/>
-            <b onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playTvshow(this.props.config, this.props.tvshow, episode, this.props.user, this.forceUpdate.bind(this)); }}>
+            <b onClick={this.handlePlayTvshow.bind(this, episode)}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
             </svg>
@@ -156,7 +173,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
                 </svg>
               </a>
             </OverlayTrigger>
-            <a href="#" className="link-light me-3" onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playTvshow(this.props.config, this.props.tvshow, episode, this.props.user, this.forceUpdate.bind(this)); }}>
+            <a href="#" className="link-light me-3" onClick={this.handlePlayTvshow.bind(this, episode)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
               </svg>
@@ -202,7 +219,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
       </div>
       <div className="media-poster">
         <span className="poster" style={{ backgroundImage: (selectedSeason?.posterPath || tvshow.posterPath ? `url(/images/posters_w780${selectedSeason?.posterPath || tvshow.posterPath})` : '') }}>
-          <b onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playTvshow(this.props.config, tvshow, undefined, this.props.user, this.forceUpdate.bind(this)); }}>
+          <b onClick={this.handlePlayTvshow.bind(this, undefined)}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
             </svg>
@@ -218,7 +235,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
             <div>{getSeasonCount(tvshow)} &emsp; {getEpisodeCount(tvshow)} &emsp; <img src={`/images/classification/${tvshow.audience}.svg`} width="18px"/></div>
           </div>
           <div className="actions">
-            <a href="#" className="link-light me-3" onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playTvshow(this.props.config, tvshow, undefined, this.props.user, this.forceUpdate.bind(this)); }}>
+            <a href="#" className="link-light me-3" onClick={this.handlePlayTvshow.bind(this, undefined)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
               </svg>

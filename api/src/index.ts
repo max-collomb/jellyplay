@@ -22,11 +22,10 @@ export async function main() {
     rootPath,
   });
 
-  await catalog.load();
-
   await startHttp(rootPath, catalog);
 
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await catalog.load();
+
   console.log("main end");
 }
 

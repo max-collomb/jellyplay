@@ -28,17 +28,22 @@ type MovieDetailsState = {
   fixingMetadata: boolean;
   renaming: boolean;
   tabKey: string;
+  currentStatus: SeenStatus;
+  percentPos: number;
 };
 
 export default class MovieDetails extends React.Component<MovieDetailsProps, MovieDetailsState> {
 
   constructor(props: MovieDetailsProps) {
     super(props);
+    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
     this.state = {
       credits: [],
       tabKey: "cast",
       fixingMetadata: false,
       renaming: false,
+      currentStatus: us ? us.currentStatus : SeenStatus.unknown,
+      percentPos: (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0,
     };
     apiClient.getCredits().then(credits => this.setState({ credits }));
   }
@@ -113,6 +118,22 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     evt.preventDefault();
   }
 
+  handleClick(evt: React.MouseEvent<HTMLElement>): void {
+    playMovie(this.props.config, this.props.movie, this.props.user, this.handlePlayCallback.bind(this));
+    evt.stopPropagation();
+    evt.preventDefault();
+  }
+
+  handlePlayCallback(): void {
+    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
+    const percentPos = (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0;
+    const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
+    if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
+      this.props.onChanged();
+      this.setState({ percentPos, currentStatus });
+    }
+  }
+
   render(): JSX.Element {
     if (! this.props.movie) {
       return <div>Film introuvable. <a href="#" onClick={this.props.onClosed}>Retour</a></div>;
@@ -135,7 +156,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
       </div>
       <div className="media-poster">
         <span className="poster" style={{ backgroundImage: movie.posterPath ? `url(/images/posters_w780${movie.posterPath})` : '' }}>
-          <b onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playMovie(this.props.config, movie, this.props.user, this.forceUpdate.bind(this)); }}>
+          <b onClick={this.handleClick.bind(this)}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
             </svg>

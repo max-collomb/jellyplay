@@ -31,7 +31,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       movies: [],
       scrollPosition: 0,
     };
-    apiClient.getMovies().then(movies => this.setState({ movies }));
+    apiClient.getMovies().then(movies => { this.lastOrderBy = undefined; this.setState({ movies }); });
   }
 
   componentDidUpdate(_prevProps: MoviesProps, prevState: MoviesState) {
@@ -63,33 +63,24 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       if (this.lastOrderBy != this.props.orderBy) {
         this.lastOrderBy = this.props.orderBy;
         let sortFn: (a: DbMovie, b: DbMovie) => number;
-        sortFn = (a: DbMovie, b: DbMovie) => (b.created < a.created) ? -1 : (b.created > a.created) ? 1 : 0;
+        const compare = new Intl.Collator('fr', { usage: "sort", sensitivity: "base" }).compare;
+        sortFn = (a: DbMovie, b: DbMovie) => compare(b.created, a.created);
         switch(this.props.orderBy) {
-          case OrderBy.addedDesc:
-            // valeur par défaut
-            break;
-          case OrderBy.addedAsc:
-            sortFn = (a: DbMovie, b: DbMovie) => (a.created < b.created) ? -1 : (a.created > b.created) ? 1 : 0;
-            break;
-          case OrderBy.titleAsc:
-            sortFn = (a: DbMovie, b: DbMovie) => (a.title.toUpperCase() < b.title.toUpperCase()) ? -1 : 1;
-            break;
-          case OrderBy.titleDesc:
-            sortFn = (a: DbMovie, b: DbMovie) => (b.title.toUpperCase() < a.title.toUpperCase()) ? -1 : 1;
-            break;
-          case OrderBy.yearDesc:
-            sortFn = (a: DbMovie, b: DbMovie) => b.year - a.year;
-            break;
-          case OrderBy.yearAsc:
-            sortFn = (a: DbMovie, b: DbMovie) => a.year - b.year;
-            break;
+          case OrderBy.addedDesc: /* valeur par défaut */ break;
+          case OrderBy.addedAsc:     sortFn = (a: DbMovie, b: DbMovie) => compare(a.created, b.created);   break;
+          case OrderBy.titleAsc:     sortFn = (a: DbMovie, b: DbMovie) => compare(a.title, b.title);       break;
+          case OrderBy.titleDesc:    sortFn = (a: DbMovie, b: DbMovie) => compare(b.title, a.title);       break;
+          case OrderBy.yearDesc:     sortFn = (a: DbMovie, b: DbMovie) => b.year - a.year;                 break;
+          case OrderBy.yearAsc:      sortFn = (a: DbMovie, b: DbMovie) => a.year - b.year;                 break;
+          case OrderBy.filenameAsc:  sortFn = (a: DbMovie, b: DbMovie) => compare(a.filename, b.filename); break;
+          case OrderBy.filenameDesc: sortFn = (a: DbMovie, b: DbMovie) => compare(b.filename, a.filename); break;
         }
         movies.sort(sortFn);
       }
       if (this.props.search) {
         movies = movies.filter(m => {
           if (! m.searchableContent) {
-            m.searchableContent = cleanString(m.title + " " + 
+            m.searchableContent = cleanString(m.filename + " " + m.title + " " + 
               (m.title == m.originalTitle ? "" : m.originalTitle + " ") +
               m.genres.join(" ") + " " +
               m.countries.join(" ")
@@ -98,7 +89,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
           return m.searchableContent.includes(cleanString(this.props.search));
         })
       }
-      return <div className="d-flex flex-wrap justify-content-evenly mt-3">{
+      return <div className="d-flex flex-wrap -justify-content-evenly mt-3">{
         movies.filter(m => m.audience <= this.props.user.audience)
         .map((movie, idx) => <MovieCard key={idx}
                                         movie={movie}

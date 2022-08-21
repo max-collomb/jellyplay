@@ -40,7 +40,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       fixingMetadata: false,
       scrollPosition: 0,
     };
-    apiClient.getTvshows().then(tvshows => this.setState({ tvshows }));
+    apiClient.getTvshows().then(tvshows => { this.lastOrderBy = undefined; this.setState({ tvshows }); });
     apiClient.getCredits().then(credits => this.setState({ credits }));
   }
 
@@ -68,34 +68,25 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       let tvshows: DbTvshow[] = this.state.tvshows;
       if (this.lastOrderBy != this.props.orderBy) {
         this.lastOrderBy = this.props.orderBy;
+        const compare = new Intl.Collator('fr', { usage: "sort", sensitivity: "base" }).compare;
         let sortFn: (a: DbTvshow, b: DbTvshow) => number;
-        sortFn = (a: DbTvshow, b: DbTvshow) => (a.title.toUpperCase() < b.title.toUpperCase()) ? -1 : 1;
+        sortFn = (a: DbTvshow, b: DbTvshow) => compare(a.title, b.title);
         switch(this.props.orderBy) {
-          case OrderBy.addedDesc:
-            sortFn = (a: DbTvshow, b: DbTvshow) => (b.createdMax < a.createdMax) ? -1 : (b.createdMax > a.createdMax) ? 1 : 0;
-            break;
-          case OrderBy.addedAsc:
-            sortFn = (a: DbTvshow, b: DbTvshow) => (a.createdMin < b.createdMin) ? -1 : (a.createdMin > b.createdMin) ? 1 : 0;
-            break;
-          case OrderBy.titleAsc:
-            // valeur par défaut
-            break;
-          case OrderBy.titleDesc:
-            sortFn = (a: DbTvshow, b: DbTvshow) => (b.title.toUpperCase() < a.title.toUpperCase()) ? -1 : 1;
-            break;
-          case OrderBy.yearDesc:
-            sortFn = (a: DbTvshow, b: DbTvshow) => (b.airDateMax < a.airDateMax) ? -1 : (b.airDateMax > a.airDateMax) ? 1 : 0;
-            break;
-          case OrderBy.yearAsc:
-            sortFn = (a: DbTvshow, b: DbTvshow) => (a.airDateMin < b.airDateMin) ? -1 : (a.airDateMin > b.airDateMin) ? 1 : 0;
-            break;
+          case OrderBy.addedDesc:    sortFn = (a: DbTvshow, b: DbTvshow) => (b.createdMax < a.createdMax) ? -1 : (b.createdMax > a.createdMax) ? 1 : 0; break;
+          case OrderBy.addedAsc:     sortFn = (a: DbTvshow, b: DbTvshow) => (a.createdMin < b.createdMin) ? -1 : (a.createdMin > b.createdMin) ? 1 : 0; break;
+          case OrderBy.titleAsc:     /* valeur par défaut */ break;
+          case OrderBy.titleDesc:    sortFn = (a: DbTvshow, b: DbTvshow) => compare(b.title, a.title); break;
+          case OrderBy.yearDesc:     sortFn = (a: DbTvshow, b: DbTvshow) => (b.airDateMax < a.airDateMax) ? -1 : (b.airDateMax > a.airDateMax) ? 1 : 0; break;
+          case OrderBy.yearAsc:      sortFn = (a: DbTvshow, b: DbTvshow) => (a.airDateMin < b.airDateMin) ? -1 : (a.airDateMin > b.airDateMin) ? 1 : 0; break;
+          case OrderBy.filenameAsc:  sortFn = (a: DbTvshow, b: DbTvshow) => compare(a.foldername, b.foldername); break;
+          case OrderBy.filenameDesc: sortFn = (a: DbTvshow, b: DbTvshow) => compare(b.foldername, a.foldername); break;
         }
         tvshows.sort(sortFn);
       }
       if (this.props.search) {
         tvshows = tvshows.filter(s => {
           if (! s.searchableContent) {
-            s.searchableContent = cleanString(s.title + " " + 
+            s.searchableContent = cleanString(s.foldername + " " + s.title + " " + 
               (s.title == s.originalTitle ? "" : s.originalTitle + " ") +
               s.genres.join(" ") + " " +
               s.countries.join(" ")
@@ -115,13 +106,14 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
           tvshowsByType[0].push(t);
       });
       return <>{tvshowsByType.map((tvshows, idx0) => {
-        return <React.Fragment key={idx0}><hr className={idx0 == 0 ? "d-none" : ""}/><h4 className="section-title p-2 mt-3 text-center">{typeTitles[idx0]}</h4>
-          <div className="d-flex flex-wrap justify-content-evenly mt-2">{
+        return <React.Fragment key={idx0}><hr className={idx0 == 0 ? "d-none" : ""}/><h4 className="section-title p-2 mt-3 -text-center">{typeTitles[idx0]}</h4>
+          <div className="d-flex flex-wrap -justify-content-evenly mt-2">{
             tvshows.filter(t => t.audience <= this.props.user.audience)
             .map((tvshow, idx) => <TvshowCard key={idx}
                                               tvshow={tvshow}
                                               config={this.props.config}
                                               user={this.props.user}
+                                              showNext={false}
                                               onChanged={this.forceUpdate.bind(this)}
                                               onSelected={(tvshow: DbTvshow) => this.setState({ selection: tvshow, tabSeason: selectCurrentSeason(tvshow, this.props.user), tabKey: "cast", scrollPosition: window.pageYOffset })}/>)
           }

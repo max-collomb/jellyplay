@@ -115,6 +115,7 @@ export type UserTvshowStatus = {
 
 export type DbTvshow = {
   foldername: string;
+  isSaga: boolean;
   tmdbid: number;
   title: string;
   originalTitle: string;
@@ -155,4 +156,10 @@ export type DataTables = {
   movies?: Collection<DbMovie>;
   tvshows?: Collection<DbTvshow>;
   credits?: Collection<DbCredit>;
+};
+
+export type ExtractedMovieInfos = {
+  title: string;
+  year: string|null;
+  tmdbid: number|null;
 };

@@ -12,13 +12,20 @@ type MovieCardProps = {
   onChanged: () => void;
   onSelected: (movie: DbMovie) => void;
 };
-type MovieCardState = {};
+type MovieCardState = {
+  currentStatus: SeenStatus;
+  percentPos: number;
+};
 
 export default class MovieCard extends React.Component<MovieCardProps, MovieCardState> {
 
   constructor(props: MovieCardProps) {
     super(props);
-    this.state = {};
+    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
+    this.state = {
+      currentStatus: us ? us.currentStatus : SeenStatus.unknown,
+      percentPos: (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0,
+    };
   }
 
   handleToggleStatus(movie: DbMovie, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
@@ -30,12 +37,34 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
     evt.preventDefault();
   }
 
+  handleClick(evt: React.MouseEvent<HTMLElement>): void {
+    this.props.onSelected(this.props.movie);
+    evt.stopPropagation();
+    evt.preventDefault();
+  }
+
+  handlePlayMovie(evt: React.MouseEvent<HTMLElement>): void {
+    playMovie(this.props.config, this.props.movie, this.props.user, this.handlePlayCallback.bind(this));
+    evt.stopPropagation();
+    evt.preventDefault();
+  }
+
+  handlePlayCallback(): void {
+    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
+    const percentPos = (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0;
+    const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
+    if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
+      this.props.onChanged();
+      this.setState({ percentPos, currentStatus });
+    }
+  }
+
   render(): JSX.Element {
     const userStatus = getUserMovieStatus(this.props.movie, this.props.user);
     const lang = getMovieLanguage(this.props.movie);
     return <div
       className={"flex-shrink-0 media-card movie" + (this.props.movie.audience == 999 ? " audience-not-set" : "")}
-      onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); this.props.onSelected(this.props.movie); }}
+      onClick={this.handleClick.bind(this)}
     >
       <span className="poster">
         { this.props.movie.posterPath ?
@@ -44,7 +73,7 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
               <path d="M0 1a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V1zm4 0v6h8V1H4zm8 8H4v6h8V9zM1 1v2h2V1H1zm2 3H1v2h2V4zM1 7v2h2V7H1zm2 3H1v2h2v-2zm-2 3v2h2v-2H1zM15 1h-2v2h2V1zm-2 3v2h2V4h-2zm2 3h-2v2h2V7zm-2 3v2h2v-2h-2zm2 3h-2v2h2v-2z"/>
             </svg></span>
         }
-        <b onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playMovie(this.props.config, this.props.movie, this.props.user, this.forceUpdate.bind(this)); }}>
+        <b onClick={this.handlePlayMovie.bind(this)}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
             <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
           </svg>
