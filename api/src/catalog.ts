@@ -118,10 +118,10 @@ export class Catalog {
           indices: ['name'],
         }
        );
-      this.tables.users.insert({ name: 'max',    audience: 999, admin: true,  created: "UTC 2022-04-25 00:00:00.000" });
-      this.tables.users.insert({ name: 'flo',    audience: 999, admin: false, created: "UTC 2022-08-01 00:00:00.000" });
-      this.tables.users.insert({ name: 'amélie', audience: 16,  admin: false, created: "UTC 2022-08-01 00:00:00.000" });
-      this.tables.users.insert({ name: 'thomas', audience: 12,  admin: false, created: "UTC 2022-08-01 00:00:00.000" });
+      this.tables.users.insert({ name: 'max',    audience: 999, admin: true,  created: 1650837600000 /* UTC 2022-04-25 00:00:00.000 */ }); 
+      this.tables.users.insert({ name: 'flo',    audience: 999, admin: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
+      this.tables.users.insert({ name: 'amélie', audience: 16,  admin: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
+      this.tables.users.insert({ name: 'thomas', audience: 12,  admin: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
     }
 
     this.tables.movies = this.db.getCollection('movies');
@@ -247,7 +247,7 @@ export class Catalog {
             synopsys: "",
             backdropPath: "",
             posterPath: "",
-            created: "",
+            created: 0,
             filesize: -1,
             video: { width: -1, height: -1, codec: "" },
             audio: [],
@@ -317,8 +317,8 @@ export class Catalog {
             searchableContent: "",
             seasons: [],
             episodes: [],
-            createdMin: "",
-            createdMax: "",
+            createdMin: 0,
+            createdMax: 0,
             airDateMin: "",
             airDateMax: "",
           };
@@ -349,7 +349,7 @@ export class Catalog {
                 duration: -1,
                 synopsys: "",
                 stillPath: "",
-                created: "",
+                created: 0,
                 filesize: -1,
                 video: { width: -1, height: -1, codec: "" },
                 audio: [],
@@ -400,8 +400,8 @@ export class Catalog {
             }
           }
           tvshow.seasons = tvshow.seasons.filter(s => seasonNumberSet.has(s.seasonNumber));
-          tvshow.createdMin = tvshow.episodes.map(e => e.created).sort().shift() || "";
-          tvshow.createdMax = tvshow.episodes.map(e => e.created).sort().pop() || "";
+          tvshow.createdMin = tvshow.episodes.map(e => e.created).sort().shift() || 0;
+          tvshow.createdMax = tvshow.episodes.map(e => e.created).sort().pop() || 0;
           tvshow.airDateMin = tvshow.episodes.map(e => e.airDate).sort().shift() || "";
           tvshow.airDateMax = tvshow.episodes.map(e => e.airDate).sort().pop() || "";
 

@@ -74,16 +74,8 @@ export const mediaInfo = async (movie: DbMovie|Episode, filename: string, log: (
         } else {
           try {
             const json = JSON.parse(stdout);
-            // mediainfo sous linux ne semble pas réussir à récupérer la date de creation du fichier
-            if (json && json.general && ! json.general.created) {
-              try {
-                json.general.created = statSync(filename).birthtime.getTime();
-              } catch(e) {
-                json.general.created = json.general.modified;
-              }
-            }
             // console.log("media info for " + filename, json);
-            movie.created = json.general.created;
+            movie.created = statSync(filename).birthtime.getTime();
             movie.filesize = json.general.size;
             movie.duration = json.general.duration / 1000; // conversion ms => s
             movie.video = json.video[0];

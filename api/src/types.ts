@@ -12,7 +12,7 @@ export type DbUser = {
   name: string;
   audience: number;
   admin: boolean;
-  created: string;
+  created: number;
 };
 
 export type DbCredit = {
@@ -61,7 +61,7 @@ export type DbMovie = {
   genres: string[];
   countries: string[];
   audience: number;
-  created: string; // date de création du fichier
+  created: number; // timestamp de création du fichier
   filesize: number;
   video: VideoInfo;
   audio: AudioInfo[];
@@ -90,7 +90,7 @@ export type Episode = {
   synopsys: string;
   duration: number;
   stillPath: string;
-  created: string; // date de création du fichier
+  created: number; // timestamp de création du fichier
   filesize: number;
   video: VideoInfo;
   audio: AudioInfo[];
@@ -128,8 +128,8 @@ export type DbTvshow = {
   seasons: Season[];
   episodes: Episode[];
   userStatus: UserTvshowStatus[];
-  createdMin: string;
-  createdMax: string;
+  createdMin: number;
+  createdMax: number;
   airDateMin: string;
   airDateMax: string;
   searchableContent: string; // title + originalTitle + genre + countries => toLowerCase + removeAccent
