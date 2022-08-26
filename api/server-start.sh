@@ -1,3 +1,3 @@
 #!/bin/sh
-PATH=$PATH:/volume1/server/jellyplay/api/node_modules/forever/bin
-forever start --workingDir /volume1/server/jellyplay/api --sourceDir /volume1/server/jellyplay/api -l /volume1/server/jellyplay/api/logs/log.txt -o /volume1/server/jellyplay/api/logs/output.txt .
+cd /volume1/server/jellyplay/api
+./node_modules/pm2/bin/pm2 start dist/index.js --node-args="--experimental-specifier-resolution=node" --time
