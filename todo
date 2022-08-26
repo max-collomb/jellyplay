@@ -97,6 +97,8 @@ V1.0
 [ ] [client] changer URL (127.0.0.1 => 192.168.0.99)
 [ ] [client] définir une icone
 [ ] effectuer des sauvegardes quotidiennes de la BDD
+[ ] pouvoir marquer un ancien film comme à voir
+[ ] série en mode portrait (??) // ou alors film en mode paysage dans "En cours" et le tout plus petit
 
 
 V1.1

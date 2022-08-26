@@ -505,7 +505,6 @@ export class Catalog {
             for (let us of episode.userStatus) {
               if (us.userName == user.name) {
                 userStatus = us;
-                console.log(episode.filename, "userStatus", userStatus);
               }
             }
             if (userStatus && userStatus.position > 0) {
@@ -516,7 +515,6 @@ export class Catalog {
               notSeenCount++;
             } 
           }
-          console.log(tvshow.title, {inProgressCount, seenCount, notSeenCount});
           if (inProgressCount > 0 || (seenCount > 0 && notSeenCount > 0)) {
             lists.inProgress.push(tvshow);
           } else {

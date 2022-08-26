@@ -8,8 +8,8 @@
         mc:Ignorable="d"
         Title="Jellyplay" Height="450" Width="800" Background="#FF222222" Foreground="White">
     <DockPanel>
-        <!--<wv2:WebView2 Name="webView" Source="http://192.168.0.99:3000/frontend/"/>-->
-        <wv2:WebView2 Name="webView" Source="http://127.0.0.1:3000/frontend/"/>
+        <wv2:WebView2 Name="webView" Source="http://192.168.0.99:3000/frontend/"/>
+        <!--<wv2:WebView2 Name="webView" Source="http://127.0.0.1:3000/frontend/"/>-->
     </DockPanel>
 
 </Window>

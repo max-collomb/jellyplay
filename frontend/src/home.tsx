@@ -120,7 +120,7 @@ export default class Home extends React.Component<HomeProps, HomeState> {
                                     tvshow={item as DbTvshow}
                                     config={this.props.config}
                                     user={this.props.user}
-                                    showNext={true}
+                                    showNext={options.mixed}
                                     onChanged={this.handleMediaChanged.bind(this)}
                                     onSelected={(tvshow: DbTvshow) => this.setState({
                                       selection: tvshow,
