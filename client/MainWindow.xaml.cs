@@ -89,7 +89,7 @@ namespace client
       {
         initialized = true;
         webView.Visibility = Visibility.Visible;
-        webView.CoreWebView2.OpenDevToolsWindow();
+        //webView.CoreWebView2.OpenDevToolsWindow();
       }
       webView.CoreWebView2.ExecuteScriptAsync($"window._mpvSchemeSupported = true;");
     }

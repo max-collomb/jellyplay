@@ -93,9 +93,9 @@ V1.0
 [x] reprendre le visionnage d'une série à l'épisode suivant
 [x] rafraichissement auto des pages (de la home principalement)
 ----------- DEPLOY ---------------
-[ ] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)
-[ ] [client] changer URL (127.0.0.1 => 192.168.0.99)
-[ ] [client] définir une icone
+[x] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)
+[x] [client] changer URL (127.0.0.1 => 192.168.0.99)
+[x] [client] définir une icone
 [ ] effectuer des sauvegardes quotidiennes de la BDD
 [ ] pouvoir marquer un ancien film comme à voir
 [ ] série en mode portrait (??) // ou alors film en mode paysage dans "En cours" et le tout plus petit
