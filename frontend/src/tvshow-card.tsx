@@ -118,7 +118,7 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
         </i>
       </span>
       <span className="title">{this.props.tvshow.title || this.props.tvshow.foldername}</span>
-      <span className="infos d-flex justify-content-between">{infos}</span>
+      <span className="infos d-flex justify-content-center">{infos}</span>
       { progress }
     </div>;
   }

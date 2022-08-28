@@ -106,7 +106,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
           tvshowsByType[0].push(t);
       });
       return <>{tvshowsByType.map((tvshows, idx0) => {
-        return <React.Fragment key={idx0}><hr className={idx0 == 0 ? "d-none" : ""}/><h4 className="section-title p-2 mt-3 -text-center">{typeTitles[idx0]}</h4>
+        return <React.Fragment key={idx0}><h4 className="section-title">{typeTitles[idx0]}</h4>
           <div className="d-flex flex-wrap -justify-content-evenly mt-2">{
             tvshows.filter(t => t.audience <= this.props.user.audience)
             .map((tvshow, idx) => <TvshowCard key={idx}

@@ -84,7 +84,7 @@ export default class Home extends React.Component<HomeProps, HomeState> {
 
   renderList(list: (DbMovie|DbTvshow)[], options: ListOptions): JSX.Element {
     return <>
-      <h4 className="section-title p-2 mt-3">
+      <h4 className="section-title">
         {options.title}
         <span className={options.scroll ? "d-block float-end" : "d-none"}>
           <a href="#" className="link-light" onClick={this.scroll.bind(this, -1, options.id)}>
@@ -100,7 +100,7 @@ export default class Home extends React.Component<HomeProps, HomeState> {
         </span>
       </h4>
 
-      <div className={"d-flex mt-3 overflow-auto" + (options.mixed ? " mixed-content" : "")} id={options.id}>{
+      <div className={"d-flex overflow-auto" + (options.mixed ? " mixed-content" : "")} id={options.id}>{
         list.filter(item => item.audience <= this.props.user.audience)
             .map((item, idx) => {
               if (this.isMovie(item)) {
@@ -157,11 +157,9 @@ export default class Home extends React.Component<HomeProps, HomeState> {
     return <>
       <div className={this.state.lists.inProgress.length ? "" : "d-none"}>
         {this.renderList(this.state.lists.inProgress, { title: "Reprendre le visionnage", id: "in-progress", mixed: true, scroll: false })}
-        <hr/>
       </div>
       <div className={this.state.lists.recentMovies.length ? "" : "d-none"}>
         {this.renderList(this.state.lists.recentMovies, { title: "Films, ajouts récents", id: "recent-movies", mixed: false, scroll: true })}
-        <hr/>
       </div>
       <div className={this.state.lists.recentTvshows.length ? "" : "d-none"}>
         {this.renderList(this.state.lists.recentTvshows, { title: "Séries, ajouts récents", id: "recent-tvshows", mixed: false, scroll: true })}

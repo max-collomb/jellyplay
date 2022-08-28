@@ -100,7 +100,7 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
         </i>
       </span>
       <span className="title">{this.props.movie.title || this.props.movie.filename}</span>
-      <span className="infos d-flex justify-content-between">
+      <span className="infos d-flex justify-content-center">
         <span className={"year" + (this.props.movie.year < 0 ? " invisible" : "")}>{this.props.movie.year}</span>
         <span className={"lang" + (lang ? "" : " invisible")} title={lang}>{lang}</span>
         <span className="duration">{getMovieDuration(this.props.movie)}</span>
