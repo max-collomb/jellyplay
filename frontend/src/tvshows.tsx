@@ -95,15 +95,20 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
           return s.searchableContent.includes(cleanString(this.props.search));
         })
       }
-      const typeTitles = ["Séries", "Emissions", "Animes"];
+      const typeTitles = this.props.user.name == "thomas"
+        ? ["Animes", "Séries", "Emissions"]
+        : ["Séries", "Emissions", "Animes"];
       let tvshowsByType: DbTvshow[][] = [ [], [], [] ];
+      const emissionPos = typeTitles.indexOf("Emissions");
+      const animePos = typeTitles.indexOf("Animes");
+      const showPos = typeTitles.indexOf("Séries");
       tvshows.forEach(t => {
         if (t.foldername.startsWith('[émission]'))
-          tvshowsByType[1].push(t);
+          tvshowsByType[emissionPos].push(t);
         else if (t.foldername.startsWith('[anime]'))
-          tvshowsByType[2].push(t);
+          tvshowsByType[animePos].push(t);
         else 
-          tvshowsByType[0].push(t);
+          tvshowsByType[showPos].push(t);
       });
       return <>{tvshowsByType.map((tvshows, idx0) => {
         return <React.Fragment key={idx0}><h4 className="section-title">{typeTitles[idx0]}</h4>
