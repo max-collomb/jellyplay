@@ -96,9 +96,10 @@ V1.0
 [x] [api] déployer sur le nas (https://github.com/StephanThierry/nodejs4synologynas)
 [x] [client] changer URL (127.0.0.1 => 192.168.0.99)
 [x] [client] définir une icone
-[ ] effectuer des sauvegardes quotidiennes de la BDD
+[x] effectuer des sauvegardes quotidiennes de la BDD
+[x] série en mode portrait (??) // ou alors film en mode paysage dans "En cours" et le tout plus petit
 [ ] pouvoir marquer un ancien film comme à voir
-[ ] série en mode portrait (??) // ou alors film en mode paysage dans "En cours" et le tout plus petit
+[ ] pouvoir marquer une saison entière comme vue
 
 
 V1.1
