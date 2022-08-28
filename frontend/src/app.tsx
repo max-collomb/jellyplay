@@ -126,6 +126,12 @@ export default class App extends React.Component<AppProps, AppState> {
   handleSearchClick(evt: React.MouseEvent<HTMLButtonElement>): void {
     const input: HTMLElement|null = document.getElementById("search-input");
     this.setState({ search: input ? (input as HTMLInputElement).value : "" });
+    evt.preventDefault();
+  }
+
+  handleServerClick(host: string, evt: React.MouseEvent<HTMLButtonElement>): void {
+    location.href = `http://${host}/frontend/`;
+    evt.preventDefault();
   }
 
   handleScanClick(evt: React.MouseEvent<HTMLButtonElement>): void {
@@ -242,13 +248,21 @@ export default class App extends React.Component<AppProps, AppState> {
                   </ButtonGroup>
                 </ButtonToolbar>
                 <hr/>
-                <Offcanvas.Title>Actions</Offcanvas.Title>
-                <ButtonToolbar className="my-3">
-                  <Button variant="outline-secondary" className={"flex-fill" + (this.state.user?.admin && ! this.state.scanning ? "" : " disabled")} onClick={this.handleScanClick.bind(this)}>Scanner la bibliothèque</Button>
-                  <Spinner animation="border" role="status" className={this.state.scanning ? "ms-3" : "d-none"} />
-                </ButtonToolbar>
-                <div className="overflow-auto" style={{height: "400px"}}>
-                  <pre>{this.state.scanLogs}</pre>
+                <div className={this.state.user?.admin ? "" : "d-none"}>
+                  <Offcanvas.Title>Admin</Offcanvas.Title>
+                  <ButtonToolbar className="my-3">
+                    <ButtonGroup className="flex-fill">
+                      <Button variant={location.host == "127.0.0.1:3000" ? "secondary" : "outline-secondary"} onClick={this.handleServerClick.bind(this, "127.0.0.1:3000")}>127.0.0.1:3000</Button>
+                      <Button variant={location.host == "192.168.0.99:3000" ? "secondary" : "outline-secondary"} onClick={this.handleServerClick.bind(this, "192.168.0.99:3000")}>192.168.0.99:3000</Button>
+                    </ButtonGroup>
+                  </ButtonToolbar>
+                  <ButtonToolbar className="my-3">
+                    <Button variant="outline-secondary" className={"flex-fill" + (this.state.user?.admin && ! this.state.scanning ? "" : " disabled")} onClick={this.handleScanClick.bind(this)}>Scanner la bibliothèque</Button>
+                    <Spinner animation="border" role="status" className={this.state.scanning ? "ms-3" : "d-none"} />
+                  </ButtonToolbar>
+                  <div className="overflow-auto" style={{height: "400px"}}>
+                    <pre>{this.state.scanLogs}</pre>
+                  </div>
                 </div>
               </Offcanvas.Body>
             </Offcanvas>
