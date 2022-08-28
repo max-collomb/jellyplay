@@ -62,6 +62,35 @@ const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
 
 const pathExists = async (path: string) => !!(await fs.promises.stat(path).catch(e => false));
 
+// frontend/src/common.tsx
+function getEpisodeUserStatus(episode: Episode, user: DbUser): UserEpisodeStatus|null {
+  for (let userStatus of episode.userStatus) {
+    if (userStatus.userName == user.name) {
+      return userStatus;
+      break;
+    }
+  }
+  return null;
+}
+
+// frontend/src/common.tsx
+function selectCurrentEpisode(tvshow: DbTvshow, user: DbUser): Episode|undefined {
+  return tvshow.episodes
+          .slice(0)
+          .filter(e => {
+            const us: UserEpisodeStatus|null = getEpisodeUserStatus(e, user);
+            return !us || (us && (us.seenTs.length == 0) && (us.currentStatus != SeenStatus.seen));
+          })
+          .sort((a, b) => {
+            if (a.seasonNumber == b.seasonNumber)
+              return (a.episodeNumbers[0] || 0) - (b.episodeNumbers[0] || 0);
+            else
+              return (a.seasonNumber == -1 ? 999 : a.seasonNumber) - (b.seasonNumber == -1 ? 999 : b.seasonNumber);
+          })
+          .shift();
+}
+
+
 export class Catalog {
   moviesPath: string;
   tvshowsPath: string;
@@ -525,8 +554,10 @@ export class Catalog {
               userStatus = us;
             }
           }
-          if (inProgressCount > 0 || (seenCount > 0 && notSeenCount > 0)) {
+          let currentEpisode: Episode|undefined = selectCurrentEpisode(tvshow, user);
+          if (inProgressCount > 0 || (seenCount > 0 && notSeenCount > 0 && (currentEpisode?.episodeNumbers[0] || 0) > 1)) {
             lists.inProgress.push(tvshow);
+            continue tvshowLoop;
           } else if (lists.recentTvshows.length < RECENT_LENGTH_MAX && tvshow.createdMax > user.created && notSeenCount > 0) {
             lists.recentTvshows.push(tvshow);
             continue tvshowLoop;
@@ -638,6 +669,9 @@ export class Catalog {
         movie.userStatus.push(userStatus);
       }
       userStatus.currentStatus = body.status;
+      if (userStatus.currentStatus == SeenStatus.seen && userStatus.position > 0) {
+        userStatus.position = 0;
+      }
       this.tables.movies?.update(movie);
       this.lastUpdate = Date.now();
       reply.send({ userStatus: movie.userStatus });
@@ -686,6 +720,9 @@ export class Catalog {
           episode.userStatus.push(userStatus);
         }
         userStatus.currentStatus = body.status as SeenStatus;
+        if (userStatus.currentStatus == SeenStatus.seen && userStatus.position > 0) {
+          userStatus.position = 0;
+        }
         this.tables.tvshows?.update(tvshow);
         this.lastUpdate = Date.now();
         reply.send({ userStatus: episode.userStatus });
