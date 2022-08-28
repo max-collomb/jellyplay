@@ -417,7 +417,7 @@ export class Catalog {
       for (const tvshow of this.tables.tvshows.find()) {
         if (foldernameSet.has(tvshow.foldername)) {
           tvshow.seasons.forEach(s => s.cast.forEach(c => creditSet.add(c.tmdbid)));
-          await this.tmdbClient.updateTvshowData(tvshow);
+          // await this.tmdbClient.updateTvshowData(tvshow);
         } else {
           this.log(`[-] folder deleted ${tvshow.foldername}`);
           await this.tmdbClient.unlinkTvshowImages(tvshow);
@@ -487,6 +487,9 @@ export class Catalog {
               lists.recentMovies.push(movie);
               continue movieLoop;
             }
+          } else if (userStatus && userStatus.currentStatus == SeenStatus.toSee) {
+            lists.recentMovies.push(movie);
+            continue movieLoop;
           }
         }
       }
@@ -516,13 +519,20 @@ export class Catalog {
               notSeenCount++;
             } 
           }
+          let userStatus: UserTvshowStatus|undefined = undefined;
+          for (const us of tvshow.userStatus) {
+            if (us.userName == user.name) {
+              userStatus = us;
+            }
+          }
           if (inProgressCount > 0 || (seenCount > 0 && notSeenCount > 0)) {
             lists.inProgress.push(tvshow);
-          } else {
-            if (lists.recentTvshows.length < RECENT_LENGTH_MAX && tvshow.createdMax > user.created && notSeenCount > 0) {
-              lists.recentTvshows.push(tvshow);
-              continue tvshowLoop;
-            }
+          } else if (lists.recentTvshows.length < RECENT_LENGTH_MAX && tvshow.createdMax > user.created && notSeenCount > 0) {
+            lists.recentTvshows.push(tvshow);
+            continue tvshowLoop;
+          } else if (userStatus && userStatus.currentStatus == SeenStatus.toSee) {
+            lists.recentTvshows.push(tvshow);
+            continue tvshowLoop;
           }
         }
       }

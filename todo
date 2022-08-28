@@ -98,8 +98,8 @@ V1.0
 [x] [client] définir une icone
 [x] effectuer des sauvegardes quotidiennes de la BDD
 [x] série en mode portrait (??) // ou alors film en mode paysage dans "En cours" et le tout plus petit
-[ ] pouvoir marquer un ancien film comme à voir
-[ ] pouvoir marquer une saison entière comme vue
+[x] pouvoir marquer un ancien film comme à voir
+[x] pouvoir marquer une saison entière comme vue
 
 
 V1.1

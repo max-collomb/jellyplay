@@ -362,31 +362,31 @@ export class TmdbClient {
     }
   }
 
-  public async updateTvshowData(tvshow: DbTvshow): Promise<void> {
-    let filepath: string;
-    if (tvshow.posterPath) {
-      filepath = path.join(this.imagePath, 'posters_w342', tvshow.posterPath);
-      await fs.promises.access(filepath).then(() => {}).catch(async () => {
-        this.log(`[+] downloading tvshow poster w342${tvshow.posterPath}`);
-        await downloadImage(
-          `${this.baseUrl}w342${tvshow.posterPath}`,
-          filepath
-        );
-      });
-    }
-    for(const season of tvshow.seasons) {
-      if (season.posterPath) {
-        filepath = path.join(this.imagePath, 'posters_w342', season.posterPath);
-        await fs.promises.access(filepath).then(() => {}).catch(async () => {
-            this.log(`[+] downloading season poster w342${season.posterPath}`);
-            await downloadImage(
-              `${this.baseUrl}w342${season.posterPath}`,
-              filepath
-            );
-        });
-      }
-    }
-  }
+  // public async updateTvshowData(tvshow: DbTvshow): Promise<void> {
+  //   let filepath: string;
+  //   if (tvshow.posterPath) {
+  //     filepath = path.join(this.imagePath, 'posters_w342', tvshow.posterPath);
+  //     await fs.promises.access(filepath).then(() => {}).catch(async () => {
+  //       this.log(`[+] downloading tvshow poster w342${tvshow.posterPath}`);
+  //       await downloadImage(
+  //         `${this.baseUrl}w342${tvshow.posterPath}`,
+  //         filepath
+  //       );
+  //     });
+  //   }
+  //   for(const season of tvshow.seasons) {
+  //     if (season.posterPath) {
+  //       filepath = path.join(this.imagePath, 'posters_w342', season.posterPath);
+  //       await fs.promises.access(filepath).then(() => {}).catch(async () => {
+  //           this.log(`[+] downloading season poster w342${season.posterPath}`);
+  //           await downloadImage(
+  //             `${this.baseUrl}w342${season.posterPath}`,
+  //             filepath
+  //           );
+  //       });
+  //     }
+  //   }
+  // }
 
   public async getCollectionData(tvshow: DbTvshow): Promise<void> {
     const tvshowInfo = await this.movieDb.collectionInfo({
