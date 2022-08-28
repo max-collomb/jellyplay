@@ -64,20 +64,20 @@ input[type="search"]::-webkit-search-cancel-button {
   overflow: hidden;
   font-size:  80%;
 }
-.media-card.movie {
+.media-card.portrait {
   min-width: 150px;
   max-width: 342px;
   width: 9vw;
 }
-.media-card.tvshow {
+.media-card.landscape {
   min-width: 300px;
   max-width: 780px;
   width: 20vw;
 }
-.mixed-content .media-card.movie {
+.mixed-content .media-card.portrait {
   max-width: 292.5px; /* 780 (max-width serie) * 2/3 (ratio poster film) * 9/16 (ratio poster série) */
 }
-.mixed-content .media-card.tvshow {
+.mixed-content .media-card.landscape {
   min-width: 400px; /* 150 (min-width film) * 3/2 (ratio poster film) * 16/9 (ratio poster série) */
   width: 26.6667vw; /* 10 (width film) * 3/2 (ratio poster film) * 16/9 (ratio poster série) */
 }
@@ -96,12 +96,12 @@ input[type="search"]::-webkit-search-cancel-button {
   /*box-shadow: 0px -10px 30px 3px rgba(145,176,255,0.15);*/
 }
 
-.media-card.movie .poster {
+.media-card.portrait .poster {
   min-width: 150px;
   max-width: 342px;
 }
 
-.media-card.tvshow .poster {
+.media-card.landscape .poster {
   min-width: 300px;
   max-width: 780px;
 }
@@ -114,13 +114,13 @@ input[type="search"]::-webkit-search-cancel-button {
   position: relative;
 }
 
-.media-card.movie .poster,
+.media-card.portrait .poster,
 .media-poster .poster {aspect-ratio: 2/3;}
-.media-card.tvshow .poster { aspect-ratio: 16/9; }
+.media-card.landscape .poster { aspect-ratio: 16/9; }
 
 .poster > img { position: absolute; width: 100%; height: auto; aspect-ratio: 2/3; }
-.movie .poster > img { aspect-ratio: 2/3; }
-.tvshow .poster > img { aspect-ratio: 16/9; }
+.portrait .poster > img { aspect-ratio: 2/3; }
+.landscape .poster > img { aspect-ratio: 16/9; }
 .episode-card .poster { position: relative; min-width: 300px; width: 300px; height: 169px; }
 .saga-episode-card .poster { position: relative; min-width: 185px; width: 185px; height: 277.5px; }
 .saga-episode-card .poster > img { aspect-ratio: 2/3; }
@@ -151,7 +151,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 50%;
   padding: 5%;
 }
-.tvshow .poster b { left: 40%; width: 20%; }
+.landscape .poster b { left: 40%; width: 20%; }
 .episode-card .poster b { top: 23.3%; width: 30%; } /* (1 - 30/100 * 16/9) / 2 = 23.3 */
 .poster b svg {
   margin-left: 5%;
@@ -198,7 +198,7 @@ input[type="search"]::-webkit-search-cancel-button {
   text-align: center;
   color: #fff9;
   font-size: 90%;
-  opacity: 0.2;
+  opacity: 0.4;
   transition: opacity linear 0.15s;
 }
 
@@ -208,12 +208,9 @@ input[type="search"]::-webkit-search-cancel-button {
 .media-card .year { display: inline-block; margin-right: 0.5rem; }
 .media-card .duration { display: inline-block; margin-left: 0.5rem; }
 .media-card .lang {
+  font-weight: bold;
   display: inline-block;
-  padding: 0 0.1rem;
   margin: 0;
-  background: #666;
-  color: #222;
-  border-radius: 4px;
   flex-shrink: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -245,8 +242,8 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 0.5vw;
   overflow: hidden;
 }
-.movie .media-poster { margin: 2vh 3vw 0 3vw; }
-.tvshow .media-poster { margin: 0 3vw; }
+.portrait .media-poster { margin: 2vh 3vw 0 3vw; }
+.landscape .media-poster { margin: 0 3vw; }
 
 span.poster .progress-bar,
 div.media-card .progress-bar {
@@ -265,8 +262,8 @@ div.media-card .progress-bar {
 }
 
 .title-bar { padding: 1em; background: rgba(0,0,0,0.75); }
-.movie .title-bar { margin-top: 6vh; }
-.tvshow .title-bar { margin-top: 2rem; }
+.portrait .title-bar { margin-top: 6vh; }
+.landscape .title-bar { margin-top: 2rem; }
 
 .title-bar h2 { font-weight: bold; }
 .title-bar h6 { font-weight: bold; opacity: 0.6; }

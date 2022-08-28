@@ -353,7 +353,38 @@ export class TmdbClient {
         `${this.baseUrl}w780${tvshowInfo.poster_path}`,
         path.join(this.imagePath, 'posters_w780', tvshowInfo.poster_path)
       );
+      this.log(`[+] downloading tvshow poster w342${tvshowInfo.poster_path}`);
+      await downloadImage(
+        `${this.baseUrl}w342${tvshowInfo.poster_path}`,
+        path.join(this.imagePath, 'posters_w342', tvshowInfo.poster_path)
+      );
       tvshow.posterPath = tvshowInfo.poster_path;
+    }
+  }
+
+  public async updateTvshowData(tvshow: DbTvshow): Promise<void> {
+    let filepath: string;
+    if (tvshow.posterPath) {
+      filepath = path.join(this.imagePath, 'posters_w342', tvshow.posterPath);
+      await fs.promises.access(filepath).then(() => {}).catch(async () => {
+        this.log(`[+] downloading tvshow poster w342${tvshow.posterPath}`);
+        await downloadImage(
+          `${this.baseUrl}w342${tvshow.posterPath}`,
+          filepath
+        );
+      });
+    }
+    for(const season of tvshow.seasons) {
+      if (season.posterPath) {
+        filepath = path.join(this.imagePath, 'posters_w342', season.posterPath);
+        await fs.promises.access(filepath).then(() => {}).catch(async () => {
+            this.log(`[+] downloading season poster w342${season.posterPath}`);
+            await downloadImage(
+              `${this.baseUrl}w342${season.posterPath}`,
+              filepath
+            );
+        });
+      }
     }
   }
 
@@ -396,11 +427,11 @@ export class TmdbClient {
   public async unlinkTvshowImages(tvshow: DbTvshow) {
     let filepath: string;
     if (tvshow.posterPath) {
-      // filepath = path.join(this.imagePath, 'posters_w342', tvshow.posterPath);
-      // await fs.promises.access(filepath).then(async () => {
-      //   console.log(`deleting file ${filepath}`);
-      //   await fs.promises.unlink(filepath);
-      // }).catch(() => {});
+      filepath = path.join(this.imagePath, 'posters_w342', tvshow.posterPath);
+      await fs.promises.access(filepath).then(async () => {
+        this.log(`[-] deleting tvshow poster posters_w342${tvshow.posterPath}`);
+        await fs.promises.unlink(filepath);
+      }).catch(() => {});
       filepath = path.join(this.imagePath, 'posters_w780', tvshow.posterPath);
       await fs.promises.access(filepath).then(async () => {
         this.log(`[-] deleting tvshow poster posters_w780${tvshow.posterPath}`);
@@ -548,10 +579,11 @@ export class TmdbClient {
             `${this.baseUrl}w780${response.poster_path}`,
             path.join(this.imagePath, 'posters_w780', response.poster_path)
           );
-          // await downloadImage(
-          //   `${this.baseUrl}w342${response.poster_path}`,
-          //   path.join(this.imagePath, 'posters_w342', response.poster_path)
-          // );
+          this.log(`[+] downloading season poster w342${response.poster_path}`);
+          await downloadImage(
+            `${this.baseUrl}w342${response.poster_path}`,
+            path.join(this.imagePath, 'posters_w342', response.poster_path)
+          );
           newSeason.posterPath = response.poster_path;
         }
         const credit = await this.movieDb.seasonCredits({
@@ -582,11 +614,11 @@ export class TmdbClient {
   public async unlinkSeasonImages(season: Season) {
     let filepath: string;
     if (season.posterPath) {
-      // filepath = path.join(this.imagePath, 'posters_w342', season.posterPath);
-      // await fs.promises.access(filepath).then(async () => {
-      //   console.log(`deleting file ${filepath}`);
-      //   await fs.promises.unlink(filepath);
-      // }).catch(() => {});
+      filepath = path.join(this.imagePath, 'posters_w342', season.posterPath);
+      await fs.promises.access(filepath).then(async () => {
+        this.log(`[-] deleting season poster posters_w342${season.posterPath}`);
+        await fs.promises.unlink(filepath);
+      }).catch(() => {});
       filepath = path.join(this.imagePath, 'posters_w780', season.posterPath);
       await fs.promises.access(filepath).then(async () => {
         this.log(`[-] deleting season poster posters_w780${season.posterPath}`);

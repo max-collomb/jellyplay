@@ -417,6 +417,7 @@ export class Catalog {
       for (const tvshow of this.tables.tvshows.find()) {
         if (foldernameSet.has(tvshow.foldername)) {
           tvshow.seasons.forEach(s => s.cast.forEach(c => creditSet.add(c.tmdbid)));
+          await this.tmdbClient.updateTvshowData(tvshow);
         } else {
           this.log(`[-] folder deleted ${tvshow.foldername}`);
           await this.tmdbClient.unlinkTvshowImages(tvshow);

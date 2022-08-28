@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Config, DbTvshow, DbUser, Episode, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
+import { Config, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
 import { getEpisodeCount, getEpisodeProgress, getEpisodeUserStatus, getSeasonCount, getTvshowUserStatus, playTvshow, selectCurrentEpisode } from './common';
 import apiClient from './api-client';
@@ -72,6 +72,7 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
     const userStatus = getTvshowUserStatus(this.props.tvshow, this.props.user);
     const infos = [];
     let progress: JSX.Element|null = null;
+    let posterPath: string = "";
     if (this.props.showNext) {
       const episode: Episode|undefined = selectCurrentEpisode(this.props.tvshow, this.props.user);
       if (episode) {
@@ -81,6 +82,11 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
           {episode.title || episode.filename}
         </span>);
         progress = getEpisodeProgress(episode, this.props.user);
+        this.props.tvshow.seasons.forEach(s => {
+          if (s.seasonNumber == episode.seasonNumber) {
+            posterPath = s.posterPath;
+          }
+        });
       }
     } else {
       infos.push(
@@ -88,13 +94,14 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
         <span key={2} className="duration">{getEpisodeCount(this.props.tvshow)}</span>
       );
     }
+    posterPath = posterPath || this.props.tvshow.posterPath;
     return /*<React.Fragment>*/<div
-      className={"flex-shrink-0 media-card tvshow" + (this.props.tvshow.audience == 999 ? " audience-not-set" : "")}
+      className={"flex-shrink-0 media-card portrait" + (this.props.tvshow.audience == 999 ? " audience-not-set" : "")}
       onClick={this.handleClick.bind(this)}
     >
       <span className="poster">
-        { this.props.tvshow.backdropPath ?
-            <img src={`/images/backdrops_w780${this.props.tvshow.backdropPath}`} width="780" height="439" loading="lazy"/> :
+        { posterPath ?
+            <img src={`/images/posters_w342${posterPath}`} width="342" height="513" loading="lazy"/> :
             <span className="no-poster-picture"><svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="currentColor" className="bi bi-film" viewBox="0 0 16 16">
               <path d="M0 1a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V1zm4 0v6h8V1H4zm8 8H4v6h8V9zM1 1v2h2V1H1zm2 3H1v2h2V4zM1 7v2h2V7H1zm2 3H1v2h2v-2zm-2 3v2h2v-2H1zM15 1h-2v2h2V1zm-2 3v2h2V4h-2zm2 3h-2v2h2V7zm-2 3v2h2v-2h-2zm2 3h-2v2h2v-2z"/>
             </svg></span>
@@ -116,10 +123,10 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
             </svg>
           </em>
         </i>
+        { progress }
       </span>
       <span className="title">{this.props.tvshow.title || this.props.tvshow.foldername}</span>
       <span className="infos d-flex justify-content-center">{infos}</span>
-      { progress }
     </div>;
   }
 }
