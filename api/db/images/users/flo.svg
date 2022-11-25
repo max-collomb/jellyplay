@@ -2,7 +2,7 @@
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
  "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
  <svg version="1.0" xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 0 24 24">
-  <circle fill="#8e24aa" cx="12" cy="12" r="12"></circle>
+  <circle fill="#d43725" cx="12" cy="12" r="12"></circle>
   <text
     fill="#ffffff"
     font-size="16"

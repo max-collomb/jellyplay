@@ -150,7 +150,7 @@ export function selectCurrentEpisode(tvshow: DbTvshow, user: DbUser): Episode|un
           .slice(0)
           .filter(e => {
             const us: UserEpisodeStatus|null = getEpisodeUserStatus(e, user);
-            return !us || (us && (us.seenTs.length == 0) && (us.currentStatus != SeenStatus.seen));
+            return !us || (us && ((us.seenTs.length == 0) && (us.currentStatus != SeenStatus.seen) || (us.currentStatus == SeenStatus.toSee)));
           })
           .sort((a, b) => {
             if (a.seasonNumber == b.seasonNumber)
