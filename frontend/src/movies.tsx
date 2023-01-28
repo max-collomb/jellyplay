@@ -1,8 +1,9 @@
 import React from 'react';
 
-import { Config, DbMovie, DbUser } from '../../api/src/types';
+import { Config, DbCredit, DbMovie, DbUser } from '../../api/src/types';
 import { OrderBy } from '../../api/src/enums';
 import { cleanString } from './common';
+import { eventBus, EventCallback } from './event-bus';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
 import MovieCard from './movie-card';
@@ -17,6 +18,7 @@ type MoviesProps = {
 };
 type MoviesState = {
   movies: DbMovie[];
+  credits: DbCredit[];
   selection?: DbMovie;
   scrollPosition: number;
 };
@@ -24,14 +26,36 @@ type MoviesState = {
 export default class Movies extends React.Component<MoviesProps, MoviesState> {
 
   lastOrderBy?: OrderBy;
+  handleEventSetSearch: EventCallback;
 
   constructor(props: MoviesProps) {
     super(props);
     this.state = {
       movies: [],
+      credits: [],
       scrollPosition: 0,
     };
     this.refreshContent();
+    this.handleEventSetSearch = (data) => {
+      this.setState({ selection: undefined });
+    };
+  }
+
+  getCreditName(id: number): string {
+    for(const credit of this.state.credits) {
+      if (credit.tmdbid == id) {
+        return credit.name;
+      }
+    }
+    return "";
+  }
+
+  componentDidMount() {
+    eventBus.on("set-search", this.handleEventSetSearch);
+  }
+
+  componentWillUnmount() {
+    eventBus.detach("set-search", this.handleEventSetSearch);
   }
 
   componentDidUpdate(_prevProps: MoviesProps, prevState: MoviesState) {
@@ -48,6 +72,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
 
   refreshContent() {
     apiClient.getMovies().then(movies => { this.lastOrderBy = undefined; this.setState({ movies }); });
+    apiClient.getCredits().then(credits => this.setState({ credits }));    
   }
 
   render(): JSX.Element {
@@ -71,10 +96,10 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
         this.lastOrderBy = this.props.orderBy;
         let sortFn: (a: DbMovie, b: DbMovie) => number;
         const compare = new Intl.Collator('fr', { usage: "sort", sensitivity: "base" }).compare;
-        sortFn = (a: DbMovie, b: DbMovie) => compare(b.created, a.created);
+        sortFn = (a: DbMovie, b: DbMovie) => a.created - b.created;
         switch(this.props.orderBy) {
-          case OrderBy.addedDesc: /* valeur par défaut */ break;
-          case OrderBy.addedAsc:     sortFn = (a: DbMovie, b: DbMovie) => compare(a.created, b.created);   break;
+          case OrderBy.addedDesc:    /* valeur par défaut */                                               break;
+          case OrderBy.addedAsc:     sortFn = (a: DbMovie, b: DbMovie) => b.created - a.created;           break;
           case OrderBy.titleAsc:     sortFn = (a: DbMovie, b: DbMovie) => compare(a.title, b.title);       break;
           case OrderBy.titleDesc:    sortFn = (a: DbMovie, b: DbMovie) => compare(b.title, a.title);       break;
           case OrderBy.yearDesc:     sortFn = (a: DbMovie, b: DbMovie) => b.year - a.year;                 break;
@@ -84,13 +109,16 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
         }
         movies.sort(sortFn);
       }
-      if (this.props.search) {
+      if (this.props.search && this.state.credits.length) {
         movies = movies.filter(m => {
           if (! m.searchableContent) {
             m.searchableContent = cleanString(m.filename + " " + m.title + " " + 
               (m.title == m.originalTitle ? "" : m.originalTitle + " ") +
               m.genres.join(" ") + " " +
-              m.countries.join(" ")
+              m.countries.join(" ") +
+              m.cast.map(c => this.getCreditName(c.tmdbid)).join(" ") +
+              m.directors.map(d => this.getCreditName(d)).join(" ") +
+              m.writers.map(w => this.getCreditName(w)).join(" ")
             );
           }
           return m.searchableContent.includes(cleanString(this.props.search));

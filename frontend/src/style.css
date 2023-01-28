@@ -271,6 +271,11 @@ div.media-card .progress-bar {
 .media-details .actions .active:focus,
 .media-details .actions .active:hover { color: rgb(209, 71, 71); }
 
+.media-details .cast > a,
+.media-details .cast > a:hover,
+.media-details .cast > a:active { color: #fff; }
+.media-details .cast + .cast:before { content: ", "; text-decoration: none; }
+
 .content-bar {
   background: rgba(0,0,0,0.5);
   padding: 1em;
@@ -296,9 +301,12 @@ div.media-card .progress-bar {
   white-space: nowrap;
   overflow: hidden;
   text-align: center;
+  text-decoration: none;
 }
 
 .cast-card .actor { color: #fff; padding: 0.5rem 0.5rem 0; }
+.cast-card .actor:hover,
+.cast-card .actor:active { color: #fff; }
 .cast-card .character { color: #777; font-size: 80%; font-weight: normal; padding: 0 0.5rem 1rem; }
 
 .cast-card .no-profile-picture {

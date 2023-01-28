@@ -3,6 +3,7 @@ import React from 'react';
 import { Config, DbCredit, DbTvshow, DbUser } from '../../api/src/types';
 import { OrderBy } from '../../api/src/enums';
 import { cleanString, selectCurrentSeason } from './common';
+import { eventBus, EventCallback } from './event-bus';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
 import TvshowCard from './tvshow-card';
@@ -29,6 +30,7 @@ type TvShowsState = {
 export default class TvShows extends React.Component<TvShowsProps, TvShowsState> {
 
   lastOrderBy?: OrderBy;
+  handleEventSetSearch: EventCallback;
 
   constructor(props: TvShowsProps) {
     super(props);
@@ -41,6 +43,26 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       scrollPosition: 0,
     };
     this.refreshContent();
+    this.handleEventSetSearch = (data) => {
+      this.setState({ selection: undefined });
+    };
+  }
+
+  getCreditName(id: number): string {
+    for(const credit of this.state.credits) {
+      if (credit.tmdbid == id) {
+        return credit.name;
+      }
+    }
+    return "";
+  }
+
+  componentDidMount() {
+    eventBus.on("set-search", this.handleEventSetSearch);
+  }
+
+  componentWillUnmount() {
+    eventBus.detach("set-search", this.handleEventSetSearch);
   }
 
   componentDidUpdate(_prevProps: TvShowsProps, prevState: TvShowsState) {
@@ -93,10 +115,13 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       if (this.props.search) {
         tvshows = tvshows.filter(s => {
           if (! s.searchableContent) {
+            let cast: Set<string> = new Set<string>();
+            s.seasons.forEach(season => season.cast.forEach(c => cast.add(this.getCreditName(c.tmdbid))));
             s.searchableContent = cleanString(s.foldername + " " + s.title + " " + 
               (s.title == s.originalTitle ? "" : s.originalTitle + " ") +
               s.genres.join(" ") + " " +
-              s.countries.join(" ")
+              s.countries.join(" ") +
+              Array.from(cast).join(" ")
             );
           }
           return s.searchableContent.includes(cleanString(this.props.search));

@@ -10,6 +10,7 @@ import { Cast, Config, DbCredit, DbTvshow, DbUser, Episode, Season, UserEpisodeS
 import { OrderBy, SeenStatus } from '../../api/src/enums';
 import { MoreToggle, MultiItem, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
 import apiClient from './api-client';
+import eventBus from './event-bus';
 
 import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
 
@@ -33,6 +34,11 @@ export default class Casting extends React.Component<CastingProps, CastingState>
     return null;
   }
 
+  handleCreditSearch(credit: DbCredit, evt: React.MouseEvent): void {
+    evt.preventDefault();
+    eventBus.emit("set-search", { search: credit.name });
+  }
+
   render(): JSX.Element {
     if (! this.props.cast) {
       return <></>;
@@ -47,7 +53,7 @@ export default class Casting extends React.Component<CastingProps, CastingState>
               <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
               <path fillRule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
             </svg></span>}
-          <span className="actor">{credit.name}</span>
+          <a href="#" className="actor" onClick={this.handleCreditSearch.bind(this, credit)}>{credit.name}</a>
           <span className={"character"}>{(role.character ? "en tant que " + role.character: "-")}</span>
         </div> : null;
       })

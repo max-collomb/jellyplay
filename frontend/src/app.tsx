@@ -21,6 +21,7 @@ import TvShows from './tvshows';
 import UserSelection from './user-selection';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
+import { eventBus, EventCallback } from './event-bus';
 
 const SCAN_POLL_INTERVAL: number = 1000;
 
@@ -38,7 +39,6 @@ type AppState = {
   user?: DbUser;
   optionsVisible: boolean;
   tab: AppTab;
-  selection?: number;
   orderBy: OrderBy;
   search: string;
   scanning: boolean;
@@ -46,6 +46,8 @@ type AppState = {
 };
 
 export default class App extends React.Component<AppProps, AppState> {
+
+  handleEventSetSearch: EventCallback;
 
   constructor(props: AppProps) {
     super(props);
@@ -77,11 +79,22 @@ export default class App extends React.Component<AppProps, AppState> {
       }
       this.setState({ users, user });
     });
+    this.handleEventSetSearch = (data) => {
+      const input: HTMLElement|null = document.getElementById("search-input");
+      if (input instanceof HTMLInputElement)
+        input.value = data.search;
+      this.setState({ search: data.search, tab: (this.state.tab == AppTab.home ? AppTab.movies : this.state.tab) });
+    };
   }
 
   componentDidMount() {
     // l'événement "search" n'est pas géré par FormControl => on se replie sur du vanillaJS
     document?.getElementById("search-input")?.addEventListener("search", (evt) => this.setState({ search: (evt?.target as HTMLInputElement).value || "" }));
+    eventBus.on("set-search", this.handleEventSetSearch);
+  }
+
+  componentWillUnmount() {
+    eventBus.detach("set-search", this.handleEventSetSearch);
   }
 
   initPollScan(finished: boolean) {
@@ -105,7 +118,7 @@ export default class App extends React.Component<AppProps, AppState> {
   }
 
   handleTabClick(tab: AppTab, evt: React.MouseEvent<HTMLElement>): void {
-    this.setState({ tab, selection: undefined });
+    this.setState({ tab });
     evt.preventDefault();
   }
 

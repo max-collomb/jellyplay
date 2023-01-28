@@ -12,6 +12,7 @@ import TmdbClient from './tmdb';
 import FixMovieMetadataForm from './fix-movie-metadata-form';
 import RenamingForm from './renaming-form';
 import Casting from './casting';
+import eventBus from './event-bus';
 
 type MovieDetailsProps = {
   movie: DbMovie;
@@ -57,15 +58,20 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     return null;
   }
 
-  renderCredits(ids: number[]): string {
-    const strings = [];
+  renderCredits(ids: number[]): JSX.Element {
+    const links = [];
      for (const id of ids) {
        const credit: DbCredit|null = this.getCredit(id);
        if (credit) {
-         strings.push(credit.name);
+         links.push(<span className="cast" key={id}><a href="#" onClick={ this.handleCastClick.bind(this, credit) }>{ credit.name }</a></span>);
        }
      }
-     return strings.join(', ');
+     return <>{ links }</>;
+  }
+
+  handleCastClick(cast: DbCredit, evt: React.MouseEvent) {
+    evt.preventDefault();
+    eventBus.emit("set-search", { search: cast.name });
   }
 
   handleToggleStatus(movie: DbMovie, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
