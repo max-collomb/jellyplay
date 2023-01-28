@@ -65,9 +65,7 @@ export default class App extends React.Component<AppProps, AppState> {
     });
     apiClient.getScanProgress(0).then((status) => {
       this.setState({ scanning: ! status.finished, scanLogs: status.logs });
-      if (! status.finished) {
-        setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
-      }
+      this.initPollScan(status.finished);
     });
     apiClient.getUsers().then((users) => {
       let userName = localStorage.getItem('userName');
@@ -86,12 +84,19 @@ export default class App extends React.Component<AppProps, AppState> {
     document?.getElementById("search-input")?.addEventListener("search", (evt) => this.setState({ search: (evt?.target as HTMLInputElement).value || "" }));
   }
 
+  initPollScan(finished: boolean) {
+    if (finished) {
+      apiClient.clearCache();
+      this.forceUpdate();
+    } else {
+      setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
+    }
+  }
+
   pollScanProgress() {
     apiClient.getScanProgress(this.state.scanLogs.length).then((status) => {
       this.setState({ scanning: ! status.finished, scanLogs: this.state.scanLogs + status.logs });
-      if (! status.finished) {
-        setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
-      }
+      this.initPollScan(status.finished);
     });
   }
 
@@ -135,12 +140,12 @@ export default class App extends React.Component<AppProps, AppState> {
   }
 
   handleScanClick(evt: React.MouseEvent<HTMLButtonElement>): void {
-    apiClient.scanNow().then((status) => {
-      this.setState({ scanning: ! status.finished, scanLogs: status.logs });
-      if (! status.finished) {
-        setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
-      }
-    });
+    if (! this.state.scanning) {
+      apiClient.scanNow().then((status) => {
+        this.setState({ optionsVisible: true, scanning: ! status.finished, scanLogs: status.logs });
+        this.initPollScan(status.finished);
+      });
+    }
   }
 
   render(): JSX.Element {
@@ -205,6 +210,7 @@ export default class App extends React.Component<AppProps, AppState> {
                 />
                 <Button variant="dark" style={{ lineHeight: "18px" }} onClick={ this.handleSearchClick.bind(this) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg></Button>
               </InputGroup>
+              <Button variant="dark" className={"ms-1" + (this.state.scanning ? " disabled" : "") + (this.state.user?.admin ? "" : " d-none")} style={{ lineHeight: "18px" }} onClick={ this.handleScanClick.bind(this) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrow-clockwise" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg></Button>
               <Button variant="dark" className="ms-1" style={{ lineHeight: "18px" }} onClick={ this.handleOptionsToggle.bind(this, true) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16"><path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg></Button>
               {this.state.user ? <div style={{ cursor: "pointer" }} onClick={this.handleUserSelected.bind(this, undefined)}><img src={`/images/users/${this.state.user.name}.svg`} width="36" className="ms-3"/></div> : null}
             </Form>

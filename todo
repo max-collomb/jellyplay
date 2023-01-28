@@ -101,17 +101,17 @@ V1.0
 [x] pouvoir marquer un ancien film comme à voir
 [x] pouvoir marquer une saison entière comme vue
 [x] afficher les animes avant les séries pour Thomas
-[ ] [frontend] back de la souris pour fermer une fiche de film/série
-[ ] [frontend] refresh après setPosition
 
 V1.1
-[ ] Accès direct à "Scanner la bibliothèque" + refresh auto
+[x] Accès direct à "Scanner la bibliothèque" + refresh auto
+[ ] [frontend] recherche de gens (réal, acteur, ect.)
+[ ] [frontend/api] nom de réal / auteur / casting cliquable pour effectuer une recherche (+ recherche externe tmdb via api)
+[ ] [frontend] back de la souris pour fermer une fiche de film/série
+[ ] [frontend] refresh après setPosition
 [ ] revoir la méthode de suppression des images lors de la disparition d'un fichier. Exemple : renommage d'un fichier (épisode) => reconnaissance auto puis téléchargement du still puis suppression du still => lien image cassé. Solution 1 : détecter les fichiers supprimés avant de détecter les nouveaux fichiers. Solution 2 : passe globale sur toutes les images pour supprimer celles qui ne sont pas référencées en BDD en fin de process plutôt que de supprimer les images au fur et à mesure
 [ ] recherche floue (https://github.com/leeoniya/uFuzzy)
 [ ] [api] supprimer les images qui ne sont pas référencées (movies/tvshows/credits)
 [ ] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode
-[ ] [frontend] recherche de gens (réal, acteur, ect.)
-[ ] [frontend/api] nom de réal / auteur / casting cliquable pour effectuer une recherche (+ recherche externe tmdb via api)
 [ ] [frontend/api] recommandation dans fiche film (tmdb via api)
 [ ] [frontend/api] recommandation ou recherche tmdb => demander le film
 [ ] [frontend] navigation avec les flèches du clavier + entrée + back

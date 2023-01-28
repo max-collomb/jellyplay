@@ -40,8 +40,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
       fixingMetadata: false,
       scrollPosition: 0,
     };
-    apiClient.getTvshows().then(tvshows => { this.lastOrderBy = undefined; this.setState({ tvshows }); });
-    apiClient.getCredits().then(credits => this.setState({ credits }));
+    this.refreshContent();
   }
 
   componentDidUpdate(_prevProps: TvShowsProps, prevState: TvShowsState) {
@@ -51,6 +50,14 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
         window.scrollTo({left: 0, top: this.state.scrollPosition, behavior: 'instant'});
       }, 0);
     }
+    if (apiClient.needRefresh("tvshows")) {
+      this.refreshContent();
+    }
+  }
+
+  refreshContent(): void {
+    apiClient.getTvshows().then(tvshows => { this.lastOrderBy = undefined; this.setState({ tvshows }); });
+    apiClient.getCredits().then(credits => this.setState({ credits }));    
   }
 
   render(): JSX.Element {

@@ -55,6 +55,9 @@ export default class Home extends React.Component<HomeProps, HomeState> {
         document.getElementById("recent-tvshows").scrollTo({left: this.state.tvshowsScrollPosition, top: 0, behavior: 'instant'});
       }, 0);
     }
+    if (apiClient.needRefresh("home")) {
+      this.refreshContent(this.state.selection);
+    }
   }
 
   refreshContent(selection: DbMovie|DbTvshow|undefined): void {

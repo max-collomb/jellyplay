@@ -31,7 +31,7 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       movies: [],
       scrollPosition: 0,
     };
-    apiClient.getMovies().then(movies => { this.lastOrderBy = undefined; this.setState({ movies }); });
+    this.refreshContent();
   }
 
   componentDidUpdate(_prevProps: MoviesProps, prevState: MoviesState) {
@@ -41,6 +41,13 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
         window.scrollTo({left: 0, top: this.state.scrollPosition, behavior: 'instant'});
       }, 0);
     }
+    if (apiClient.needRefresh("movies")) {
+      this.refreshContent();
+    }
+  }
+
+  refreshContent() {
+    apiClient.getMovies().then(movies => { this.lastOrderBy = undefined; this.setState({ movies }); });
   }
 
   render(): JSX.Element {

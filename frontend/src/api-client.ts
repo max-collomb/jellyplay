@@ -15,6 +15,32 @@ const cache = {
 };
 
 class ApiClient {
+
+  clearCache() {
+    cache.homeLists = null;
+    cache.homeListsTs = 0;
+    cache.movies = null;
+    cache.moviesTs = 0;
+    cache.tvshows = null;
+    cache.tvshowsTs = 0;
+    cache.credits = null;
+    cache.creditsTs = 0;
+  }
+
+  needRefresh(category: string): boolean {
+    switch (category) {
+    case "home":
+      return cache.homeListsTs == 0 || cache.homeListsTs < cache.lastUpdate;
+    case "movies":
+      return cache.moviesTs == 0 || cache.moviesTs < cache.lastUpdate;
+    case "tvshows":
+      return cache.tvshowsTs == 0 || cache.tvshowsTs < cache.lastUpdate;
+    case "credits":
+      return cache.creditsTs == 0 || cache.creditsTs < cache.lastUpdate;
+    }
+    return false;
+  }
+
   async getConfig(): Promise<Config> {
     return new Promise((resolve, reject) => {
       if (cache.config) {
