@@ -4,13 +4,13 @@ import { Config, DbMovie, DbUser, UserMovieStatus } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
 import { getMovieLanguage, getMovieDuration, getUserMovieStatus, getMovieProgress, playMovie } from './common';
 import apiClient from './api-client';
+import { router } from './router';
+import eventBus from './event-bus';
 
 type MovieCardProps = {
   movie: DbMovie;
   config: Config;
   user: DbUser;
-  onChanged: () => void;
-  onSelected: (movie: DbMovie) => void;
 };
 type MovieCardState = {
   currentStatus: SeenStatus;
@@ -21,6 +21,7 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
 
   constructor(props: MovieCardProps) {
     super(props);
+    this.handleEventMoviePositionChanged = this.handleEventMoviePositionChanged.bind(this);
     const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
     this.state = {
       currentStatus: us ? us.currentStatus : SeenStatus.unknown,
@@ -28,35 +29,44 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
     };
   }
 
+  componentDidMount() {
+    eventBus.on("movie-position-changed", this.handleEventMoviePositionChanged);
+  }
+
+  componentWillUnmount() {
+    eventBus.detach("movie-position-changed", this.handleEventMoviePositionChanged);
+  }
+
+  handleEventMoviePositionChanged = (evt: any) => {
+    if (evt.filename == this.props.movie.filename) {
+      this.props.movie.userStatus = evt.userStatus;
+      const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
+      const percentPos = (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0;
+      const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
+      if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
+        this.setState({ percentPos, currentStatus });
+      }
+    }
+  }
+
   handleToggleStatus(movie: DbMovie, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
-    apiClient.setMovieStatus(movie, this.props.user.name, status).then((userStatus: UserMovieStatus[]) => {
-      movie.userStatus = userStatus;
-      this.props.onChanged();
-    });
     evt.stopPropagation();
     evt.preventDefault();
+    apiClient.setMovieStatus(movie, this.props.user.name, status).then((userStatus: UserMovieStatus[]) => {
+      movie.userStatus = userStatus;
+    });
   }
 
   handleClick(evt: React.MouseEvent<HTMLElement>): void {
-    this.props.onSelected(this.props.movie);
     evt.stopPropagation();
     evt.preventDefault();
+    router.navigateTo(`#/movie/${this.props.movie.tmdbid}`);
   }
 
   handlePlayMovie(evt: React.MouseEvent<HTMLElement>): void {
-    playMovie(this.props.config, this.props.movie, this.props.user, this.handlePlayCallback.bind(this));
     evt.stopPropagation();
     evt.preventDefault();
-  }
-
-  handlePlayCallback(): void {
-    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
-    const percentPos = (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0;
-    const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
-    if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
-      this.props.onChanged();
-      this.setState({ percentPos, currentStatus });
-    }
+    playMovie(this.props.config, this.props.movie, this.props.user);
   }
 
   render(): JSX.Element {

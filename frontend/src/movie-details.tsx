@@ -15,16 +15,13 @@ import Casting from './casting';
 import eventBus from './event-bus';
 
 type MovieDetailsProps = {
-  movie: DbMovie;
+  movieId: number;
   config: Config;
   user: DbUser;
   tmdbClient?: TmdbClient;
-  onClosed: () => void;
-  onChanged: () => void;
-  onReplaced: (movie: DbMovie) => void;
-  onDeleted: (movie: DbMovie) => void;
 };
 type MovieDetailsState = {
+  movie: DbMovie;
   credits: DbCredit[];
   fixingMetadata: boolean;
   renaming: boolean;
@@ -37,16 +34,38 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
 
   constructor(props: MovieDetailsProps) {
     super(props);
-    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
+    this.handleEventMoviePositionChanged = this.handleEventMoviePositionChanged.bind(this);
     this.state = {
+      movie: { filename: "", tmdbid: 0, title: "", originalTitle: "", year: 0, duration: 0, directors: [], writers: [], cast: [], genres: [], countries: [], audience: 0, created: 0, filesize: 0, video: { width: 0, height: 0, codec: "" }, audio: [], subtitles: [], synopsys: "", backdropPath: "", posterPath: "", userStatus: [], searchableContent: "" },
       credits: [],
       tabKey: "cast",
       fixingMetadata: false,
       renaming: false,
-      currentStatus: us ? us.currentStatus : SeenStatus.unknown,
-      percentPos: (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0,
+      currentStatus: SeenStatus.unknown,
+      percentPos: 0,
     };
+    apiClient.getMovies().then(movies => {
+      let movie: DbMovie|undefined = movies.find(m => m.tmdbid == this.props.movieId);
+      if (movie) {
+        const us: UserMovieStatus|null = getUserMovieStatus(movie, this.props.user);
+        this.setState({
+          movie,
+          currentStatus: us ? us.currentStatus : SeenStatus.unknown,
+          percentPos: (us && movie.duration) ? Math.floor(100 * us.position / movie.duration) : 0,
+        })
+      } else {
+        this.setState({ movie: {...this.state.movie, tmdbid: -1 }});
+      }
+    });
     apiClient.getCredits().then(credits => this.setState({ credits }));
+  }
+
+  componentDidMount() {
+    eventBus.on("movie-position-changed", this.handleEventMoviePositionChanged);
+  }
+
+  componentWillUnmount() {
+    eventBus.detach("movie-position-changed", this.handleEventMoviePositionChanged);
   }
 
   getCredit(id: number): DbCredit|null {
@@ -69,92 +88,88 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
      return <>{ links }</>;
   }
 
+  handleEventMoviePositionChanged(evt: any): void {
+    if (evt.filename == this.state.movie.filename) {
+      this.state.movie.userStatus = evt.userStatus;
+      const us: UserMovieStatus|null = getUserMovieStatus(this.state.movie, this.props.user);
+      const percentPos = (us && this.state.movie.duration) ? Math.floor(100 * us.position / this.state.movie.duration) : 0;
+      const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
+      if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
+        this.setState({ percentPos, currentStatus });
+      }
+    }
+  }
+
   handleCastClick(cast: DbCredit, evt: React.MouseEvent) {
     evt.preventDefault();
     eventBus.emit("set-search", { search: cast.name });
   }
 
   handleToggleStatus(movie: DbMovie, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
-    apiClient.setMovieStatus(movie, this.props.user.name, status).then((userStatus: UserMovieStatus[]) => {
-      movie.userStatus = userStatus;
-      this.props.onChanged();
-    });
     evt.stopPropagation();
     evt.preventDefault();
+    apiClient.setMovieStatus(movie, this.props.user.name, status).then((userStatus: UserMovieStatus[]) => {
+      movie.userStatus = userStatus;
+      this.setState({ movie });
+    });
   }
 
   handleSetAudience(movie: DbMovie, audience: number, evt: React.MouseEvent<HTMLElement>): void {
+    evt.preventDefault();
     if (this.props.user.admin) {
       apiClient.setMovieAudience(movie, audience).then((aud: number) => {
         movie.audience = aud;
-        this.props.onChanged();
+        this.setState({ movie });
       });
     }
-    evt.preventDefault();
   }
 
   handleFixMetadataClick(evt: React.MouseEvent<HTMLElement>): void {
-    this.setState({ fixingMetadata: true });
     evt.preventDefault();
+    this.setState({ fixingMetadata: true });
   }
 
   handleFixingMetadataFormClose(movie?: DbMovie): void {
-    if (movie) {
-      this.props.onReplaced(movie);
-    }
-    this.setState({ fixingMetadata: false });
+    this.setState({ movie: movie || this.state.movie, fixingMetadata: false });
   }
 
   handleRenameClick(evt: React.MouseEvent<HTMLElement>): void {
-    this.setState({ renaming: true });
     evt.preventDefault();
+    this.setState({ renaming: true });
   }
 
   handleRenamingFormClose(): void {
     this.setState({ renaming: false });
   }
 
-  async handleDeleteClick(evt: React.MouseEvent<HTMLElement>): Promise<void> {
-    if (this.props.movie) {
-      await apiClient.deleteFile(this.props.movie.filename);
-      this.props.onDeleted(this.props.movie);
-      // const movies = this.state.movies.filter(m => m.filename !== this.props.movie?.filename)
-      // this.setState({ movies, selection: undefined });
-    }
+  handleDeleteClick(evt: React.MouseEvent<HTMLElement>): void {
     evt.preventDefault();
+    if (this.state.movie) {
+      apiClient.deleteFile(this.state.movie.filename);
+    }
   }
 
   handleClick(evt: React.MouseEvent<HTMLElement>): void {
-    playMovie(this.props.config, this.props.movie, this.props.user, this.handlePlayCallback.bind(this));
     evt.stopPropagation();
     evt.preventDefault();
-  }
-
-  handlePlayCallback(): void {
-    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
-    const percentPos = (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0;
-    const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
-    if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
-      this.props.onChanged();
-      this.setState({ percentPos, currentStatus });
-    }
+    playMovie(this.props.config, this.state.movie, this.props.user);
   }
 
   render(): JSX.Element {
-    if (! this.props.movie) {
-      return <div>Film introuvable. <a href="#" onClick={this.props.onClosed}>Retour</a></div>;
+    if (this.state.movie.tmdbid == -1) {
+      return <div>Film introuvable. <a href="#" onClick={(evt) => { evt.preventDefault(); history.back(); }}>Retour</a></div>;
     }
     if (this.state.fixingMetadata) {
-      return <FixMovieMetadataForm {...this.props} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
+      return <FixMovieMetadataForm {...this.props} movie={this.state.movie} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
     }
     if (this.state.renaming) {
-      return <RenamingForm {...this.props} onClose={this.handleRenamingFormClose.bind(this)}/>;
+      return <RenamingForm {...this.props} movie={this.state.movie} onClose={this.handleRenamingFormClose.bind(this)}/>;
     }
-    const movie: DbMovie = this.props.movie;
+    const movie: DbMovie = this.state.movie;
     const userStatus = getUserMovieStatus(movie, this.props.user);
-    return <div className="media-details movie pt-5" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdropPath ? `, url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
+    return <div className="media-details movie" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdropPath ? `, url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
       <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
-        <a href="#" className="link-light" onClick={this.props.onClosed}>
+        <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); history.back(); }}>
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
           </svg>
@@ -178,7 +193,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
             <div>{movie.year > 0 ? movie.year : ""} &emsp; {getMovieDuration(movie)} &emsp; <img src={`/images/classification/${movie.audience}.svg`} width="18px"/></div>
           </div>
           <div className="actions">
-            <a href="#" className="link-light me-3" onClick={(evt: React.MouseEvent<HTMLElement>) => { evt.stopPropagation(); evt.preventDefault(); playMovie(this.props.config, movie, this.props.user, this.forceUpdate.bind(this)); }}>
+            <a href="#" className="link-light me-3" onClick={this.handleClick.bind(this)}>
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
               </svg>

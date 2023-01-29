@@ -70,10 +70,10 @@ export function getMovieProgress(movie: DbMovie, user: DbUser): JSX.Element {
   return position > 0 ? <div className="progress-bar"><div style={{ width: Math.round(100 * position / movie.duration) + '%' }}></div></div> : <></>;
 }
 
-export function playMovie(config: Config, movie: DbMovie, user: DbUser, callback: Function): void {
+export function playMovie(config: Config, movie: DbMovie, user: DbUser): void {
   const path = encodeURIComponent(`${config.moviesRemotePath}/${movie.filename}`);
   if (window._mpvSchemeSupported) {
-    window._setPosition = apiClient.setMoviePosition.bind(apiClient, movie, user.name, callback);
+    window._setPosition = apiClient.setMoviePosition.bind(apiClient, movie.filename, user.name);
     console.log(`mpv://${path}?pos=${getMoviePosition(movie, user)}`);
     document.location.href = `mpv://${path}?pos=${getMoviePosition(movie, user)}`;
   } else {
@@ -105,6 +105,14 @@ export function getEpisodeCount(tvshow: DbTvshow): string {
     }
   }
   return "";
+}
+
+export function getEpisodeByFilename(tvshow: DbTvshow, filename: string): Episode|null {
+  for(let episode of tvshow.episodes) {
+    if (episode.filename == filename)
+      return episode;
+  }
+  return null;
 }
 
 export function getEpisodeDuration(episode: Episode): string {
@@ -183,14 +191,15 @@ export function renderAudioInfos(audios: AudioInfo[]): JSX.Element {
   return <React.Fragment>{audios.map((audio, idx, all) => <React.Fragment key={idx}>{audio.lang} {audio.ch}ch {audio.codec} {idx < all.length - 1 ? ", " : null}</React.Fragment>)}</React.Fragment>;
 }
 
-export function playTvshow(config: Config, tvshow: DbTvshow, episode: Episode|undefined, user: DbUser, callback: Function): Episode|undefined {
+export function playTvshow(config: Config, tvshow: DbTvshow, episode: Episode|undefined, user: DbUser): Episode|undefined {
   if (! episode) {
     episode = selectCurrentEpisode(tvshow, user);
   }
   if (episode) {
     const path = `${config.tvshowsRemotePath}/${tvshow.foldername}/${episode.filename}`;
     if (window._mpvSchemeSupported) {
-      window._setPosition = apiClient.setEpisodePosition.bind(apiClient, tvshow, episode, user.name, () => callback(episode));
+      window._setPosition = apiClient.setEpisodePosition.bind(apiClient, tvshow.foldername, episode.filename, user.name);
+      console.log(`mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(episode, user)}`);
       document.location.href = `mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(episode, user)}`;
     } else {
       navigator.clipboard.writeText(path).then(function() {

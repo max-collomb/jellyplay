@@ -17,19 +17,16 @@ import { OrderBy } from '../../api/src/enums';
 
 import Home from './home';
 import Movies from './movies';
+import MovieDetails from './movie-details';
 import TvShows from './tvshows';
+import TvshowDetails from './tvshow-details';
 import UserSelection from './user-selection';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
-import { eventBus, EventCallback } from './event-bus';
+import eventBus from './event-bus';
+import { router, MatchedRoute } from './router';
 
 const SCAN_POLL_INTERVAL: number = 1000;
-
-enum AppTab {
-  home = "home",
-  movies = "movies",
-  tvshows = "tvshows",
-};
 
 type AppProps = {};
 type AppState = {
@@ -38,7 +35,7 @@ type AppState = {
   users: DbUser[];
   user?: DbUser;
   optionsVisible: boolean;
-  tab: AppTab;
+  route: MatchedRoute;
   orderBy: OrderBy;
   search: string;
   scanning: boolean;
@@ -47,16 +44,16 @@ type AppState = {
 
 export default class App extends React.Component<AppProps, AppState> {
 
-  handleEventSetSearch: EventCallback;
-
   constructor(props: AppProps) {
     super(props);
+    this.handleEventSetSearch = this.handleEventSetSearch.bind(this);
+    this.handleEventHashChanged = this.handleEventHashChanged.bind(this);
     const orderBy = (localStorage.getItem('orderBy') || "addedDesc") as OrderBy;
     this.state = {
       config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "" },
       users: [],
       optionsVisible: false,
-      tab: AppTab.home,
+      route: { name: "home" },
       orderBy,
       search: "",
       scanning: false,
@@ -79,28 +76,29 @@ export default class App extends React.Component<AppProps, AppState> {
       }
       this.setState({ users, user });
     });
-    this.handleEventSetSearch = (data) => {
-      const input: HTMLElement|null = document.getElementById("search-input");
-      if (input instanceof HTMLInputElement)
-        input.value = data.search;
-      this.setState({ search: data.search, tab: (this.state.tab == AppTab.home ? AppTab.movies : this.state.tab) });
-    };
+    router.add("home", "/home");
+    router.add("movies", "/movies");
+    router.add("movie-details", "/movie/:id");
+    router.add("tvshows", "/tvshows");
+    router.add("tvshow-details", "/tvshow/:id");
   }
 
   componentDidMount() {
     // l'événement "search" n'est pas géré par FormControl => on se replie sur du vanillaJS
     document?.getElementById("search-input")?.addEventListener("search", (evt) => this.setState({ search: (evt?.target as HTMLInputElement).value || "" }));
+    eventBus.on("hash-changed", this.handleEventHashChanged);
     eventBus.on("set-search", this.handleEventSetSearch);
   }
 
   componentWillUnmount() {
+    eventBus.detach("hash-changed", this.handleEventHashChanged);
     eventBus.detach("set-search", this.handleEventSetSearch);
   }
 
   initPollScan(finished: boolean) {
     if (finished) {
       apiClient.clearCache();
-      this.forceUpdate();
+      this.setState({ optionsVisible: false });
     } else {
       setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
     }
@@ -113,13 +111,19 @@ export default class App extends React.Component<AppProps, AppState> {
     });
   }
 
-  handleOptionsToggle(isVisible: boolean): void {
-    this.setState({ optionsVisible: isVisible });
+  handleEventSetSearch(data: any): void {
+    const input: HTMLElement|null = document.getElementById("search-input");
+    if (input instanceof HTMLInputElement)
+      input.value = data.search;
+    this.setState({ search: data.search, route: (this.state.route.name != "movies" && this.state.route.name != "tvshows" ? { name: "movies"} : this.state.route) });
   }
 
-  handleTabClick(tab: AppTab, evt: React.MouseEvent<HTMLElement>): void {
-    this.setState({ tab });
-    evt.preventDefault();
+  handleEventHashChanged(route: any): void {
+    this.setState(route);
+  }
+
+  handleOptionsToggle(isVisible: boolean): void {
+    this.setState({ optionsVisible: isVisible });
   }
 
   handleUserSelected(user?: DbUser): void {
@@ -167,24 +171,34 @@ export default class App extends React.Component<AppProps, AppState> {
       content = <div className="d-flex justify-content-center mt-5"><div className="spinner-border text-light"></div></div>;
     } else if (! this.state.user) {
       content = <UserSelection users={this.state.users} onValidation={this.handleUserSelected.bind(this)}/>
-    } else if (this.state.tab == AppTab.home) {
+    } else if (this.state.route.name == "home") {
       content = <Home config={this.state.config}
                       user={this.state.user}
                       tmdbClient={this.state.tmdbClient}
                       orderBy={this.state.orderBy}
                       search={this.state.search}/>;
-    } else if (this.state.tab == AppTab.movies) {
+    } else if (this.state.route.name == "movies") {
       content = <Movies config={this.state.config}
                         user={this.state.user}
                         tmdbClient={this.state.tmdbClient}
                         orderBy={this.state.orderBy}
                         search={this.state.search}/>;
-    } else if (this.state.tab == AppTab.tvshows) {
+    } else if (this.state.route.name == "movie-details" && this.state.route.id) {
+      content = <MovieDetails config={this.state.config}
+                              user={this.state.user}
+                              tmdbClient={this.state.tmdbClient}
+                              movieId={this.state.route.id}/>;
+    } else if (this.state.route.name == "tvshows") {
       content = <TvShows config={this.state.config}
                          user={this.state.user}
                          tmdbClient={this.state.tmdbClient}
                          orderBy={this.state.orderBy}
                          search={this.state.search}/>
+    } else if (this.state.route.name == "tvshow-details" && this.state.route.id) {
+      content = <TvshowDetails config={this.state.config}
+                               user={this.state.user}
+                               tmdbClient={this.state.tmdbClient}
+                               tvshowId={this.state.route.id}/>;
     }
 
     return (
@@ -193,22 +207,19 @@ export default class App extends React.Component<AppProps, AppState> {
           <Container fluid>
             <Nav className="me-auto">
               <Nav.Link
-                href="#home"
-                className={ (this.state.tab == AppTab.home) ? "active" : "" }
-                onClick={ this.handleTabClick.bind(this, AppTab.home) }
+                href="#/home"
+                active={ this.state.route.name == "home" }
                 style={{ lineHeight: "18px" }}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-house-door-fill" viewBox="0 0 16 16"><path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5z"/></svg>
               </Nav.Link>
               <Nav.Link
-                href="#movies"
-                className={ (this.state.tab == AppTab.movies) ? "active" : "" }
-                onClick={ this.handleTabClick.bind(this, AppTab.movies) }>
+                href="#/movies"
+                active={ this.state.route.name == "movies" }>
                 Films
               </Nav.Link>
               <Nav.Link
-                href="#tvshows"
-                className={ (this.state.tab == AppTab.tvshows) ? "active" : "" }
-                onClick={ this.handleTabClick.bind(this, AppTab.tvshows) }>
+                href="#/tvshows"
+                active={ this.state.route.name == "tvshows" }>
                 Séries
               </Nav.Link>
             </Nav>

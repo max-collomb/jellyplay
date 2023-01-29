@@ -8,22 +8,21 @@ import Tooltip from 'react-bootstrap/Tooltip';
 
 import { Config, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
 import { OrderBy, SeenStatus } from '../../api/src/enums';
-import { MoreToggle, MultiItem, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
+import { MoreToggle, MultiItem, getEpisodeByFilename, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
 import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
 import Casting from './casting';
+import eventBus from './event-bus';
 
 type TvShowDetailsProps = {
-  tvshow: DbTvshow;
+  tvshowId: number;
   config: Config;
   user: DbUser;
   tmdbClient?: TmdbClient;
-  onClosed: () => void;
-  onChanged: () => void;
-  onReplaced: (tvshow: DbTvshow) => void;
 };
 type TvShowDetailsState = {
+  tvshow: DbTvshow;
   fixingMetadata: boolean;
   tabSeason: number;
   tabKey: string;
@@ -37,19 +36,52 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
 
   constructor(props: TvShowDetailsProps) {
     super(props);
+    this.handleEventEpisodePositionChanged = this.handleEventEpisodePositionChanged.bind(this);
     this.state = {
-      tabSeason: selectCurrentSeason(this.props.tvshow, this.props.user),
+      tvshow: { foldername: "", isSaga: false, tmdbid: 0, title: "", originalTitle: "", countries: [], synopsys: "", genres: [], audience: 0, backdropPath: "", posterPath: "", seasons: [], episodes: [], userStatus: [], createdMin: 0, createdMax: 0, airDateMin: "", airDateMax: "", searchableContent: "", },
+      tabSeason: -1,
       tabKey: "cast",
       fixingMetadata: false,
       currentStatus: SeenStatus.unknown,
       percentPos: 0,
     };
+    apiClient.getTvshows().then(tvshows => {
+      let tvshow: DbTvshow|undefined = tvshows.find(t => t.tmdbid == this.props.tvshowId);
+      if (tvshow) {
+        this.setState({ tvshow, tabSeason: selectCurrentSeason(tvshow, this.props.user) })
+      } else {
+        this.setState({ tvshow: {...this.state.tvshow, tmdbid: -1 }});
+      }
+    });
+  }
+
+  componentDidMount() {
+    eventBus.on("episode-position-changed", this.handleEventEpisodePositionChanged);
+  }
+
+  componentWillUnmount() {
+    eventBus.detach("episode-position-changed", this.handleEventEpisodePositionChanged);
+  }
+
+  handleEventEpisodePositionChanged(evt: any): void {
+    if (evt.foldername == this.state.tvshow.foldername) {
+      let episode: Episode|null = getEpisodeByFilename(this.state.tvshow, evt.filename);
+      if (episode) {
+        episode.userStatus = evt.userStatus;
+        const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode, this.props.user);
+        const percentPos = (us && episode.duration) ? Math.floor(100 * us.position / episode.duration) : 0;
+        const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
+        if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
+          this.setState({ percentPos, currentStatus });
+        }
+      }
+    }
   }
 
   handleToggleStatus(tvshow: DbTvshow, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
     apiClient.setTvshowStatus(tvshow, this.props.user.name, status).then((userStatus: UserTvshowStatus[]) => {
       tvshow.userStatus = userStatus;
-      this.props.onChanged();
+      this.setState({ tvshow });
     });
     evt.stopPropagation();
     evt.preventDefault();
@@ -58,7 +90,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   handleToggleEpisodeStatus(tvshow: DbTvshow, episode: Episode, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
     apiClient.setEpisodeStatus(tvshow, episode, this.props.user.name, status).then((userStatus: UserEpisodeStatus[]) => {
       episode.userStatus = userStatus;
-      this.props.onChanged();
+      this.setState({ tvshow });
     });
     evt.stopPropagation();
     evt.preventDefault();
@@ -68,7 +100,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
     if (this.props.user.admin) {
       apiClient.setTvshowAudience(tvshow, audience).then((aud: number) => {
         tvshow.audience = aud;
-        this.props.onChanged();
+      this.setState({ tvshow });
       });
     }
     evt.preventDefault();
@@ -81,16 +113,13 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
 
   handleFixingMetadataFormClose(tvshow?: DbTvshow): void {
     if (tvshow) {
-      this.props.onReplaced(tvshow);
-    //   const tvshows = this.state.tvshows.filter(m => m.foldername !== tvshow.foldername)
-    //   tvshows.push(tvshow);
-    //   this.setState({ tvshows, selection: tvshow });
+      this.setState({ tvshow });
     }
     this.setState({ fixingMetadata: false });
   }
 
   handlePlayTvshow(episode: Episode|undefined, evt: React.MouseEvent<HTMLElement>): void {
-    const episode2: Episode|undefined = playTvshow(this.props.config, this.props.tvshow, episode, this.props.user, this.handlePlayCallback.bind(this));
+    const episode2: Episode|undefined = playTvshow(this.props.config, this.state.tvshow, episode, this.props.user, this.handlePlayCallback.bind(this));
     if (episode2) {
       const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode2, this.props.user);
       this.setState({
@@ -108,18 +137,18 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
       const percentPos = (us && episode.duration) ? Math.floor(100 * us.position / episode.duration) : 0;
       const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
       if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
-        this.props.onChanged();
+        this.setState({ tvshow: this.state.tvshow });
         this.setState({ percentPos, currentStatus });
       }
     }
   }
 
   handleToggleAllStatus(season: number|undefined, status: SeenStatus): void {
-    for(const episode of this.props.tvshow.episodes) {
+    for(const episode of this.state.tvshow.episodes) {
       if (season == undefined || episode.seasonNumber == season) {
-        apiClient.setEpisodeStatus(this.props.tvshow, episode, this.props.user.name, status).then((userStatus: UserEpisodeStatus[]) => {
+        apiClient.setEpisodeStatus(this.state.tvshow, episode, this.props.user.name, status).then((userStatus: UserEpisodeStatus[]) => {
           episode.userStatus = userStatus;
-          this.props.onChanged();
+          this.setState({ tvshow: this.state.tvshow });
         });
       }
     }
@@ -207,13 +236,13 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   }
 
   render(): JSX.Element {
-    if (! this.props.tvshow) {
-      return <div>Série introuvable. <a href="#" onClick={this.props.onClosed}>Retour</a></div>;
+    if (this.state.tvshow.tmdbid == -1) {
+      return <div>Série introuvable. <a href="#" onClick={(evt) => { evt.preventDefault(); history.back(); }}>Retour</a></div>;
     }
     if (this.state.fixingMetadata) {
-      return <FixTvshowMetadataForm {...this.props} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
+      return <FixTvshowMetadataForm {...this.props} tvshow={this.state.tvshow} onClose={this.handleFixingMetadataFormClose.bind(this)}/>;
     }
-    const tvshow: DbTvshow = this.props.tvshow;
+    const tvshow: DbTvshow = this.state.tvshow;
     let selectedSeason: Season|undefined = tvshow.seasons.filter(s => s.seasonNumber == this.state.tabSeason).shift();
     const seasons = tvshow.seasons.slice(0).sort((a, b) => a.seasonNumber - b.seasonNumber);
     const unknownSeasonEpisodeCount: number = tvshow.episodes.filter(e => e.seasonNumber == -1).length; 
@@ -221,9 +250,9 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
       seasons.push({tmdbid: -1, seasonNumber: -1, episodeCount: unknownSeasonEpisodeCount, year: 0, synopsys: "", posterPath: "", cast: [] });
     }
     const userStatus = getTvshowUserStatus(tvshow, this.props.user);
-    return <div className="media-details tvshow pt-5" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (tvshow.backdropPath ? `, url(/images/backdrops_w1280${tvshow.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
+    return <div className="media-details tvshow" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (tvshow.backdropPath ? `, url(/images/backdrops_w1280${tvshow.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
       <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
-        <a href="#" className="link-light" onClick={this.props.onClosed}>
+        <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); history.back(); }}>
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
             <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
           </svg>
@@ -236,7 +265,6 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
             </svg>
           </b>
-          {/*this.getProgress(movie)*/}
         </span>
       </div>
       <div className="title-bar">

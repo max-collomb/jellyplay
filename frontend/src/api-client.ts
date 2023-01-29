@@ -1,4 +1,6 @@
 import { Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilename, ScanStatus, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from '../../api/src/types';
+import { SeenStatus } from '../../api/src/enums';
+import eventBus from './event-bus';
 
 const cache = {
   config: null,
@@ -198,27 +200,25 @@ class ApiClient {
     });    
   }
 
-  setMoviePosition(movie: DbMovie, userName: string, callback: Function, position: number): void {
+  setMoviePosition(filename: string, userName: string, position: number): void {
     fetch('/catalog/movie/set_position', {
       method: "POST",
       headers: new Headers({'content-type': 'application/json'}),
-      body: JSON.stringify({ filename: movie.filename, userName, position })
+      body: JSON.stringify({ filename, userName, position })
     }).then(async (response) => {
       let json = await response.json();
-      movie.userStatus = json.userStatus;
-      callback();
+      eventBus.emit("movie-position-changed", { filename, userStatus: json.userStatus });
     });
   }
 
-  setEpisodePosition(tvshow: DbTvshow, episode: Episode, userName: string, callback: Function, position: number): void {
+  setEpisodePosition(foldername: string, filename: string, userName: string, position: number): void {
     fetch('/catalog/tvshow/set_position', {
       method: "POST",
       headers: new Headers({'content-type': 'application/json'}),
-      body: JSON.stringify({ foldername: tvshow.foldername, filename: episode.filename, userName, position })
+      body: JSON.stringify({ foldername, filename, userName, position })
     }).then(async (response) => {
       let json = await response.json();
-      episode.userStatus = json.userStatus;
-      callback();
+      eventBus.emit("episode-position-changed", { foldername, filename, userStatus: json.userStatus });
     });
   }
 

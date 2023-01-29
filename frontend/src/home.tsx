@@ -2,12 +2,14 @@ import React from 'react';
 
 import { Config, DbMovie, DbTvshow, DbUser, Episode, HomeLists, Season, UserEpisodeStatus, UserTvshowStatus, VideoInfo } from '../../api/src/types';
 import { OrderBy, SeenStatus } from '../../api/src/enums';
+import { router } from './router';
 import apiClient from './api-client';
 import MovieCard from './movie-card';
 import MovieDetails from './movie-details';
 import TvshowCard from './tvshow-card';
 import TvshowDetails from './tvshow-details';
 import TmdbClient from './tmdb';
+import eventBus from './event-bus';
 
 type ListOptions = {
   title: string;
@@ -25,43 +27,54 @@ type HomeProps = {
 };
 type HomeState = {
   lists: HomeLists;
-  selection?: DbMovie|DbTvshow;
-  windowScrollPosition: number;
-  moviesScrollPosition: number;
-  tvshowsScrollPosition: number;
 };
 
 export default class Home extends React.Component<HomeProps, HomeState> {
 
   constructor(props: HomeProps) {
     super(props);
+    this.handleEventWillNavigate = this.handleEventWillNavigate.bind(this);
     this.state = {
       lists: { inProgress: [], recentMovies: [], recentTvshows: [] },
-      windowScrollPosition: 0,
-      moviesScrollPosition: 0,
-      tvshowsScrollPosition: 0,      
     };
-    this.refreshContent(undefined);
+    this.refreshContent(/*undefined*/);
+  }
+
+  componentDidMount() {
+    eventBus.on("will-navigate", this.handleEventWillNavigate);
+  }
+
+  componentWillUnmount() {
+    eventBus.detach("will-navigate", this.handleEventWillNavigate);
   }
 
   componentDidUpdate(_prevProps: HomeProps, prevState: HomeState) {
-    if (prevState.selection && ! this.state.selection) {
+    if (router.currentRoute?.state?.windowScrollPosition !== undefined) {
       setTimeout(() => {
         //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        window.scrollTo({left: 0, top: this.state.windowScrollPosition, behavior: 'instant'});
+        window.scrollTo({left: 0, top: router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant'});
         //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        document.getElementById("recent-movies").scrollTo({left: this.state.moviesScrollPosition, top: 0, behavior: 'instant'});
+        document.getElementById("recent-movies").scrollTo({left: router.currentRoute?.state?.moviesScrollPosition || 0, top: 0, behavior: 'instant'});
         //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        document.getElementById("recent-tvshows").scrollTo({left: this.state.tvshowsScrollPosition, top: 0, behavior: 'instant'});
+        document.getElementById("recent-tvshows").scrollTo({left: router.currentRoute?.state?.tvshowsScrollPosition || 0, top: 0, behavior: 'instant'});
+        router.currentRoute.state = {};
       }, 0);
     }
     if (apiClient.needRefresh("home")) {
-      this.refreshContent(this.state.selection);
+      this.refreshContent();
     }
   }
 
-  refreshContent(selection: DbMovie|DbTvshow|undefined): void {
-    apiClient.getHome(this.props.user.name).then(lists => this.setState({ lists, selection }));
+  handleEventWillNavigate(evt: any): void {
+    history.replaceState({}, "", "#/home/state/" + JSON.stringify({
+      windowScrollPosition: window.pageYOffset,
+      moviesScrollPosition: document.getElementById("recent-movies")?.scrollLeft || 0,
+      tvshowsScrollPosition: document.getElementById("recent-tvshows")?.scrollLeft || 0
+    }));
+  }
+
+  refreshContent(): void {
+    apiClient.getHome(this.props.user.name).then(lists => this.setState({ lists }));
   }
 
   isMovie(item: DbMovie|DbTvshow): boolean {
@@ -79,10 +92,6 @@ export default class Home extends React.Component<HomeProps, HomeState> {
       container.scrollBy({ left: direction * (container.clientWidth - margin), behavior: "smooth" });
     }
     evt.preventDefault();
-  }
-
-  handleMediaChanged(): void {
-    this.refreshContent(this.state.selection);
   }
 
   renderList(list: (DbMovie|DbTvshow)[], options: ListOptions): JSX.Element {
@@ -110,27 +119,13 @@ export default class Home extends React.Component<HomeProps, HomeState> {
                 return <MovieCard key={idx}
                                   movie={item as DbMovie}
                                   config={this.props.config}
-                                  user={this.props.user}
-                                  onChanged={this.handleMediaChanged.bind(this)}
-                                  onSelected={(movie: DbMovie) => this.setState({
-                                    selection: movie,
-                                    windowScrollPosition: window.pageYOffset,
-                                    moviesScrollPosition: document.getElementById("recent-movies")?.scrollLeft || 0,
-                                    tvshowsScrollPosition: document.getElementById("recent-tvshows")?.scrollLeft || 0
-                                  })}/>;
+                                  user={this.props.user}/>;
               } else if (this.isTvshow(item)) {
                 return <TvshowCard  key={idx}
                                     tvshow={item as DbTvshow}
                                     config={this.props.config}
                                     user={this.props.user}
-                                    showNext={options.mixed}
-                                    onChanged={this.handleMediaChanged.bind(this)}
-                                    onSelected={(tvshow: DbTvshow) => this.setState({
-                                      selection: tvshow,
-                                      windowScrollPosition: window.pageYOffset,
-                                      moviesScrollPosition: document.getElementById("recent-movies")?.scrollLeft || 0,
-                                      tvshowsScrollPosition: document.getElementById("recent-tvshows")?.scrollLeft || 0
-                                    })}/>;
+                                    showNext={options.mixed}/>;
               } else {
                 return <div key={idx}>Elément inconnu</div>;
               }
@@ -141,22 +136,6 @@ export default class Home extends React.Component<HomeProps, HomeState> {
   }
 
   render(): JSX.Element {
-    if (this.state.selection) {
-      if (this.isMovie(this.state.selection)) {
-        return <MovieDetails  {...this.props}
-                              movie={this.state.selection as DbMovie}
-                              onClosed={() => this.setState({ selection: undefined })}
-                              onChanged={this.handleMediaChanged.bind(this)}
-                              onReplaced={this.refreshContent.bind(this)}
-                              onDeleted={this.refreshContent.bind(this)}/>;
-      } else if (this.isTvshow(this.state.selection)) {
-        return <TvshowDetails {...this.props}
-                              tvshow={this.state.selection as DbTvshow}
-                              onClosed={() => this.setState({ selection: undefined })}
-                              onChanged={this.handleMediaChanged.bind(this)}
-                              onReplaced={this.refreshContent.bind(this)}/>;
-      }
-    }
     return <>
       <div className={this.state.lists.inProgress.length ? "" : "d-none"}>
         {this.renderList(this.state.lists.inProgress, { title: "Reprendre le visionnage", id: "in-progress", mixed: true, scroll: false })}
