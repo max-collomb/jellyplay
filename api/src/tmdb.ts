@@ -232,29 +232,6 @@ export class TmdbClient {
     return credits;
   }
 
-  public async unlinkMovieImages(movie: DbMovie) {
-    let filepath: string;
-    if (movie.posterPath) {
-      filepath = path.join(this.imagePath, 'posters_w342', movie.posterPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting movie poster posters_w342${movie.posterPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-      filepath = path.join(this.imagePath, 'posters_w780', movie.posterPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting movie poster posters_w780${movie.posterPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-    }
-    if (movie.backdropPath) {
-      filepath = path.join(this.imagePath, 'backdrops_w1280', movie.backdropPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting movie backdrop backdrops_w1280${movie.backdropPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-    }
-  }
-
   public async autoIdentifyMovie(movie: DbMovie): Promise<DbCredit[]> {
     const data: ExtractedMovieInfos = extractMovieTitle(movie.filename);
     let id: number|null = data.tmdbid;
@@ -424,34 +401,6 @@ export class TmdbClient {
     }
   }
 
-  public async unlinkTvshowImages(tvshow: DbTvshow) {
-    let filepath: string;
-    if (tvshow.posterPath) {
-      filepath = path.join(this.imagePath, 'posters_w342', tvshow.posterPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting tvshow poster posters_w342${tvshow.posterPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-      filepath = path.join(this.imagePath, 'posters_w780', tvshow.posterPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting tvshow poster posters_w780${tvshow.posterPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-    }
-    if (tvshow.backdropPath) {
-      filepath = path.join(this.imagePath, 'backdrops_w1280', tvshow.backdropPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting tvshow backdrop backdrops_w1280${tvshow.backdropPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-      filepath = path.join(this.imagePath, 'backdrops_w780', tvshow.backdropPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting tvshow backdrop backdrops_w780${tvshow.backdropPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-    }
-  }
-
   public async autoIdentifyTvshow(tvshow: DbTvshow): Promise<void> {
     const data: ExtractedMovieInfos = extractMovieTitle(tvshow.foldername);
     if (tvshow.isSaga) {
@@ -544,16 +493,6 @@ export class TmdbClient {
     } catch(e) {}
   }
 
-  public async unlinkEpisodeImages(episode: Episode) {
-    if (episode.stillPath) {
-      let filepath: string = path.join(this.imagePath, 'stills_w300', episode.stillPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting episode still stills_w300${episode.stillPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-    }
-  }
-
   public async addTvshowSeason(tvshow: DbTvshow, seasonNumber: number): Promise<DbCredit[]> {
     const credits: DbCredit[] = [];
     try {
@@ -611,22 +550,6 @@ export class TmdbClient {
     return credits;
   }
 
-  public async unlinkSeasonImages(season: Season) {
-    let filepath: string;
-    if (season.posterPath) {
-      filepath = path.join(this.imagePath, 'posters_w342', season.posterPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting season poster posters_w342${season.posterPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-      filepath = path.join(this.imagePath, 'posters_w780', season.posterPath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting season poster posters_w780${season.posterPath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-    }
-  }
-
   public async downloadProfileImage(credit: DbCredit) {
     if (credit.profilePath) {
       this.log(`[+] downloading cast profile w185${credit.profilePath}`);
@@ -637,13 +560,4 @@ export class TmdbClient {
     }
   }
 
-  public async unlinkProfileImage(credit: DbCredit) {
-    if (credit.profilePath) {
-      const filepath: string = path.join(this.imagePath, 'profiles_w185', credit.profilePath);
-      await fs.promises.access(filepath).then(async () => {
-        this.log(`[-] deleting cast profile profiles_w185${credit.profilePath}`);
-        await fs.promises.unlink(filepath);
-      }).catch(() => {});
-    }
-  }
 }

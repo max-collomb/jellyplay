@@ -201,21 +201,37 @@ export class Catalog {
     console.log("begin catalog_load");
     await this.dbReady;
     const creditSet: Set<number> = new Set<number>();
+    const imgFilenameSet: Set<string> = new Set<string>();
     //await new Promise(resolve => setTimeout(resolve, 1_000));
-    await this.scanMovies(creditSet);
+    await this.scanMovies(creditSet, imgFilenameSet);
     //await new Promise(resolve => setTimeout(resolve, 1_000));
-    await this.scanTvshows(creditSet);
+    await this.scanTvshows(creditSet, imgFilenameSet);
     if (this.tables.credits) {
       for (const credit of this.tables.credits.find()) {
-        if (! creditSet.has(credit.tmdbid)) {
+        if (creditSet.has(credit.tmdbid)) {
+          imgFilenameSet.add(path.join('profiles_w185', credit.profilePath));
+        } else {
           this.log(`[-] credit unreferenced ${credit.name}`);
-          await this.tmdbClient.unlinkProfileImage(credit);
           this.tables.credits.remove(credit);
         }
       }
     }
+    await this.clearUnusedImages(imgFilenameSet);
     console.log("end catalog_load");
     this.scanning = false;
+  }
+
+  private async clearUnusedImages(imgFilenameSet: Set<string>) {
+    ['backdrops_w1280', 'backdrops_w780', 'posters_w780', 'posters_w342', 'profiles_w185', 'stills_w300']
+    .forEach(async foldername => {
+      const filenames = await fs.promises.readdir(path.join(this.rootPath, 'db', 'images', foldername));
+      for (const filename of filenames) {
+        if(! imgFilenameSet.has(path.join(foldername, filename)) && path.extname(filename).toLowerCase() == ".jpg") {
+          this.log(`[-] deleting image ${path.join(foldername, filename)}`);
+          await fs.promises.unlink(path.join(this.rootPath, 'db', 'images', foldername, filename));
+        }
+      }
+    });
   }
 
   private async recursiveReaddir(rootPath: string): Promise<string[]> {
@@ -249,7 +265,7 @@ export class Catalog {
     return pathes;
   }
 
-  private async scanMovies(creditSet: Set<number>) {
+  private async scanMovies(creditSet: Set<number>, imgFilenameSet: Set<string>) {
     this.log("begin scan_movies");
     // scanne le dossier pour détecter changements
     const filenames: string[] = await this.recursiveReaddir(this.moviesPath);
@@ -305,9 +321,10 @@ export class Catalog {
           movie.cast.forEach(c => creditSet.add(c.tmdbid));
           movie.writers.forEach(id => creditSet.add(id));
           movie.directors.forEach(id => creditSet.add(id));
+          imgFilenameSet.add(path.join('backdrops_w1280', movie.backdropPath)).add(path.join('backdrops_w780', movie.backdropPath));
+          imgFilenameSet.add(path.join('posters_w780', movie.posterPath)).add(path.join('posters_w342', movie.posterPath));
         } else {
           this.log(`[-] file deleted ${movie.filename}`);
-          await this.tmdbClient.unlinkMovieImages(movie);
           this.tables.movies.remove(movie);
         }
       }
@@ -315,7 +332,7 @@ export class Catalog {
     this.log("end scan_movies");
   }
 
-  private async scanTvshows(creditSet: Set<number>) {
+  private async scanTvshows(creditSet: Set<number>, imgFilenameSet: Set<string>) {
     this.log("begin scan_tvshows");
     // scanne le dossier pour détecter changements
     const foldernames: string[] = await this.readDirectories(this.tvshowsPath);
@@ -411,9 +428,9 @@ export class Catalog {
           for (const episode of tvshow.episodes) {
             if (filenameSet.has(episode.filename)) {
               seasonNumberSet.add(episode.seasonNumber);
+              imgFilenameSet.add(path.join('stills_w300', episode.stillPath));
             } else {
               this.log(`[-] file deleted ${episode.filename}`);
-              await this.tmdbClient.unlinkEpisodeImages(episode);
               episode.filename = "";
             }
           }
@@ -423,9 +440,9 @@ export class Catalog {
           for (const season of tvshow.seasons) {
             if (seasonNumberSet.has(season.seasonNumber)) {
               season.cast.forEach(c => creditSet.add(c.tmdbid));
+              imgFilenameSet.add(path.join('posters_w780', season.posterPath)).add(path.join('posters_w342', season.posterPath));
             } else {
               this.log(`[-] season unreferenced ${season.seasonNumber}`);
-              await this.tmdbClient.unlinkSeasonImages(season);
             }
           }
           tvshow.seasons = tvshow.seasons.filter(s => seasonNumberSet.has(s.seasonNumber));
@@ -446,12 +463,11 @@ export class Catalog {
       for (const tvshow of this.tables.tvshows.find()) {
         if (foldernameSet.has(tvshow.foldername)) {
           tvshow.seasons.forEach(s => s.cast.forEach(c => creditSet.add(c.tmdbid)));
+          imgFilenameSet.add(path.join('backdrops_w1280', tvshow.backdropPath)).add(path.join('backdrops_w780', tvshow.backdropPath));
+          imgFilenameSet.add(path.join('posters_w780', tvshow.posterPath)).add(path.join('posters_w342', tvshow.posterPath));
           // await this.tmdbClient.updateTvshowData(tvshow);
         } else {
           this.log(`[-] folder deleted ${tvshow.foldername}`);
-          await this.tmdbClient.unlinkTvshowImages(tvshow);
-          tvshow.episodes.forEach(async episode => await this.tmdbClient.unlinkEpisodeImages(episode));
-          tvshow.seasons.forEach(async season => await this.tmdbClient.unlinkSeasonImages(season));
           this.tables.tvshows.remove(tvshow);
         }
       }
@@ -788,7 +804,7 @@ export class Catalog {
       tvshow.countries = [];
 
       await this.tmdbClient.getTvshowData(tvshow);
-      await this.scanTvshows(new Set<number>());
+      await this.scanTvshows(new Set<number>(), new Set<string>());
       this.lastUpdate = Date.now();
       // pas de ménage des données de l'ancienne série => sera fait lors du prochain scan complet
     }
