@@ -12,6 +12,7 @@ import TmdbClient from './tmdb';
 import FixMovieMetadataForm from './fix-movie-metadata-form';
 import RenamingForm from './renaming-form';
 import Casting from './casting';
+import Recommandations from './recommandations';
 import eventBus from './event-bus';
 
 type MovieDetailsProps = {
@@ -44,6 +45,25 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
       currentStatus: SeenStatus.unknown,
       percentPos: 0,
     };
+    this.loadMovie();
+    apiClient.getCredits().then(credits => this.setState({ credits }));
+  }
+
+  componentDidUpdate(prevProps: MovieDetailsProps, _prevState: MovieDetailsState) {
+    if (prevProps.movieId != this.props.movieId) {
+      this.loadMovie();
+    }
+  }
+
+  componentDidMount() {
+    eventBus.on("movie-position-changed", this.handleEventMoviePositionChanged);
+  }
+
+  componentWillUnmount() {
+    eventBus.detach("movie-position-changed", this.handleEventMoviePositionChanged);
+  }
+
+  loadMovie(): void {
     apiClient.getMovies().then(movies => {
       let movie: DbMovie|undefined = movies.find(m => m.tmdbid == this.props.movieId);
       if (movie) {
@@ -57,15 +77,6 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
         this.setState({ movie: {...this.state.movie, tmdbid: -1 }});
       }
     });
-    apiClient.getCredits().then(credits => this.setState({ credits }));
-  }
-
-  componentDidMount() {
-    eventBus.on("movie-position-changed", this.handleEventMoviePositionChanged);
-  }
-
-  componentWillUnmount() {
-    eventBus.detach("movie-position-changed", this.handleEventMoviePositionChanged);
   }
 
   getCredit(id: number): DbCredit|null {
@@ -268,8 +279,9 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
           <Tab eventKey="cast" title="Casting">
             <Casting cast={movie.cast} />
           </Tab>
-          {/*<Tab eventKey="similar" title="Recommandations">
-          </Tab>*/}
+          <Tab eventKey="similar" title="Recommandations">
+            <Recommandations movieId={this.state.movie.tmdbid} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
+          </Tab>
         </Tabs>
       </div>
     </div>;

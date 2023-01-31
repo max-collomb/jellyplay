@@ -1,5 +1,5 @@
 import { MovieDb } from 'moviedb-promise';
-import { MovieResult, TvResult } from 'moviedb-promise/dist/request-types';
+import { MovieResult, TvResult, MovieRecommendationsResponse } from 'moviedb-promise/dist/request-types';
 
 import { DbMovie, DbTvshow, DbCredit, ParsedFilename } from '../../api/src/types';
 
@@ -44,6 +44,16 @@ export default class TmdbClient {
        query: title,
     });
     return response?.results || [];
+  }
+
+  public async getMovieRecommandations(movieId: number, page?: number): Promise<MovieRecommendationsResponse|undefined> {
+    await this.initMovieDb();
+    const response = await this.movieDb?.movieRecommendations({
+      language: this.lang,
+      id: movieId,
+      page: (page || 1).toString(),
+    });
+    return response;
   }
 
 }
