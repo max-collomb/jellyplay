@@ -41,10 +41,12 @@ export default class Home extends React.Component<HomeProps, HomeState> {
   }
 
   componentDidMount() {
+    window._exited = this.refreshContent.bind(this);
     eventBus.on("will-navigate", this.handleEventWillNavigate);
   }
 
   componentWillUnmount() {
+    window._exited = () => {};
     eventBus.detach("will-navigate", this.handleEventWillNavigate);
   }
 
@@ -119,7 +121,8 @@ export default class Home extends React.Component<HomeProps, HomeState> {
                 return <MovieCard key={idx}
                                   movie={item as DbMovie}
                                   config={this.props.config}
-                                  user={this.props.user}/>;
+                                  user={this.props.user}
+                                  onStatusUpdated={this.refreshContent.bind(this)}/>;
               } else if (this.isTvshow(item)) {
                 return <TvshowCard  key={idx}
                                     tvshow={item as DbTvshow}

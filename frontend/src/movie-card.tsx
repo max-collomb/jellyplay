@@ -11,6 +11,7 @@ type MovieCardProps = {
   movie: DbMovie;
   config: Config;
   user: DbUser;
+  onStatusUpdated?: () => void;
 };
 type MovieCardState = {
   currentStatus: SeenStatus;
@@ -44,6 +45,9 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
       const percentPos = (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0;
       const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
       if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
+        if (currentStatus != this.state.currentStatus && this.props.onStatusUpdated != undefined) {
+          this.props.onStatusUpdated();
+        }
         this.setState({ percentPos, currentStatus });
       }
     }
@@ -54,6 +58,9 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
     evt.preventDefault();
     apiClient.setMovieStatus(movie, this.props.user.name, status).then((userStatus: UserMovieStatus[]) => {
       movie.userStatus = userStatus;
+      this.setState({ currentStatus: status });
+      if (this.props.onStatusUpdated != undefined)
+        this.props.onStatusUpdated();
     });
   }
 

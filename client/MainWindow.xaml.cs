@@ -77,7 +77,7 @@ namespace client
           if (proc != null)
           {
             await proc.WaitForExitAsync();
-            await webView.CoreWebView2.ExecuteScriptAsync($"console.log(\"exited with code {proc.ExitCode}\");");
+            await webView.CoreWebView2.ExecuteScriptAsync($"window._exited(); console.log(\"exited with code {proc.ExitCode}\");");
           }
         }
       }

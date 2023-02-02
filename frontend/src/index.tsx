@@ -9,6 +9,9 @@ import './style.css';
 declare global {
   var _mpvSchemeSupported: boolean;
   var _setPosition: (position: number) => void;
+  var _exited: () => void;
 }
+
+window._exited = () => {};
 
 ReactDOM.render(<App />, document.getElementById('root'));
