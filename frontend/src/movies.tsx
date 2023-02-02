@@ -90,10 +90,10 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       this.lastOrderBy = this.props.orderBy;
       let sortFn: (a: DbMovie, b: DbMovie) => number;
       const compare = new Intl.Collator('fr', { usage: "sort", sensitivity: "base" }).compare;
-      sortFn = (a: DbMovie, b: DbMovie) => a.created - b.created;
+      sortFn = (a: DbMovie, b: DbMovie) => b.created - a.created;
       switch(this.props.orderBy) {
         case OrderBy.addedDesc:    /* valeur par défaut */                                               break;
-        case OrderBy.addedAsc:     sortFn = (a: DbMovie, b: DbMovie) => b.created - a.created;           break;
+        case OrderBy.addedAsc:     sortFn = (a: DbMovie, b: DbMovie) => a.created - b.created;           break;
         case OrderBy.titleAsc:     sortFn = (a: DbMovie, b: DbMovie) => compare(a.title, b.title);       break;
         case OrderBy.titleDesc:    sortFn = (a: DbMovie, b: DbMovie) => compare(b.title, a.title);       break;
         case OrderBy.yearDesc:     sortFn = (a: DbMovie, b: DbMovie) => b.year - a.year;                 break;
