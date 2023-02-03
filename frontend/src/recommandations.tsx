@@ -82,6 +82,8 @@ export default class Recommandations extends React.Component<RecommandationsProp
     evt.preventDefault();
     if (this.isOwned(id)) {
       router.navigateTo(`#/movie/${id}`);
+    } else {
+      router.navigateTo(`#/tmdb/movie/${id}`);
     }
   }
 

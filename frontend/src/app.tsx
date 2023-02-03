@@ -18,6 +18,7 @@ import { OrderBy } from '../../api/src/enums';
 import Home from './home';
 import Movies from './movies';
 import MovieDetails from './movie-details';
+import TmdbMovieDetails from './tmdb-movie-details';
 import TvShows from './tvshows';
 import TvshowDetails from './tvshow-details';
 import UserSelection from './user-selection';
@@ -78,6 +79,7 @@ export default class App extends React.Component<AppProps, AppState> {
     });
     router.add("home", "/home");
     router.add("movies", "/movies");
+    router.add("tmdb-movie-details", "/tmdb/movie/:id");
     router.add("movie-details", "/movie/:id");
     router.add("tvshows", "/tvshows");
     router.add("tvshow-details", "/tvshow/:id");
@@ -188,6 +190,11 @@ export default class App extends React.Component<AppProps, AppState> {
                               user={this.state.user}
                               tmdbClient={this.state.tmdbClient}
                               movieId={this.state.route.id}/>;
+    } else if (this.state.route.name == "tmdb-movie-details" && this.state.route.id) {
+      content = <TmdbMovieDetails config={this.state.config}
+                                  user={this.state.user}
+                                  tmdbClient={this.state.tmdbClient}
+                                  movieId={this.state.route.id}/>;
     } else if (this.state.route.name == "tvshows") {
       content = <TvShows config={this.state.config}
                          user={this.state.user}

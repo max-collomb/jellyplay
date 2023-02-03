@@ -1,0 +1,199 @@
+import React from 'react';
+
+import Tabs from 'react-bootstrap/Tabs';
+import Tab from 'react-bootstrap/Tab';
+import Spinner from 'react-bootstrap/Spinner';
+import { CreditsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
+
+import { Config, DbCredit, DbUser } from '../../api/src/types';
+import apiClient from './api-client';
+import TmdbClient from './tmdb';
+import Recommandations from './recommandations';
+import eventBus from './event-bus';
+
+type TmdbMovieDetailsProps = {
+  movieId: number;
+  config: Config;
+  user: DbUser;
+  tmdbClient?: TmdbClient;
+};
+type TmdbMovieDetailsState = {
+  movie?: MovieResponse;
+  credits?: CreditsResponse;
+  fetchedCredits: DbCredit[];
+  tabKey: string;
+};
+
+export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsProps, TmdbMovieDetailsState> {
+
+  constructor(props: TmdbMovieDetailsProps) {
+    super(props);
+    this.state = {
+      fetchedCredits: [],
+      tabKey: "cast",
+    };
+    this.fetchMovie();
+    apiClient.getCredits().then(fetchedCredits => this.setState({ fetchedCredits }));
+  }
+
+  componentDidUpdate(prevProps: TmdbMovieDetailsProps, _prevState: TmdbMovieDetailsState) {
+    if (prevProps.movieId != this.props.movieId) {
+      this.fetchMovie();
+    }
+  }
+
+  async fetchMovie(): Promise<void> {
+    const movie = await this.props.tmdbClient?.getMovie(this.props.movieId);
+    const credits = await this.props.tmdbClient?.getMovieCredits(this.props.movieId);
+    this.setState({ movie, credits });
+  }
+
+  getCredit(id: number): DbCredit|null {
+    for(const credit of this.state.fetchedCredits) {
+      if (credit.tmdbid == id) {
+        return credit;
+      }
+    }
+    return null;
+  }
+
+  getDuration(duration: number|null): string {
+    if (duration) {
+      return Math.floor(duration / 60) + 'h' + (duration % 60).toString().padStart(2, '0');
+    }
+    return "";
+  }
+
+  getAudience(movie?: MovieResponse): number {
+    if (movie) {
+      const audiences = [];
+      if ((movie as any).release_dates?.results) {
+        for (const country of (movie as any).release_dates.results) {
+          if (country.iso_3166_1 == "US") {
+            for (const date of country.release_dates) {
+              switch (date.certification) {
+                case "NR"   : break;                     // "No rating information."
+                case "G"    : audiences.push( 0); break; // "All ages admitted. There is no content that would be objectionable to most parents. This is one of only two ratings dating back to 1968 that still exists today."
+                case "PG"   : audiences.push(10); break; // "Some material may not be suitable for children under 10. These films may contain some mild language, crude/suggestive humor, scary moments and/or violence. No drug content is present. There are a few exceptions to this rule. A few racial insults may also be heard."
+                case "PG-13": audiences.push(12); break; // "Some material may be inappropriate for children under 13. Films given this rating may contain sexual content, brief or partial nudity, some strong language and innuendo, humor, mature themes, political themes, terror and/or intense action violence. However, bloodshed is rarely present. This is the minimum rating at which drug content is present."
+                case "R"    : audiences.push(16); break; // "Under 17 requires accompanying parent or adult guardian 21 or older. The parent/guardian is required to stay with the child under 17 through the entire movie, even if the parent gives the child/teenager permission to see the film alone. These films may contain strong profanity, graphic sexuality, nudity, strong violence, horror, gore, and strong drug use. A movie rated R for profanity often has more severe or frequent language than the PG-13 rating would permit. An R-rated movie may have more blood, gore, drug use, nudity, or graphic sexuality than a PG-13 movie would admit."
+                case "NC-17": audiences.push(18); break; // "These films contain excessive graphic violence, intense or explicit sex, depraved, abhorrent behavior, explicit drug abuse, strong language, explicit nudity, or any other elements which, at present, most parents would consider too strong and therefore off-limits for viewing by their children and teens. NC-17 does not necessarily mean obscene or pornographic in the oft-accepted or legal meaning of those words."
+              }
+            };
+          } else if (country.iso_3166_1 == "FR") {
+            for (const date of country.release_dates) {
+              switch (date.certification) {
+                case "U" : audiences.push( 0); break; // "(Tous publics) valid for all audiences."
+                case "10": audiences.push(10); break; // "(Déconseillé aux moins de 10 ans) unsuitable for children younger than 10 (this rating is only used for TV); equivalent in theatres : \"avertissement\" (warning), some scenes may be disturbing to young children and sensitive people; equivalent on video : \"accord parental\" (parental guidance)."
+                case "12": audiences.push(12); break; // "(Interdit aux moins de 12 ans) unsuitable for children younger than 12 or forbidden in cinemas for under 12."
+                case "16": audiences.push(16); break; // "(Interdit aux moins de 16 ans) unsuitable for children younger than 16 or forbidden in cinemas for under 16."
+                case "18": audiences.push(18); break; // "(Interdit aux mineurs) unsuitable for children younger than 18 or forbidden in cinemas for under 18."
+              }
+            };
+          }
+        }
+      }
+      return (audiences.length) ? Math.max.apply(null, audiences) : 999;
+    }
+    return 999;
+  }
+
+  renderCredits(ids: number[]): JSX.Element {
+    const links = [];
+     for (const id of ids) {
+       const credit: DbCredit|null = this.getCredit(id);
+       if (credit) {
+         links.push(<span className="cast" key={id}><a href="#" onClick={ this.handleCastClick.bind(this, credit) }>{ credit.name }</a></span>);
+       }
+     }
+     return <>{ links }</>;
+  }
+
+  handleCastClick(cast: DbCredit, evt: React.MouseEvent) {
+    evt.preventDefault();
+    eventBus.emit("set-search", { search: cast.name });
+  }
+
+  render(): JSX.Element {
+    if (! this.state.movie) {
+      return <div className="d-flex justify-content-center mt-5"><Spinner animation="border" variant="light" /></div>;
+    }
+    const movie: MovieResponse = this.state.movie;
+    const year: number = parseFloat(movie?.release_date || "0");
+    return <div className="media-details movie" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdrop_path ? `, url(${this.props.tmdbClient?.baseUrl}w1280${movie.backdrop_path}) 100% 0% / cover no-repeat` : '')}}>
+      <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
+        <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); history.back(); }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+          </svg>
+        </a>
+      </div>
+      <div className="media-poster">
+        <span className="poster" style={{ backgroundImage: movie.poster_path ? `url(${this.props.tmdbClient?.baseUrl}w780${movie.poster_path})` : '' }}></span>
+      </div>
+      <div className="title-bar">
+        <div className="d-flex align-items-center">
+          <div className="flex-grow-1">
+            <h2>{movie.title}</h2>
+            {movie?.original_title && movie.original_title != movie.title ? <h6>{movie.original_title}</h6> : null}
+            <div>{year > 0 ? year : ""} &emsp; {this.getDuration(movie?.runtime || null)} &emsp; <img src={`/images/classification/${this.getAudience(movie)}.svg`} width="18px"/></div>
+          </div>
+          <div className="actions">
+            <a href="#"
+               className={"link-light me-3"}
+               onClick={() => {}}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-bookmark-plus-fill" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M2 15.5V2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.74.439L8 13.069l-5.26 2.87A.5.5 0 0 1 2 15.5zm6.5-11a.5.5 0 0 0-1 0V6H6a.5.5 0 0 0 0 1h1.5v1.5a.5.5 0 0 0 1 0V7H10a.5.5 0 0 0 0-1H8.5V4.5z"/>
+              </svg>
+              Liste d'envies
+            </a>
+          </div>
+        </div>
+      </div>
+      <div className="content-bar">
+        <div className="d-flex align-items-start mb-3">
+          <div className="flex-grow-1 pe-5">
+            <p><span className="dt">Genre</span><span className="dd">{ movie?.genres ? movie?.genres.filter(genre => !!genre.name).map(genre => genre.name).join(', ') : "" }</span></p>
+{/*
+            <p><span className="dt">Réalisé par</span><span className="dd">{this.renderCredits(movie.directors)}</span></p>
+            {movie.writers.length > 0
+              ? <p><span className="dt">Scénariste{movie.writers.length > 1 ? "s" : ""}</span><span className="dd">{this.renderCredits(movie.writers)}</span></p>
+              : null
+            }
+*/}
+          </div>
+{/*          <div className="flex-grow-1">
+            <p><span className="dt">Taille</span><span className="dd">{renderFileSize(movie.filesize)}</span></p>
+            {movie.video
+              ? <p><span className="dt">Vidéo</span><span className="dd">{renderVideoInfos(movie.video)}</span></p>
+              : null
+            }
+            {movie.audio.length
+              ? <p><span className="dt">Audio</span><span className="dd">{renderAudioInfos(movie.audio)}</span></p>
+              : null
+            }
+            {movie.subtitles.length
+              ? <p><span className="dt">Sous-titres</span><span className="dd">{movie.subtitles.join(', ')}</span></p>
+              : null
+            }
+          </div>
+*/}
+        </div>
+        <div className="d-flex align-items-start mb-3">
+          <p className="synopsis">{movie.overview}</p>
+        </div>
+{/*        <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={(tabKey) => this.setState({ tabKey: tabKey || "cast" })} className="constrained-width">
+          <Tab eventKey="cast" title="Casting">
+            <Casting cast={movie.cast} />
+          </Tab>
+          <Tab eventKey="similar" title="Recommandations">
+            <Recommandations movieId={this.state.movie.tmdbid} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
+          </Tab>
+        </Tabs>
+*/}
+      </div>
+    </div>;
+  }
+
+}

@@ -31,6 +31,9 @@ namespace client
     {
       InitializeComponent();
       ((App)Application.Current).WindowPlace.Register(this);
+#if DEBUG
+      webView.Source = new Uri("http://127.0.0.1:3000/frontend/");
+#endif
       webView.DefaultBackgroundColor = System.Drawing.Color.Black;
       webView.Visibility = Visibility.Collapsed;
       webView.NavigationStarting += MpvScheme;
