@@ -14,6 +14,7 @@ import FixMovieMetadataForm from './fix-movie-metadata-form';
 import RenamingForm from './renaming-form';
 import Casting from './casting';
 import TmdbRecommandations from './tmdb-recommandations';
+import YoutubeVideos from './youtube-videos';
 import eventBus from './event-bus';
 
 type MovieDetailsProps = {
@@ -282,12 +283,15 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
         <div className="d-flex align-items-start mb-3">
           <p className="synopsis">{movie.synopsys}</p>
         </div>
-        <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={this.handleChangeTab.bind(this)} className="constrained-width">
+        <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={this.handleChangeTab.bind(this)} className="constrained-width" mountOnEnter={true}>
           <Tab eventKey="cast" title="Casting">
             <Casting cast={movie.cast} />
           </Tab>
           <Tab eventKey="similar" title="Recommandations">
             <TmdbRecommandations movieId={this.state.movie.tmdbid} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
+          </Tab>
+          <Tab eventKey="trailers" title="Videos">
+            <YoutubeVideos search={this.state.movie?.title || ""} />
           </Tab>
         </Tabs>
       </div>

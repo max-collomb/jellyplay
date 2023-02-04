@@ -3,5 +3,6 @@
   "moviesRemotePath": "C:/dev/git/jellyplay/sample-library/movies",
   "tvshowsLocalPath": "C:\\dev\\git\\jellyplay\\sample-library\\tvshows",
   "tvshowsRemotePath": "C:/dev/git/jellyplay/sample-library/tvshows",
-  "tmdbApiKey": ""
+  "tmdbApiKey": "",
+  "youtubeApiKey": ""
 }

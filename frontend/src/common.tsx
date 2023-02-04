@@ -85,6 +85,17 @@ export function playMovie(config: Config, movie: DbMovie, user: DbUser): void {
   }
 }
 
+export function playUrl(url: string): void {
+  const path = encodeURIComponent(url);
+  if (window._mpvSchemeSupported) {
+    window._setPosition = () => {};
+    console.log(`mpv://${path}?pos=0`);
+    document.location.href = `mpv://${path}?pos=0`;
+  } else {
+    window.open(url);
+  }
+}
+
 export function getSeasonCount(tvshow: DbTvshow): string {
   if (tvshow.seasons.length > 0) {
     if (tvshow.seasons.length > 1) {

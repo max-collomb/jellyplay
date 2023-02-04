@@ -114,12 +114,13 @@ V1.1
 [x] afficher la fiche descriptive d'un film non possédé (fetch depuis tmdb)
 [x] recommandation : effectuer immédiatement 2 requêtes (et supprimer "plus") + trier les films possédés en début de liste séparés du reste par un <hr>
 [x] conserver l'onglet actif (casting / recommandation) dans l'URL
-[ ] onglet bande annonce + lecture avec mpv
-    https://youtube.googleapis.com/youtube/v3/search?part=snippet&q=bande%20annonce%20titre_du_film&key=AIzaSyCS0PObi3tGev_HczcbQZVtCE63wzYnkLE
+[x] onglet bande annonce + lecture avec mpv
+    https://youtube.googleapis.com/youtube/v3/search?part=snippet&q=bande%20annonce%20titre_du_film&key=[API_KEY]
     https://console.cloud.google.com/apis/credentials?project=jellyplay&supportedpurview=project
 [ ] fiche descriptive d'une personne (acteur / réal) : fetch from tmdp + liste de film (local) + liste de films non possédés
 [ ] recherche externe tmdb via api (nécessite de créer une page résultat de recherche au lieu de se contenter de filtrer les films et les séries)
 [ ] [frontend/api] recommandation ou recherche tmdb => ajouter à ma liste d'envie + voir la liste + supprimer de la liste
+[ ] utiliser une seule instance de mpv (manifestement possible en envoyant des message `loadfile` - source : https://github.com/mpv-player/mpv/issues/4954)
 
 
 [ ] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode

@@ -6,6 +6,7 @@ export type Config = {
   tvshowsLocalPath: string;
   tvshowsRemotePath: string;
   tmdbApiKey: string;
+  youtubeApiKey: string;
 };
 
 export type DbUser = {

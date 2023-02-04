@@ -24,6 +24,7 @@ import TvshowDetails from './tvshow-details';
 import UserSelection from './user-selection';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
+import youtubeClient from './youtube-client';
 import eventBus from './event-bus';
 import { router, MatchedRoute } from './router';
 
@@ -51,7 +52,7 @@ export default class App extends React.Component<AppProps, AppState> {
     this.handleEventHashChanged = this.handleEventHashChanged.bind(this);
     const orderBy = (localStorage.getItem('orderBy') || "addedDesc") as OrderBy;
     this.state = {
-      config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "" },
+      config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "", youtubeApiKey: "" },
       users: [],
       optionsVisible: false,
       route: { name: "home" },
@@ -62,6 +63,7 @@ export default class App extends React.Component<AppProps, AppState> {
     };
     apiClient.getConfig().then((config) => {
       this.setState({ config, tmdbClient: new TmdbClient(config.tmdbApiKey, 'fr-FR') });
+      youtubeClient.init(config.youtubeApiKey);
     });
     apiClient.getScanProgress(0).then((status) => {
       this.setState({ scanning: ! status.finished, scanLogs: status.logs });
