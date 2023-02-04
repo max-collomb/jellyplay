@@ -7,12 +7,13 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import { Config, DbCredit, DbMovie, DbUser, UserMovieStatus } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
 import { MoreToggle, MultiItem, getMovieDuration, getUserMovieStatus, getMovieProgress, playMovie, renderFileSize, renderVideoInfos, renderAudioInfos } from './common';
+import { router } from './router';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
 import FixMovieMetadataForm from './fix-movie-metadata-form';
 import RenamingForm from './renaming-form';
 import Casting from './casting';
-import Recommandations from './recommandations';
+import TmdbRecommandations from './tmdb-recommandations';
 import eventBus from './event-bus';
 
 type MovieDetailsProps = {
@@ -39,7 +40,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     this.state = {
       movie: { filename: "", tmdbid: 0, title: "", originalTitle: "", year: 0, duration: 0, directors: [], writers: [], cast: [], genres: [], countries: [], audience: 0, created: 0, filesize: 0, video: { width: 0, height: 0, codec: "" }, audio: [], subtitles: [], synopsys: "", backdropPath: "", posterPath: "", userStatus: [], searchableContent: "" },
       credits: [],
-      tabKey: "cast",
+      tabKey: router.currentRoute?.state?.tabKey || "cast",
       fixingMetadata: false,
       renaming: false,
       currentStatus: SeenStatus.unknown,
@@ -51,6 +52,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
 
   componentDidUpdate(prevProps: MovieDetailsProps, _prevState: MovieDetailsState) {
     if (prevProps.movieId != this.props.movieId) {
+      this.setState({ tabKey: router.currentRoute?.state?.tabKey || "cast" });
       this.loadMovie();
     }
   }
@@ -166,6 +168,11 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     playMovie(this.props.config, this.state.movie, this.props.user);
   }
 
+  handleChangeTab(tabKey: string|null): void {
+    this.setState({ tabKey: tabKey || "cast" });
+    history.replaceState({}, "", `#/movie/${this.props.movieId}/state/` + JSON.stringify({ tabKey }));
+  }
+
   render(): JSX.Element {
     if (this.state.movie.tmdbid == -1) {
       return <div>Film introuvable. <a href="#" onClick={(evt) => { evt.preventDefault(); history.back(); }}>Retour</a></div>;
@@ -180,9 +187,9 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     const userStatus = getUserMovieStatus(movie, this.props.user);
     return <div className="media-details movie" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdropPath ? `, url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
       <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
-        <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); history.back(); }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+        <a href="#" className="link-light" style={{ zIndex: 1 }} onClick={(evt) => { evt.preventDefault(); history.back(); }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-arrow-left" viewBox="0 0 16 16">
+            <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
           </svg>
         </a>
       </div>
@@ -275,12 +282,12 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
         <div className="d-flex align-items-start mb-3">
           <p className="synopsis">{movie.synopsys}</p>
         </div>
-        <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={(tabKey) => this.setState({ tabKey: tabKey || "cast" })} className="constrained-width">
+        <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={this.handleChangeTab.bind(this)} className="constrained-width">
           <Tab eventKey="cast" title="Casting">
             <Casting cast={movie.cast} />
           </Tab>
           <Tab eventKey="similar" title="Recommandations">
-            <Recommandations movieId={this.state.movie.tmdbid} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
+            <TmdbRecommandations movieId={this.state.movie.tmdbid} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
           </Tab>
         </Tabs>
       </div>

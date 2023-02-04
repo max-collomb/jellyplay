@@ -111,10 +111,18 @@ V1.1
 [x] revoir la méthode de suppression des images lors de la disparition d'un fichier. Exemple : renommage d'un fichier (épisode) => reconnaissance auto puis téléchargement du still puis suppression du still => lien image cassé. Solution 1 : détecter les fichiers supprimés avant de détecter les nouveaux fichiers. Solution 2 : passe globale sur toutes les images pour supprimer celles qui ne sont pas référencées en BDD en fin de process plutôt que de supprimer les images au fur et à mesure
 [x] [api] supprimer les images qui ne sont pas référencées (movies/tvshows/credits)
 [x] [frontend/api] recommandation dans fiche film (tmdb via api)
-[ ] afficher la fiche descriptive d'un film non possédé (fetch depuis l'api)
+[x] afficher la fiche descriptive d'un film non possédé (fetch depuis tmdb)
+[x] recommandation : effectuer immédiatement 2 requêtes (et supprimer "plus") + trier les films possédés en début de liste séparés du reste par un <hr>
+[x] conserver l'onglet actif (casting / recommandation) dans l'URL
+[ ] onglet bande annonce + lecture avec mpv
+    https://youtube.googleapis.com/youtube/v3/search?part=snippet&q=bande%20annonce%20titre_du_film&key=AIzaSyCS0PObi3tGev_HczcbQZVtCE63wzYnkLE
+    https://console.cloud.google.com/apis/credentials?project=jellyplay&supportedpurview=project
+[ ] fiche descriptive d'une personne (acteur / réal) : fetch from tmdp + liste de film (local) + liste de films non possédés
 [ ] recherche externe tmdb via api (nécessite de créer une page résultat de recherche au lieu de se contenter de filtrer les films et les séries)
+[ ] [frontend/api] recommandation ou recherche tmdb => ajouter à ma liste d'envie + voir la liste + supprimer de la liste
+
+
 [ ] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode
-[ ] [frontend/api] recommandation ou recherche tmdb => demander le film
 [ ] [api] intégration du script de téléchargement depuis la seedbox
 [ ] [frontend/api] importer les fichiers depuis \\192.168.0.99\share\download
 [ ] recherche ygg + téléchargement

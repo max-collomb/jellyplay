@@ -46,13 +46,24 @@ export default class TmdbClient {
     return response?.results || [];
   }
 
-  public async getMovieRecommandations(movieId: number, page?: number): Promise<MovieRecommendationsResponse|undefined> {
+  public async getMovieRecommandations(movieId: number, pages: number[]): Promise<MovieRecommendationsResponse|undefined> {
     await this.initMovieDb();
-    const response = await this.movieDb?.movieRecommendations({
-      language: this.lang,
-      id: movieId,
-      page: (page || 1).toString(),
-    });
+    let response;
+    let recommandations;
+    for(let p of pages) {
+      if (! response || (response.total_pages || 0) >= p) {
+        recommandations = await this.movieDb?.movieRecommendations({
+          language: this.lang,
+          id: movieId,
+          page: p.toString(),
+        });
+        if (! response?.results)
+          response = recommandations;
+        else {
+          response.results = response.results.concat(recommandations?.results || []);
+        }
+      }
+    }
     return response;
   }
 

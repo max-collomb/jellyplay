@@ -3,12 +3,14 @@ import React from 'react';
 import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 import Spinner from 'react-bootstrap/Spinner';
-import { CreditsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
+import { Crew, CreditsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
 
 import { Config, DbCredit, DbUser } from '../../api/src/types';
+import { router } from './router';
 import apiClient from './api-client';
 import TmdbClient from './tmdb';
-import Recommandations from './recommandations';
+import TmdbRecommandations from './tmdb-recommandations';
+import TmdbCasting from './tmdb-casting';
 import eventBus from './event-bus';
 
 type TmdbMovieDetailsProps = {
@@ -30,7 +32,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     super(props);
     this.state = {
       fetchedCredits: [],
-      tabKey: "cast",
+      tabKey: router.currentRoute?.state?.tabKey || "cast",
     };
     this.fetchMovie();
     apiClient.getCredits().then(fetchedCredits => this.setState({ fetchedCredits }));
@@ -38,6 +40,11 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
 
   componentDidUpdate(prevProps: TmdbMovieDetailsProps, _prevState: TmdbMovieDetailsState) {
     if (prevProps.movieId != this.props.movieId) {
+      this.setState({
+        movie: undefined,
+        credits: undefined,
+        tabKey: router.currentRoute?.state?.tabKey || "cast"
+      });
       this.fetchMovie();
     }
   }
@@ -98,20 +105,24 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     return 999;
   }
 
-  renderCredits(ids: number[]): JSX.Element {
+  renderCredits(crewList?: Crew[]): JSX.Element {
+    if (! crewList || ! crewList.length)
+      return <>Inconnu</>;
     const links = [];
-     for (const id of ids) {
-       const credit: DbCredit|null = this.getCredit(id);
-       if (credit) {
-         links.push(<span className="cast" key={id}><a href="#" onClick={ this.handleCastClick.bind(this, credit) }>{ credit.name }</a></span>);
-       }
-     }
-     return <>{ links }</>;
+    for (const crew of crewList) {
+      links.push(<span className="cast" key={crew.id}><a href="#" onClick={ evt => evt.preventDefault() /*this.handleCastClick.bind(this, credit)*/ }>{ crew.name }</a></span>);
+    }
+    return <>{ links }</>;
   }
 
   handleCastClick(cast: DbCredit, evt: React.MouseEvent) {
     evt.preventDefault();
     eventBus.emit("set-search", { search: cast.name });
+  }
+
+  handleChangeTab(tabKey: string|null): void {
+    this.setState({ tabKey: tabKey || "cast" });
+    history.replaceState({}, "", `#/tmdb/movie/${this.props.movieId}/state/` + JSON.stringify({ tabKey }));
   }
 
   render(): JSX.Element {
@@ -120,11 +131,13 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     }
     const movie: MovieResponse = this.state.movie;
     const year: number = parseFloat(movie?.release_date || "0");
+    const directors: Crew[]|undefined = this.state.credits?.crew?.filter(c => c.job == "Director").slice(0, 5);
+    const writers: Crew[]|undefined = this.state.credits?.crew?.filter(c => c.job == "Writer").slice(0, 5);
     return <div className="media-details movie" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdrop_path ? `, url(${this.props.tmdbClient?.baseUrl}w1280${movie.backdrop_path}) 100% 0% / cover no-repeat` : '')}}>
       <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
         <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); history.back(); }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-arrow-left" viewBox="0 0 16 16">
+            <path fillRule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
           </svg>
         </a>
       </div>
@@ -140,13 +153,13 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
           </div>
           <div className="actions">
             <a href="#"
-               className={"link-light me-3"}
+               className={"btn btn-primary disabled me-3"}
                onClick={() => {}}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-bookmark-plus-fill" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M2 15.5V2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.74.439L8 13.069l-5.26 2.87A.5.5 0 0 1 2 15.5zm6.5-11a.5.5 0 0 0-1 0V6H6a.5.5 0 0 0 0 1h1.5v1.5a.5.5 0 0 0 1 0V7H10a.5.5 0 0 0 0-1H8.5V4.5z"/>
+              <svg style={{verticalAlign: "baseline"}} xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" className="bi bi-bookmark-plus-fill" viewBox="0 0 16 16">
+                <path fillRule="evenodd" d="M2 15.5V2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.74.439L8 13.069l-5.26 2.87A.5.5 0 0 1 2 15.5zm6.5-11a.5.5 0 0 0-1 0V6H6a.5.5 0 0 0 0 1h1.5v1.5a.5.5 0 0 0 1 0V7H10a.5.5 0 0 0 0-1H8.5V4.5z"/>
               </svg>
-              Liste d'envies
+              <span className="d-inline-block ms-3">Ajouter à ma<br/>liste d'envies</span>
             </a>
           </div>
         </div>
@@ -155,43 +168,24 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
         <div className="d-flex align-items-start mb-3">
           <div className="flex-grow-1 pe-5">
             <p><span className="dt">Genre</span><span className="dd">{ movie?.genres ? movie?.genres.filter(genre => !!genre.name).map(genre => genre.name).join(', ') : "" }</span></p>
-{/*
-            <p><span className="dt">Réalisé par</span><span className="dd">{this.renderCredits(movie.directors)}</span></p>
-            {movie.writers.length > 0
-              ? <p><span className="dt">Scénariste{movie.writers.length > 1 ? "s" : ""}</span><span className="dd">{this.renderCredits(movie.writers)}</span></p>
-              : null
-            }
-*/}
-          </div>
-{/*          <div className="flex-grow-1">
-            <p><span className="dt">Taille</span><span className="dd">{renderFileSize(movie.filesize)}</span></p>
-            {movie.video
-              ? <p><span className="dt">Vidéo</span><span className="dd">{renderVideoInfos(movie.video)}</span></p>
-              : null
-            }
-            {movie.audio.length
-              ? <p><span className="dt">Audio</span><span className="dd">{renderAudioInfos(movie.audio)}</span></p>
-              : null
-            }
-            {movie.subtitles.length
-              ? <p><span className="dt">Sous-titres</span><span className="dd">{movie.subtitles.join(', ')}</span></p>
+            <p><span className="dt">Réalisé par</span><span className="dd">{this.renderCredits(directors)}</span></p>
+            {writers && writers.length > 0
+              ? <p><span className="dt">Scénariste{writers.length > 1 ? "s" : ""}</span><span className="dd">{this.renderCredits(writers)}</span></p>
               : null
             }
           </div>
-*/}
         </div>
         <div className="d-flex align-items-start mb-3">
           <p className="synopsis">{movie.overview}</p>
         </div>
-{/*        <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={(tabKey) => this.setState({ tabKey: tabKey || "cast" })} className="constrained-width">
+        <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={this.handleChangeTab.bind(this)} className="constrained-width">
           <Tab eventKey="cast" title="Casting">
-            <Casting cast={movie.cast} />
+            <TmdbCasting cast={this.state.credits?.cast} tmdbClient={this.props.tmdbClient} />
           </Tab>
           <Tab eventKey="similar" title="Recommandations">
-            <Recommandations movieId={this.state.movie.tmdbid} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
+            <TmdbRecommandations movieId={this.props.movieId} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
           </Tab>
         </Tabs>
-*/}
       </div>
     </div>;
   }
