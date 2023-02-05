@@ -21,6 +21,7 @@
     "noFallthroughCasesInSwitch": false
   },
   "include": [
+    ".eslintrc.js",
     "src"
   ]
 }

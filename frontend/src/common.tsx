@@ -1,6 +1,8 @@
 import React from 'react';
 
-import { AudioInfo, Config, DbMovie, DbTvshow, DbUser, Episode, UserMovieStatus, UserEpisodeStatus, UserTvshowStatus, VideoInfo } from '../../api/src/types';
+import {
+  AudioInfo, Config, DbMovie, DbTvshow, DbUser, Episode, UserMovieStatus, UserEpisodeStatus, UserTvshowStatus, VideoInfo,
+} from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
 
 import { apiClient, ApiClient } from './api-client';
@@ -20,7 +22,9 @@ export type Context = {
 };
 
 export const ctx: Context = {
-  config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "", youtubeApiKey: "" },
+  config: {
+    moviesLocalPath: '', moviesRemotePath: '', tvshowsLocalPath: '', tvshowsRemotePath: '', tmdbApiKey: '', youtubeApiKey: '',
+  },
   user: undefined,
   eventBus,
   router,
@@ -37,82 +41,85 @@ export function initContext(config: Config): Context {
 }
 
 export enum ItemAction {
-  play = "play",
-  open = "open",
-};
+  play = 'play',
+  open = 'open',
+}
 
 export interface CustomToggleProps {
-  children?: React.ReactNode;
+  children: React.ReactNode;
   onClick: (evt: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 export const MoreToggle = React.forwardRef<HTMLAnchorElement, CustomToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLAnchorElement>) => (
-  <a href="" ref={ref} className="link-light me-3" onClick={(e) => {
+  <a
+    href=""
+    ref={ref}
+    className="link-light me-3"
+    onClick={(e) => {
       e.preventDefault();
       onClick(e);
-    }}>
+    }}
+  >
     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+      <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
     </svg>
+    { children }
   </a>
 ));
 
-export const MultiItem = React.forwardRef<HTMLElement, CustomToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLElement>) => {
-    return <span ref={ref} className="d-block text-nowrap p-2" onClick={onClick}>{children}</span>;
-  },
-);
+export const MultiItem = React.forwardRef<HTMLElement, CustomToggleProps>(({ children, onClick }, ref: React.LegacyRef<HTMLElement>) => <span ref={ref} className="d-block text-nowrap p-2" onClick={onClick}>{children}</span>);
 
 export function cleanString(s: string): string {
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
 export function getMovieLanguage(movie: DbMovie): string {
-  let found = movie.filename.match(/([vostfqi\+]+)\]/i);
+  const found = movie.filename.match(/([vostfqi+]+)\]/i);
   if (found) {
     return found[1].toUpperCase();
   }
-  return "";
+  return '';
 }
 
 export function getMovieDuration(movie: DbMovie): string {
-  let found = movie.filename.match(/\[([0-9]+)'/i);
+  const found = movie.filename.match(/\[([0-9]+)'/i);
   if (found) {
-    return Math.floor(parseFloat(found[1]) / 60) + 'h' + (parseFloat(found[1]) % 60).toString().padStart(2, '0');
+    return `${Math.floor(parseFloat(found[1]) / 60)}h${(parseFloat(found[1]) % 60).toString().padStart(2, '0')}`;
   }
-  return "";
+  return '';
 }
 
-export function getUserMovieStatus(movie: DbMovie, user?: DbUser): UserMovieStatus|null {
-    for (let userStatus of movie.userStatus) {
-      if (userStatus.userName == (user || ctx.user)?.name) {
-        return userStatus;
-        break;
-      }
+export function getUserMovieStatus(movie: DbMovie, user?: DbUser): UserMovieStatus | null {
+  for (const userStatus of movie.userStatus) {
+    if (userStatus.userName === (user || ctx.user)?.name) {
+      return userStatus;
+      break;
     }
-    return null;
   }
+  return null;
+}
 
 function getMoviePosition(movie: DbMovie): number {
-  let userStatus: UserMovieStatus|null = getUserMovieStatus(movie);
+  const userStatus: UserMovieStatus | null = getUserMovieStatus(movie);
   return userStatus?.position || 0;
 }
 
 export function getMovieProgress(movie: DbMovie): JSX.Element {
-  let position: number = getMoviePosition(movie);
-  return position > 0 ? <div className="progress-bar"><div style={{ width: Math.round(100 * position / movie.duration) + '%' }}></div></div> : <></>;
+  const position: number = getMoviePosition(movie);
+  return position > 0 ? <div className="progress-bar"><div style={{ width: `${Math.round(100 * (position / movie.duration))}%` }} /></div> : <></>;
 }
 
 export function playMovie(movie: DbMovie): void {
   const path = encodeURIComponent(`${ctx.config.moviesRemotePath}/${movie.filename}`);
   if (window._mpvSchemeSupported && ctx.user) {
     window._setPosition = ctx.apiClient.setMoviePosition.bind(ctx.apiClient, movie.filename, ctx.user.name);
-    console.log(`mpv://${path}?pos=${getMoviePosition(movie)}`);
+    console.log(`mpv://${path}?pos=${getMoviePosition(movie)}`); // eslint-disable-line no-console
     document.location.href = `mpv://${path}?pos=${getMoviePosition(movie)}`;
   } else {
-    navigator.clipboard.writeText(path).then(function() {
-      alert(`Le chemin a été copié dans le presse-papier`);
-    }, function() {
-      alert(`La copie du chemin dans le presse-papier a échoué`);
+    navigator.clipboard.writeText(path).then(() => {
+      alert('Le chemin a été copié dans le presse-papier'); // eslint-disable-line no-alert
+    }, () => {
+      alert('La copie du chemin dans le presse-papier a échoué'); // eslint-disable-line no-alert
     });
   }
 }
@@ -121,7 +128,7 @@ export function playUrl(url: string): void {
   const path = encodeURIComponent(url);
   if (window._mpvSchemeSupported) {
     window._setPosition = () => {};
-    console.log(`mpv://${path}?pos=0`);
+    console.log(`mpv://${path}?pos=0`); // eslint-disable-line no-console
     document.location.href = `mpv://${path}?pos=0`;
   } else {
     window.open(url);
@@ -132,28 +139,25 @@ export function getSeasonCount(tvshow: DbTvshow): string {
   if (tvshow.seasons.length > 0) {
     if (tvshow.seasons.length > 1) {
       return `${tvshow.seasons.length} saisons`;
-    } else {
-      return "1 saison";
     }
+    return '1 saison';
   }
-  return "";
+  return '';
 }
 
 export function getEpisodeCount(tvshow: DbTvshow): string {
   if (tvshow.episodes.length > 0) {
     if (tvshow.episodes.length > 1) {
       return `${tvshow.episodes.length} épisodes`;
-    } else {
-      return "1 épisode";
     }
+    return '1 épisode';
   }
-  return "";
+  return '';
 }
 
-export function getEpisodeByFilename(tvshow: DbTvshow, filename: string): Episode|null {
-  for(let episode of tvshow.episodes) {
-    if (episode.filename == filename)
-      return episode;
+export function getEpisodeByFilename(tvshow: DbTvshow, filename: string): Episode | null {
+  for (const episode of tvshow.episodes) {
+    if (episode.filename === filename) { return episode; }
   }
   return null;
 }
@@ -161,14 +165,14 @@ export function getEpisodeByFilename(tvshow: DbTvshow, filename: string): Episod
 export function getEpisodeDuration(episode: Episode): string {
   if (episode.duration) {
     const minutes = Math.trunc(episode.duration / 60);
-    return (minutes >= 60 ? Math.floor(minutes / 60) + 'h' : '') + (minutes % 60).toString().padStart(2, '0') + (minutes >= 60 ? '' : 'm');
+    return (minutes >= 60 ? `${Math.floor(minutes / 60)}h` : '') + (minutes % 60).toString().padStart(2, '0') + (minutes >= 60 ? '' : 'm');
   }
-  return "";
+  return '';
 }
 
-export function getTvshowUserStatus(tvshow: DbTvshow, user?: DbUser): UserTvshowStatus|null {
-  for (let userStatus of tvshow.userStatus) {
-    if (userStatus.userName == (user || ctx.user)?.name) {
+export function getTvshowUserStatus(tvshow: DbTvshow, user?: DbUser): UserTvshowStatus | null {
+  for (const userStatus of tvshow.userStatus) {
+    if (userStatus.userName === (user || ctx.user)?.name) {
       return userStatus;
       break;
     }
@@ -176,9 +180,9 @@ export function getTvshowUserStatus(tvshow: DbTvshow, user?: DbUser): UserTvshow
   return null;
 }
 
-export function getEpisodeUserStatus(episode: Episode, user?: DbUser): UserEpisodeStatus|null {
-  for (let userStatus of episode.userStatus) {
-    if (userStatus.userName == (user || ctx.user)?.name) {
+export function getEpisodeUserStatus(episode: Episode, user?: DbUser): UserEpisodeStatus | null {
+  for (const userStatus of episode.userStatus) {
+    if (userStatus.userName === (user || ctx.user)?.name) {
       return userStatus;
       break;
     }
@@ -187,68 +191,88 @@ export function getEpisodeUserStatus(episode: Episode, user?: DbUser): UserEpiso
 }
 
 export function getEpisodePosition(episode: Episode): number {
-  let userStatus: UserEpisodeStatus|null = getEpisodeUserStatus(episode);
+  const userStatus: UserEpisodeStatus | null = getEpisodeUserStatus(episode);
   return userStatus?.position || 0;
 }
 
 export function getEpisodeProgress(episode: Episode): JSX.Element {
-  let position: number = getEpisodePosition(episode);
-  return position > 0 ? <div className="progress-bar"><div style={{ width: Math.round(100 * position / episode.duration) + '%' }}></div></div> : <></>;
+  const position: number = getEpisodePosition(episode);
+  return position > 0 ? <div className="progress-bar"><div style={{ width: `${Math.round(100 * (position / episode.duration))}%` }} /></div> : <></>;
 }
 
-export function selectCurrentEpisode(tvshow: DbTvshow): Episode|undefined {
+export function selectCurrentEpisode(tvshow: DbTvshow): Episode | undefined {
   return tvshow.episodes
-          .slice(0)
-          .filter(e => {
-            const us: UserEpisodeStatus|null = getEpisodeUserStatus(e);
-            return !us || (us && ((us.seenTs.length == 0) && (us.currentStatus != SeenStatus.seen) || (us.currentStatus == SeenStatus.toSee)));
-          })
-          .sort((a, b) => {
-            if (a.seasonNumber == b.seasonNumber)
-              return (a.episodeNumbers[0] || 0) - (b.episodeNumbers[0] || 0);
-            else
-              return (a.seasonNumber == -1 ? 999 : a.seasonNumber) - (b.seasonNumber == -1 ? 999 : b.seasonNumber);
-          })
-          .shift();
+    .slice(0)
+    .filter((e) => {
+      const us: UserEpisodeStatus | null = getEpisodeUserStatus(e);
+      return !us || (us && (((us.seenTs.length === 0) && (us.currentStatus !== SeenStatus.seen)) || (us.currentStatus === SeenStatus.toSee)));
+    })
+    .sort((a, b) => {
+      if (a.seasonNumber === b.seasonNumber) return (a.episodeNumbers[0] || 0) - (b.episodeNumbers[0] || 0);
+      return (a.seasonNumber === -1 ? 999 : a.seasonNumber) - (b.seasonNumber === -1 ? 999 : b.seasonNumber);
+    })
+    .shift();
 }
 
 export function selectCurrentSeason(tvshow: DbTvshow): number {
   const currentEpisode = selectCurrentEpisode(tvshow);
   if (currentEpisode) {
     return currentEpisode.seasonNumber || -1;
-  } else {
-    return tvshow.seasons[0]?.seasonNumber || -1;
   }
+  return tvshow.seasons[0]?.seasonNumber || -1;
 }
 
 export function renderFileSize(size: number): string {
-  var i = Math.floor(Math.log(size) / Math.log(1024));
-  return (size / Math.pow(1024, i)).toFixed(1) + ' ' + ['o', 'ko', 'Mo', 'Go', 'To'][i];
+  const i = Math.floor(Math.log(size) / Math.log(1024));
+  return `${(size / 1024 ** i).toFixed(1)} ${['o', 'ko', 'Mo', 'Go', 'To'][i]}`;
 }
 
 export function renderVideoInfos(video: VideoInfo): JSX.Element {
-  return <>{video.width} &times; {video.height} {video.codec}</>;
+  return (
+    <>
+      {video.width}
+      {' '}
+      &times;
+      {' '}
+      {video.height}
+      {' '}
+      {video.codec}
+    </>
+  );
 }
 
 export function renderAudioInfos(audios: AudioInfo[]): JSX.Element {
-  return <React.Fragment>{audios.map((audio, idx, all) => <React.Fragment key={idx}>{audio.lang} {audio.ch}ch {audio.codec} {idx < all.length - 1 ? ", " : null}</React.Fragment>)}</React.Fragment>;
+  return (
+    <>
+      {audios.map((audio, idx, all) => (
+        <React.Fragment key={audio.lang}>
+          {audio.lang}
+          {' '}
+          {audio.ch}
+          ch
+          {' '}
+          {audio.codec}
+          {' '}
+          {idx < all.length - 1 ? ', ' : null}
+        </React.Fragment>
+      ))}
+    </>
+  );
 }
 
-export function playTvshow(tvshow: DbTvshow, episode: Episode|undefined): Episode|undefined {
-  if (! episode) {
-    episode = selectCurrentEpisode(tvshow);
-  }
-  if (episode) {
-    const path = `${ctx.config.tvshowsRemotePath}/${tvshow.foldername}/${episode.filename}`;
+export function playTvshow(tvshow: DbTvshow, episode: Episode | undefined): Episode | undefined {
+  const ep = episode || selectCurrentEpisode(tvshow);
+  if (ep) {
+    const path = `${ctx.config.tvshowsRemotePath}/${tvshow.foldername}/${ep.filename}`;
     if (window._mpvSchemeSupported && ctx.user) {
-      window._setPosition = ctx.apiClient.setEpisodePosition.bind(ctx.apiClient, tvshow.foldername, episode.filename, ctx.user?.name);
-      console.log(`mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(episode)}`);
-      document.location.href = `mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(episode)}`;
+      window._setPosition = ctx.apiClient.setEpisodePosition.bind(ctx.apiClient, tvshow.foldername, ep.filename, ctx.user?.name);
+      console.log(`mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(ep)}`); // eslint-disable-line no-console
+      document.location.href = `mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(ep)}`;
     } else {
-      navigator.clipboard.writeText(path).then(function() {
-        alert(`Le chemin a été copié dans le presse-papier`);
-      }, function() {
-        alert(`La copie du chemin dans le presse-papier a échoué`);
+      navigator.clipboard.writeText(path).then(() => {
+        alert('Le chemin a été copié dans le presse-papier'); // eslint-disable-line no-alert
+      }, () => {
+        alert('La copie du chemin dans le presse-papier a échoué'); // eslint-disable-line no-alert
       });
     }
   }

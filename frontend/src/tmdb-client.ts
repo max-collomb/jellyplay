@@ -1,13 +1,18 @@
 import { MovieDb } from 'moviedb-promise';
-import { CreditsResponse, MovieResult, TvResult, MovieRecommendationsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
+import {
+  CreditsResponse, MovieResult, TvResult, MovieRecommendationsResponse, MovieResponse, Person,
+} from 'moviedb-promise/dist/request-types';
 
 // https://github.com/grantholle/moviedb-promise pour l'api TMDB
 
 export class TmdbClient {
-  apiKey: string = "";
+  apiKey: string = '';
+
   movieDb: MovieDb | undefined;
-  lang: string = "";
-  baseUrl: string = "https://image.tmdb.org/t/p/";
+
+  lang: string = '';
+
+  baseUrl: string = 'https://image.tmdb.org/t/p/';
 
   public init(key: string, language: string) {
     this.apiKey = key;
@@ -15,7 +20,7 @@ export class TmdbClient {
   }
 
   private async initMovieDb(): Promise<void> {
-    if (! this.movieDb) {
+    if (!this.movieDb) {
       this.movieDb = new MovieDb(this.apiKey);
       await this.movieDb.configuration().then((config) => {
         if (config.images.secure_base_url) {
@@ -28,9 +33,9 @@ export class TmdbClient {
   public async getMovieCandidates(title: string, year: string): Promise<MovieResult[]> {
     await this.initMovieDb();
     const response = await this.movieDb?.searchMovie({
-       language: this.lang,
-       query: title,
-       year: year ? parseFloat(year) : undefined,
+      language: this.lang,
+      query: title,
+      year: year ? parseFloat(year) : undefined,
     });
     return response?.results || [];
   }
@@ -38,26 +43,25 @@ export class TmdbClient {
   public async getTvCandidates(title: string): Promise<TvResult[]> {
     await this.initMovieDb();
     const response = await this.movieDb?.searchTv({
-       language: this.lang,
-       query: title,
+      language: this.lang,
+      query: title,
     });
     return response?.results || [];
   }
 
-  public async getMovieRecommandations(movieId: number, pages: number[]): Promise<MovieRecommendationsResponse|undefined> {
+  public async getMovieRecommandations(movieId: number, pages: number[]): Promise<MovieRecommendationsResponse | undefined> {
     await this.initMovieDb();
     let response;
     let recommandations;
-    for(let p of pages) {
-      if (! response || (response.total_pages || 0) >= p) {
+    for (const p of pages) {
+      if (!response || (response.total_pages || 0) >= p) {
+        // eslint-disable-next-line no-await-in-loop
         recommandations = await this.movieDb?.movieRecommendations({
           language: this.lang,
           id: movieId,
           page: p.toString(),
         });
-        if (! response?.results)
-          response = recommandations;
-        else {
+        if (!response?.results) { response = recommandations; } else {
           response.results = response.results.concat(recommandations?.results || []);
         }
       }
@@ -65,7 +69,7 @@ export class TmdbClient {
     return response;
   }
 
-  public async getMovieCredits(movieId: number): Promise<CreditsResponse|undefined> {
+  public async getMovieCredits(movieId: number): Promise<CreditsResponse | undefined> {
     await this.initMovieDb();
     const response = await this.movieDb?.movieCredits({
       id: movieId,
@@ -74,7 +78,7 @@ export class TmdbClient {
     return response;
   }
 
-  public async getMovie(movieId: number): Promise<MovieResponse|undefined> {
+  public async getMovie(movieId: number): Promise<MovieResponse | undefined> {
     await this.initMovieDb();
     const response = await this.movieDb?.movieInfo({
       id: movieId,
@@ -84,6 +88,15 @@ export class TmdbClient {
     return response;
   }
 
+  public async getPerson(personId: number): Promise<Person | undefined> {
+    await this.initMovieDb();
+    const response = await this.movieDb?.personInfo({
+      id: personId,
+      language: this.lang,
+      append_to_response: 'movie_credits,tv_credits',
+    });
+    return response;
+  }
 }
 
 export const tmdbClient: TmdbClient = new TmdbClient();

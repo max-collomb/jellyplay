@@ -21,11 +21,11 @@ type RenamingFormState = {
 };
 
 export default class RenamingForm extends React.Component<RenamingFormProps, RenamingFormState> {
-
   constructor(props: RenamingFormProps) {
     super(props);
+    const { movie } = this.props;
     this.state = {
-      filename: this.props.movie.filename,
+      filename: movie.filename,
       updating: false,
     };
   }
@@ -36,40 +36,53 @@ export default class RenamingForm extends React.Component<RenamingFormProps, Ren
 
   async handleRenameClick(evt: React.MouseEvent<HTMLButtonElement>): Promise<void> {
     evt.preventDefault();
-    if (this.state.filename != this.props.movie.filename) {
-      let newFilename = await ctx.apiClient.renameFile(this.props.movie.filename, this.state.filename);
+    const { movie, onClose } = this.props;
+    const { filename } = this.state;
+    if (filename !== movie.filename) {
+      const newFilename = await ctx.apiClient.renameFile(movie.filename, filename);
       if (newFilename) {
-        this.props.movie.filename = newFilename;
+        movie.filename = newFilename;
       }
     }
-    this.props.onClose();
+    onClose();
   }
 
   handleCancelClick(evt: React.MouseEvent<HTMLButtonElement>): void {
     evt.preventDefault();
-    this.props.onClose();
+    const { onClose } = this.props;
+    onClose();
   }
 
   render(): JSX.Element {
-    if (this.state.updating) {
-      return <div className="d-flex justify-content-center mt-5">Mise à jour &emsp; <Spinner animation="border" variant="light" /></div>;
+    const { movie } = this.props;
+    const { filename, updating } = this.state;
+    if (updating) {
+      return (
+        <div className="d-flex justify-content-center mt-5">
+          Mise à jour &emsp;
+          {' '}
+          <Spinner animation="border" variant="light" />
+        </div>
+      );
     }
-    return <>
-      <h4 className="mx-3 my-5">{ this.props.movie.filename }</h4>
-      <Form className="m-3">
-        <Row className="justify-content-md-center">
-          <Col>
-            <InputGroup className="mb-2">
-              <InputGroup.Text>Titre</InputGroup.Text>
-              <Form.Control value={this.state.filename} onChange={this.handleFilenameChange.bind(this)}/>
-            </InputGroup>
-          </Col>
-          <Col md="auto">
-            <Button type="submit" className="mb-2" onClick={this.handleRenameClick.bind(this)}>Renommer</Button>
-            <Button variant="link" className="mb-2" onClick={this.handleCancelClick.bind(this)}>Annuler</Button>
-          </Col>
-        </Row>
-      </Form>
-    </>;
+    return (
+      <>
+        <h4 className="mx-3 my-5">{ movie.filename }</h4>
+        <Form className="m-3">
+          <Row className="justify-content-md-center">
+            <Col>
+              <InputGroup className="mb-2">
+                <InputGroup.Text>Titre</InputGroup.Text>
+                <Form.Control value={filename} onChange={this.handleFilenameChange.bind(this)} />
+              </InputGroup>
+            </Col>
+            <Col md="auto">
+              <Button type="submit" className="mb-2" onClick={this.handleRenameClick.bind(this)}>Renommer</Button>
+              <Button variant="link" className="mb-2" onClick={this.handleCancelClick.bind(this)}>Annuler</Button>
+            </Col>
+          </Row>
+        </Form>
+      </>
+    );
   }
 }

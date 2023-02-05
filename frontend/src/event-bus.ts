@@ -39,9 +39,7 @@ export class EventBus {
   detach(eventName: string, callback: EventCallback) {
     let listeners = this.listeners[eventName] || [];
 
-    listeners = listeners.filter(function (value) {
-      return value.callback !== callback;
-    });
+    listeners = listeners.filter((value) => value.callback !== callback);
 
     if (eventName in this.listeners) {
       this.listeners[eventName] = listeners;
@@ -72,12 +70,13 @@ export class EventBus {
     }
 
     listeners.forEach((listener, k) => {
-      let callback = listener.callback;
+      const { callback } = listener;
+      let { triggerCapacity } = listener;
 
       callback(...args);
 
-      if (listener.triggerCapacity !== undefined) {
-        listener.triggerCapacity--;
+      if (triggerCapacity !== undefined) {
+        triggerCapacity--;
         listeners[k].triggerCapacity = listener.triggerCapacity;
       }
 
@@ -90,7 +89,7 @@ export class EventBus {
   private registerListener(
     eventName: string,
     callback: EventCallback,
-    triggerCapacity?: number
+    triggerCapacity?: number,
   ) {
     if (!this.hasListeners(eventName)) {
       this.listeners[eventName] = [];

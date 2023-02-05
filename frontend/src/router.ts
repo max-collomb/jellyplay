@@ -14,11 +14,12 @@ export type MatchedRoute = {
 
 export class Router {
   private routes: Route[];
+
   currentRoute: MatchedRoute;
 
   constructor() {
     this.routes = [];
-    this.currentRoute = { name: "home", state: {} };
+    this.currentRoute = { name: 'home', state: {} };
     window.addEventListener('hashchange', this.onHashChanged.bind(this));
   }
 
@@ -26,27 +27,27 @@ export class Router {
     this.routes.push({
       name,
       url,
-      regexp: new RegExp(url.replace(':id', '(\\d+)') + '(?:\/state\/(\{.*\}))?', 'i'),
+      regexp: new RegExp(`${url.replace(':id', '(\\d+)')}(?:/state/({.*}))?`, 'i'),
     });
   }
 
   navigateTo(url: string) {
-    let event = { url, getRoute: () => this.resolveRoute(url), cancel: false };
+    const event = { url, getRoute: () => this.resolveRoute(url), cancel: false };
     eventBus.emit('will-navigate', event);
-    if (! event.cancel) {
+    if (!event.cancel) {
       document.location.href = url;
     }
   }
 
-  onHashChanged(evt: HashChangeEvent): void {
-    let url = window.location.hash.slice(1) || '/';
+  onHashChanged(): void {
+    const url = window.location.hash.slice(1) || '/';
     this.currentRoute = this.resolveRoute(url);
     eventBus.emit('hash-changed', { route: this.currentRoute });
   }
 
   resolveRoute(url: string): MatchedRoute {
-    for(let route of this.routes) {
-      let match = route.regexp.exec(url);
+    for (const route of this.routes) {
+      const match = route.regexp.exec(url);
       if (match != null) {
         return {
           name: route.name,
@@ -56,7 +57,7 @@ export class Router {
       }
     }
 
-    return { name: this.routes[0]?.name || "" };
+    return { name: this.routes[0]?.name || '' };
   }
 }
 

@@ -8,7 +8,7 @@ import { ctx } from './common';
 
 type TmdbRecommandationsProps = {
   movieId: number;
-  hidden?: boolean;
+  hidden: boolean;
 };
 type TmdbRecommandationsState = {
   recommandations: MovieResult[];
@@ -19,7 +19,6 @@ type TmdbRecommandationsState = {
 };
 
 export default class TmdbRecommandations extends React.Component<TmdbRecommandationsProps, TmdbRecommandationsState> {
-
   constructor(props: TmdbRecommandationsProps) {
     super(props);
     const movieIds = new Set<number>();
@@ -30,17 +29,19 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
       pageLoaded: 0,
       pageCount: 1,
     };
-    ctx.apiClient.getMovies().then(movies => {
-      movies.forEach(movie => movieIds.add(movie.tmdbid));
+    ctx.apiClient.getMovies().then((movies) => {
+      movies.forEach((movie) => movieIds.add(movie.tmdbid));
       this.setState({ movieIds });
     });
   }
 
-  async componentDidUpdate(prevProps: TmdbRecommandationsProps, _prevState: TmdbRecommandationsState) {
-    if (prevProps.movieId != this.props.movieId) {
+  async componentDidUpdate(prevProps: TmdbRecommandationsProps) {
+    const { movieId, hidden } = this.props;
+    const { pageLoaded } = this.state;
+    if (prevProps.movieId !== movieId) {
       this.setState({ pageLoaded: 0 });
     }
-    if (this.state.pageLoaded == 0 && !this.props.hidden) {
+    if (pageLoaded === 0 && !hidden) {
       this.setState({
         recommandations: [],
         loading: false,
@@ -50,65 +51,81 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
     }
   }
 
+  handleClick(id: number | undefined, evt: React.MouseEvent): void {
+    evt.preventDefault();
+    if (this.isOwned(id)) {
+      ctx.router.navigateTo(`#/movie/${id}/state/${JSON.stringify({ tabKey: 'cast' })}`);
+    } else {
+      ctx.router.navigateTo(`#/tmdb/movie/${id}/state/${JSON.stringify({ tabKey: 'cast' })}`);
+    }
+  }
+
   async loadNextPage() {
+    const { pageLoaded, pageCount, recommandations } = this.state;
+    const { movieId } = this.props;
     this.setState({ loading: true });
-    const pages = this.state.pageLoaded == 0 ? [1, 2] : [this.state.pageLoaded + 1];
-    const response: MovieRecommendationsResponse|undefined = await ctx.tmdbClient?.getMovieRecommandations(this.props.movieId, pages);
+    const pages = pageLoaded === 0 ? [1, 2] : [pageLoaded + 1];
+    const response: MovieRecommendationsResponse | undefined = await ctx.tmdbClient?.getMovieRecommandations(movieId, pages);
     this.setState({
       loading: false,
-      recommandations: this.state.recommandations.concat(response?.results || []),
-      pageCount: response?.total_pages || this.state.pageCount,
+      recommandations: recommandations.concat(response?.results || []),
+      pageCount: response?.total_pages || pageCount,
       pageLoaded: pages[pages.length - 1],
     });
   }
 
-  isOwned(id: number|undefined): boolean {
-    return id ? this.state.movieIds.has(id) : false;
-  }
-
-  handleClick(id: number|undefined, evt: React.MouseEvent): void {
-    evt.preventDefault();
-    if (this.isOwned(id)) {
-      ctx.router.navigateTo(`#/movie/${id}/state/` + JSON.stringify({ tabKey: "cast" }));
-    } else {
-      ctx.router.navigateTo(`#/tmdb/movie/${id}/state/` + JSON.stringify({ tabKey: "cast" }));
-    }
+  isOwned(id: number | undefined): boolean {
+    const { movieIds } = this.state;
+    return id ? movieIds.has(id) : false;
   }
 
   renderList(movies: MovieResult[]): JSX.Element {
-    return <div className="d-flex flex-wrap mt-3">{
-      movies.map((movie, idx) => {
-        return <div key={idx} className="media-card movie" onClick={this.handleClick.bind(this, movie.id)}>
-          <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }}></span>
+    return (
+      <div className="d-flex flex-wrap mt-3">
+        {
+      movies.map((movie) => (
+        <div key={movie.id} className="media-card movie" onClick={this.handleClick.bind(this, movie.id)}>
+          <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
           <span className="title">{movie.title}</span>
           <span className="infos d-flex justify-content-between">
             <span className="year">{movie.release_date?.substring(0, 4)}</span>
           </span>
-        </div>;
-      })}
-    </div>;
+        </div>
+      ))
+}
+      </div>
+    );
   }
 
   render(): JSX.Element {
+    const {
+      recommandations, loading, pageLoaded, pageCount,
+    } = this.state;
     const owned: MovieResult[] = [];
     const notOwned: MovieResult[] = [];
-    this.state.recommandations.forEach(r => {
-      if (this.isOwned(r.id))
-        owned.push(r);
-      else
-        notOwned.push(r);
+    recommandations.forEach((r) => {
+      if (this.isOwned(r.id)) { owned.push(r); } else { notOwned.push(r); }
     });
-    return <div>
-    { owned.length ? <>{ this.renderList(owned) }<hr/></> : null }
-    { this.renderList(notOwned) }
-    { this.state.loading
-        ? <div className="text-center"><Spinner animation="border" variant="light" /></div>
-        : null }
-    { this.state.pageLoaded < this.state.pageCount
-        ? <div className="mt-3 text-center">
-            <Button variant="outline-secondary" onClick={this.loadNextPage.bind(this)}>Plus</Button>
-          </div>
-        : null }
-    </div>;
+    return (
+      <div>
+        { owned.length ? (
+          <>
+            { this.renderList(owned) }
+            <hr />
+          </>
+        ) : null }
+        { this.renderList(notOwned) }
+        { loading
+          ? <div className="text-center"><Spinner animation="border" variant="light" /></div>
+          : null }
+        { pageLoaded < pageCount
+          ? (
+            <div className="mt-3 text-center">
+              <Button variant="outline-secondary" onClick={this.loadNextPage.bind(this)}>Plus</Button>
+            </div>
+          )
+          : null }
+      </div>
+    );
   }
 }

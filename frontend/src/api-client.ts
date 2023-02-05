@@ -1,6 +1,9 @@
-import { Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilename, ScanStatus, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from '../../api/src/types';
+import {
+  Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilename, ScanStatus,
+  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus,
+} from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
-import eventBus from './event-bus';
+import { eventBus } from './event-bus';
 
 const cache = {
   config: null,
@@ -17,7 +20,6 @@ const cache = {
 };
 
 export class ApiClient {
-
   clearCache() {
     cache.homeLists = null;
     cache.homeListsTs = 0;
@@ -31,61 +33,63 @@ export class ApiClient {
 
   needRefresh(category: string): boolean {
     switch (category) {
-    case "home":
-      return cache.homeListsTs == 0 || cache.homeListsTs < cache.lastUpdate;
-    case "movies":
-      return cache.moviesTs == 0 || cache.moviesTs < cache.lastUpdate;
-    case "tvshows":
-      return cache.tvshowsTs == 0 || cache.tvshowsTs < cache.lastUpdate;
-    case "credits":
-      return cache.creditsTs == 0 || cache.creditsTs < cache.lastUpdate;
+      case 'home':
+        return cache.homeListsTs === 0 || cache.homeListsTs < cache.lastUpdate;
+      case 'movies':
+        return cache.moviesTs === 0 || cache.moviesTs < cache.lastUpdate;
+      case 'tvshows':
+        return cache.tvshowsTs === 0 || cache.tvshowsTs < cache.lastUpdate;
+      case 'credits':
+        return cache.creditsTs === 0 || cache.creditsTs < cache.lastUpdate;
+      default:
+        return false;
     }
-    return false;
   }
 
   async getConfig(): Promise<Config> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (cache.config) {
         resolve(cache.config);
       } else {
         fetch('/catalog/config')
-        .then(async (response) => {
-          let json = await response.json();
-          cache.config = json.config;
-          resolve(json.config);
-        });
+          .then(async (response) => {
+            const json = await response.json();
+            cache.config = json.config;
+            resolve(json.config);
+          });
       }
     });
   }
 
   async getLastUpdate(): Promise<number> {
-    return new Promise((resolve, reject) => {
-      fetch(`/catalog/lastupdate`)
-      .then(async (response) => {
-        let json = await response.json();
-        cache.lastUpdate = json.lastUpdate;
-        resolve(json.lastUpdate);
-      });
+    return new Promise((resolve) => {
+      fetch('/catalog/lastupdate')
+        .then(async (response) => {
+          const json = await response.json();
+          cache.lastUpdate = json.lastUpdate;
+          resolve(json.lastUpdate);
+        });
     });
   }
 
   async getUsers(): Promise<DbUser[]> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (cache.users) {
         resolve(cache.users);
       } else {
         fetch('/catalog/users')
-        .then(async (response) => {
-          let json = await response.json();
-          cache.users = json.list;
-          resolve(json.list);
-        });
+          .then(async (response) => {
+            const json = await response.json();
+            cache.users = json.list;
+            resolve(json.list);
+          });
       }
     });
   }
 
   async getMovies(): Promise<DbMovie[]> {
-    return new Promise(async (resolve, reject) => {
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async (resolve) => {
       if (cache.movies) {
         if (cache.moviesTs >= cache.lastUpdate) {
           cache.lastUpdate = await this.getLastUpdate();
@@ -98,18 +102,19 @@ export class ApiClient {
         resolve(cache.movies);
       } else {
         fetch('/catalog/movies/list')
-        .then(async (response) => {
-          let json = await response.json();
-          cache.movies = json.list;
-          cache.moviesTs = json.lastUpdate;
-          resolve(json.list);
-        });
+          .then(async (response) => {
+            const json = await response.json();
+            cache.movies = json.list;
+            cache.moviesTs = json.lastUpdate;
+            resolve(json.list);
+          });
       }
     });
   }
 
   async getTvshows(): Promise<DbTvshow[]> {
-    return new Promise(async (resolve, reject) => {
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async (resolve) => {
       if (cache.tvshows) {
         if (cache.tvshowsTs >= cache.lastUpdate) {
           cache.lastUpdate = await this.getLastUpdate();
@@ -122,18 +127,19 @@ export class ApiClient {
         resolve(cache.tvshows);
       } else {
         fetch('/catalog/tvshows/list')
-        .then(async (response) => {
-          let json = await response.json();
-          cache.tvshows = json.list;
-          cache.tvshowsTs = json.lastUpdate;
-          resolve(json.list);
-        });
+          .then(async (response) => {
+            const json = await response.json();
+            cache.tvshows = json.list;
+            cache.tvshowsTs = json.lastUpdate;
+            resolve(json.list);
+          });
       }
     });
   }
 
   async getCredits(): Promise<DbCredit[]> {
-    return new Promise(async (resolve, reject) => {
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async (resolve) => {
       if (cache.credits) {
         if (cache.creditsTs >= cache.lastUpdate) {
           cache.lastUpdate = await this.getLastUpdate();
@@ -146,18 +152,19 @@ export class ApiClient {
         resolve(cache.credits);
       } else {
         fetch('/catalog/credits/list')
-        .then(async (response) => {
-          let json = await response.json();
-          cache.credits = json.list;
-          cache.creditsTs = json.lastUpdate;
-          resolve(json.list);
-        });
+          .then(async (response) => {
+            const json = await response.json();
+            cache.credits = json.list;
+            cache.creditsTs = json.lastUpdate;
+            resolve(json.list);
+          });
       }
     });
   }
 
   async getHome(userName: string): Promise<HomeLists> {
-    return new Promise(async (resolve, reject) => {
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async (resolve) => {
       if (cache.homeLists) {
         if (cache.homeListsTs >= cache.lastUpdate) {
           cache.lastUpdate = await this.getLastUpdate();
@@ -170,181 +177,185 @@ export class ApiClient {
         resolve(cache.homeLists);
       } else {
         fetch(`/catalog/home/${userName}`)
-        .then(async (response) => {
-          let json = await response.json();
-          cache.homeLists = json.list;
-          cache.homeListsTs = json.lastUpdate;
-          resolve(json.lists);
-        });
+          .then(async (response) => {
+            const json = await response.json();
+            cache.homeLists = json.list;
+            cache.homeListsTs = json.lastUpdate;
+            resolve(json.lists);
+          });
       }
     });
   }
 
   async scanNow(): Promise<ScanStatus> {
-    return new Promise((resolve, reject) => {
-      fetch(`/catalog/scan_now`)
-      .then(async (response) => {
-        let json = await response.json();
-        resolve(json);
-      });
-    });    
+    return new Promise((resolve) => {
+      fetch('/catalog/scan_now')
+        .then(async (response) => {
+          const json = await response.json();
+          resolve(json);
+        });
+    });
   }
 
   async getScanProgress(offset: number): Promise<ScanStatus> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       fetch(`/catalog/get_scan_progress/${offset}`)
-      .then(async (response) => {
-        let json = await response.json();
-        resolve(json);
-      });
-    });    
+        .then(async (response) => {
+          const json = await response.json();
+          resolve(json);
+        });
+    });
   }
 
   setMoviePosition(filename: string, userName: string, position: number): void {
     fetch('/catalog/movie/set_position', {
-      method: "POST",
-      headers: new Headers({'content-type': 'application/json'}),
-      body: JSON.stringify({ filename, userName, position })
+      method: 'POST',
+      headers: new Headers({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ filename, userName, position }),
     }).then(async (response) => {
-      let json = await response.json();
-      eventBus.emit("movie-position-changed", { filename, userStatus: json.userStatus });
+      const json = await response.json();
+      eventBus.emit('movie-position-changed', { filename, userStatus: json.userStatus });
     });
   }
 
   setEpisodePosition(foldername: string, filename: string, userName: string, position: number): void {
     fetch('/catalog/tvshow/set_position', {
-      method: "POST",
-      headers: new Headers({'content-type': 'application/json'}),
-      body: JSON.stringify({ foldername, filename, userName, position })
+      method: 'POST',
+      headers: new Headers({ 'content-type': 'application/json' }),
+      body: JSON.stringify({
+        foldername, filename, userName, position,
+      }),
     }).then(async (response) => {
-      let json = await response.json();
-      eventBus.emit("episode-position-changed", { foldername, filename, userStatus: json.userStatus });
+      const json = await response.json();
+      eventBus.emit('episode-position-changed', { foldername, filename, userStatus: json.userStatus });
     });
   }
 
-  async setMovieStatus(movie: DbMovie, userName: string|undefined, status: SeenStatus): Promise<UserMovieStatus[]> {
-    return new Promise((resolve, reject) => {
+  async setMovieStatus(movie: DbMovie, userName: string | undefined, status: SeenStatus): Promise<UserMovieStatus[]> {
+    return new Promise((resolve) => {
       fetch('/catalog/movie/set_status', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ filename: movie.filename, userName, status })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ filename: movie.filename, userName, status }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.userStatus);
       });
     });
   }
 
-  async setTvshowStatus(tvshow: DbTvshow, userName: string|undefined, status: SeenStatus): Promise<UserTvshowStatus[]> {
-    return new Promise((resolve, reject) => {
+  async setTvshowStatus(tvshow: DbTvshow, userName: string | undefined, status: SeenStatus): Promise<UserTvshowStatus[]> {
+    return new Promise((resolve) => {
       fetch('/catalog/tvshow/set_status', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ foldername: tvshow.foldername, userName, status })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ foldername: tvshow.foldername, userName, status }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.userStatus);
       });
     });
   }
 
-  async setEpisodeStatus(tvshow: DbTvshow, episode: Episode, userName: string|undefined, status: SeenStatus): Promise<UserEpisodeStatus[]> {
-    return new Promise((resolve, reject) => {
+  async setEpisodeStatus(tvshow: DbTvshow, episode: Episode, userName: string | undefined, status: SeenStatus): Promise<UserEpisodeStatus[]> {
+    return new Promise((resolve) => {
       fetch('/catalog/tvshow/set_episode_status', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ foldername: tvshow.foldername, filename: episode.filename, userName, status })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({
+          foldername: tvshow.foldername, filename: episode.filename, userName, status,
+        }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.userStatus);
       });
     });
   }
 
   async setMovieAudience(movie: DbMovie, audience: number): Promise<number> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       fetch('/catalog/movie/set_audience', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ filename: movie.filename, audience })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ filename: movie.filename, audience }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.audience);
       });
     });
   }
 
   async setTvshowAudience(tvshow: DbTvshow, audience: number): Promise<number> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       fetch('/catalog/tvshow/set_audience', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ foldername: tvshow.foldername, audience })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ foldername: tvshow.foldername, audience }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.audience);
       });
     });
   }
 
   async parseFilename(filename: string): Promise<ParsedFilename> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       fetch('/catalog/parse_filename', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ filename })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ filename }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.parsedFilename);
       });
     });
   }
 
   async fixMovieMetadata(filename: string, tmdbId: number): Promise<DbMovie> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       fetch('/catalog/movie/fix_metadata', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ filename, tmdbId })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ filename, tmdbId }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.movie);
       });
     });
   }
 
   async fixTvshowMetadata(foldername: string, tmdbId: number): Promise<DbTvshow> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       fetch('/catalog/tvshow/fix_metadata', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ foldername, tmdbId })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ foldername, tmdbId }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.tvshow);
       });
     });
   }
 
   async renameFile(oldFilename: string, newFilename: string): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       fetch('/catalog/rename_file', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ oldFilename, newFilename })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ oldFilename, newFilename }),
       }).then(async (response) => {
-        let json = await response.json();
+        const json = await response.json();
         resolve(json.newFilename);
       });
     });
   }
 
   async deleteFile(filename: string): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       fetch('/catalog/delete_file', {
-        method: "POST",
-        headers: new Headers({'content-type': 'application/json'}),
-        body: JSON.stringify({ filename })
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ filename }),
       }).then(async () => {
         resolve();
       });
