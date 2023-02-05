@@ -1,7 +1,6 @@
 import path from 'path';
-import { Server, IncomingMessage, ServerResponse } from 'http';
 
-import Fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify';
+import Fastify, { FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyFavicon from 'fastify-favicon';
 

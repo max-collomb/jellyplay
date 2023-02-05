@@ -1,4 +1,3 @@
-
 export class YoutubeClient {
   apiKey: string = "";
   baseUrl: string = "https://youtube.googleapis.com/youtube/v3/";
@@ -15,5 +14,5 @@ export class YoutubeClient {
 
 }
 
-const youtubeClient = new YoutubeClient();
+export const youtubeClient: YoutubeClient = new YoutubeClient();
 export default youtubeClient;

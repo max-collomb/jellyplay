@@ -7,7 +7,7 @@ type Listener = {
   triggerCapacity?: number;
 };
 
-class EventBus {
+export class EventBus {
   private listeners: { [key: string]: Listener[] } = {};
 
   // creates an event that can be triggered any number of times

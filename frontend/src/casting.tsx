@@ -1,18 +1,7 @@
 import React from 'react';
 
-import Tabs from 'react-bootstrap/Tabs';
-import Tab from 'react-bootstrap/Tab';
-import Dropdown from 'react-bootstrap/Dropdown';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
-
-import { Cast, Config, DbCredit, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
-import { OrderBy, SeenStatus } from '../../api/src/enums';
-import { MoreToggle, MultiItem, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
-import apiClient from './api-client';
-import eventBus from './event-bus';
-
-import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
+import { Cast, DbCredit } from '../../api/src/types';
+import { ctx } from './common';
 
 type CastingProps = { cast?: Cast[] };
 type CastingState = { credits: DbCredit[] };
@@ -22,7 +11,7 @@ export default class Casting extends React.Component<CastingProps, CastingState>
   constructor(props: CastingProps) {
     super(props);
     this.state = { credits: [] };
-    apiClient.getCredits().then(credits => this.setState({ credits }));
+    ctx.apiClient.getCredits().then(credits => this.setState({ credits }));
   }
 
   getCredit(id: number): DbCredit|null {
@@ -36,7 +25,7 @@ export default class Casting extends React.Component<CastingProps, CastingState>
 
   handleCreditSearch(credit: DbCredit, evt: React.MouseEvent): void {
     evt.preventDefault();
-    eventBus.emit("set-search", { search: credit.name });
+    ctx.eventBus.emit("set-search", { search: credit.name });
   }
 
   render(): JSX.Element {

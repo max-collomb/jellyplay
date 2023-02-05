@@ -5,7 +5,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
 
-import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, ExtractedMovieInfos, HomeLists, Season, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from './types';
+import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from './types';
 import { SeenStatus } from './enums';
 import { TmdbClient, mediaInfo, extractMovieTitle } from './tmdb';
 

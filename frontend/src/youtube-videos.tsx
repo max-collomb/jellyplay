@@ -1,23 +1,9 @@
 import React from 'react';
 
-import Button from 'react-bootstrap/Button';
-import Tabs from 'react-bootstrap/Tabs';
-import Tab from 'react-bootstrap/Tab';
 import Spinner from 'react-bootstrap/Spinner';
-import Dropdown from 'react-bootstrap/Dropdown';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
-import { MovieResult, MovieRecommendationsResponse } from 'moviedb-promise/dist/request-types';
 
-import { Cast, Config, DbMovie, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
-import { OrderBy, SeenStatus } from '../../api/src/enums';
 import { playUrl } from './common';
-import apiClient from './api-client';
-import eventBus from './event-bus';
 import youtubeClient from './youtube-client';
-import { router } from './router';
-
-import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
 
 type YoutubeVideosProps = {
   search: string;

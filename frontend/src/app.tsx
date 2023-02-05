@@ -12,9 +12,10 @@ import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Spinner from 'react-bootstrap/Spinner';
 
-import { Config, DbUser } from '../../api/src/types';
+import { DbUser } from '../../api/src/types';
 import { OrderBy } from '../../api/src/enums';
 
+import { ctx, initContext } from './common';
 import Home from './home';
 import Movies from './movies';
 import MovieDetails from './movie-details';
@@ -22,20 +23,13 @@ import TmdbMovieDetails from './tmdb-movie-details';
 import TvShows from './tvshows';
 import TvshowDetails from './tvshow-details';
 import UserSelection from './user-selection';
-import apiClient from './api-client';
-import TmdbClient from './tmdb';
-import youtubeClient from './youtube-client';
-import eventBus from './event-bus';
-import { router, MatchedRoute } from './router';
+import { MatchedRoute } from './router';
 
 const SCAN_POLL_INTERVAL: number = 1000;
 
 type AppProps = {};
 type AppState = {
-  config: Config;
-  tmdbClient?: TmdbClient;
   users: DbUser[];
-  user?: DbUser;
   optionsVisible: boolean;
   route: MatchedRoute;
   orderBy: OrderBy;
@@ -52,7 +46,6 @@ export default class App extends React.Component<AppProps, AppState> {
     this.handleEventHashChanged = this.handleEventHashChanged.bind(this);
     const orderBy = (localStorage.getItem('orderBy') || "addedDesc") as OrderBy;
     this.state = {
-      config: { moviesLocalPath: "", moviesRemotePath: "", tvshowsLocalPath: "", tvshowsRemotePath: "", tmdbApiKey: "", youtubeApiKey: "" },
       users: [],
       optionsVisible: false,
       route: { name: "home" },
@@ -61,15 +54,12 @@ export default class App extends React.Component<AppProps, AppState> {
       scanning: false,
       scanLogs: "",
     };
-    apiClient.getConfig().then((config) => {
-      this.setState({ config, tmdbClient: new TmdbClient(config.tmdbApiKey, 'fr-FR') });
-      youtubeClient.init(config.youtubeApiKey);
-    });
-    apiClient.getScanProgress(0).then((status) => {
+    ctx.apiClient.getConfig().then(config => initContext(config));
+    ctx.apiClient.getScanProgress(0).then((status) => {
       this.setState({ scanning: ! status.finished, scanLogs: status.logs });
       this.initPollScan(status.finished);
     });
-    apiClient.getUsers().then((users) => {
+    ctx.apiClient.getUsers().then((users) => {
       let userName = localStorage.getItem('userName');
       let user;
       for(let u of users) {
@@ -77,31 +67,32 @@ export default class App extends React.Component<AppProps, AppState> {
           user = u;
         }
       }
-      this.setState({ users, user });
+      ctx.user = user;
+      this.setState({ users });
     });
-    router.add("home", "/home");
-    router.add("movies", "/movies");
-    router.add("tmdb-movie-details", "/tmdb/movie/:id");
-    router.add("movie-details", "/movie/:id");
-    router.add("tvshows", "/tvshows");
-    router.add("tvshow-details", "/tvshow/:id");
+    ctx.router.add("home", "/home");
+    ctx.router.add("movies", "/movies");
+    ctx.router.add("tmdb-movie-details", "/tmdb/movie/:id");
+    ctx.router.add("movie-details", "/movie/:id");
+    ctx.router.add("tvshows", "/tvshows");
+    ctx.router.add("tvshow-details", "/tvshow/:id");
   }
 
   componentDidMount() {
     // l'événement "search" n'est pas géré par FormControl => on se replie sur du vanillaJS
     document?.getElementById("search-input")?.addEventListener("search", (evt) => this.setState({ search: (evt?.target as HTMLInputElement).value || "" }));
-    eventBus.on("hash-changed", this.handleEventHashChanged);
-    eventBus.on("set-search", this.handleEventSetSearch);
+    ctx.eventBus.on("hash-changed", this.handleEventHashChanged);
+    ctx.eventBus.on("set-search", this.handleEventSetSearch);
   }
 
   componentWillUnmount() {
-    eventBus.detach("hash-changed", this.handleEventHashChanged);
-    eventBus.detach("set-search", this.handleEventSetSearch);
+    ctx.eventBus.detach("hash-changed", this.handleEventHashChanged);
+    ctx.eventBus.detach("set-search", this.handleEventSetSearch);
   }
 
   initPollScan(finished: boolean) {
     if (finished) {
-      apiClient.clearCache();
+      ctx.apiClient.clearCache();
       this.setState({ optionsVisible: false });
     } else {
       setTimeout(this.pollScanProgress.bind(this), SCAN_POLL_INTERVAL);
@@ -109,7 +100,7 @@ export default class App extends React.Component<AppProps, AppState> {
   }
 
   pollScanProgress() {
-    apiClient.getScanProgress(this.state.scanLogs.length).then((status) => {
+    ctx.apiClient.getScanProgress(this.state.scanLogs.length).then((status) => {
       this.setState({ scanning: ! status.finished, scanLogs: this.state.scanLogs + status.logs });
       this.initPollScan(status.finished);
     });
@@ -131,7 +122,8 @@ export default class App extends React.Component<AppProps, AppState> {
   }
 
   handleUserSelected(user?: DbUser): void {
-    this.setState({ user });
+    ctx.user = user;
+    this.forceUpdate();
     localStorage.setItem('userName', user ? user.name : "none");
   }
 
@@ -162,7 +154,7 @@ export default class App extends React.Component<AppProps, AppState> {
 
   handleScanClick(evt: React.MouseEvent<HTMLButtonElement>): void {
     if (! this.state.scanning) {
-      apiClient.scanNow().then((status) => {
+      ctx.apiClient.scanNow().then((status) => {
         this.setState({ optionsVisible: true, scanning: ! status.finished, scanLogs: status.logs });
         this.initPollScan(status.finished);
       });
@@ -173,41 +165,20 @@ export default class App extends React.Component<AppProps, AppState> {
     let content: JSX.Element = <div/>;
     if (! this.state.users.length) {
       content = <div className="d-flex justify-content-center mt-5"><div className="spinner-border text-light"></div></div>;
-    } else if (! this.state.user) {
+    } else if (! ctx.user) {
       content = <UserSelection users={this.state.users} onValidation={this.handleUserSelected.bind(this)}/>
     } else if (this.state.route.name == "home") {
-      content = <Home config={this.state.config}
-                      user={this.state.user}
-                      tmdbClient={this.state.tmdbClient}
-                      orderBy={this.state.orderBy}
-                      search={this.state.search}/>;
+      content = <Home orderBy={this.state.orderBy} search={this.state.search}/>;
     } else if (this.state.route.name == "movies") {
-      content = <Movies config={this.state.config}
-                        user={this.state.user}
-                        tmdbClient={this.state.tmdbClient}
-                        orderBy={this.state.orderBy}
-                        search={this.state.search}/>;
+      content = <Movies orderBy={this.state.orderBy} search={this.state.search}/>;
     } else if (this.state.route.name == "movie-details" && this.state.route.id) {
-      content = <MovieDetails config={this.state.config}
-                              user={this.state.user}
-                              tmdbClient={this.state.tmdbClient}
-                              movieId={this.state.route.id}/>;
+      content = <MovieDetails movieId={this.state.route.id}/>;
     } else if (this.state.route.name == "tmdb-movie-details" && this.state.route.id) {
-      content = <TmdbMovieDetails config={this.state.config}
-                                  user={this.state.user}
-                                  tmdbClient={this.state.tmdbClient}
-                                  movieId={this.state.route.id}/>;
+      content = <TmdbMovieDetails movieId={this.state.route.id}/>;
     } else if (this.state.route.name == "tvshows") {
-      content = <TvShows config={this.state.config}
-                         user={this.state.user}
-                         tmdbClient={this.state.tmdbClient}
-                         orderBy={this.state.orderBy}
-                         search={this.state.search}/>
+      content = <TvShows orderBy={this.state.orderBy} search={this.state.search}/>
     } else if (this.state.route.name == "tvshow-details" && this.state.route.id) {
-      content = <TvshowDetails config={this.state.config}
-                               user={this.state.user}
-                               tmdbClient={this.state.tmdbClient}
-                               tvshowId={this.state.route.id}/>;
+      content = <TvshowDetails tvshowId={this.state.route.id}/>;
     }
 
     return (
@@ -243,9 +214,9 @@ export default class App extends React.Component<AppProps, AppState> {
                 />
                 <Button variant="dark" style={{ lineHeight: "18px" }} onClick={ this.handleSearchClick.bind(this) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg></Button>
               </InputGroup>
-              <Button variant="dark" className={"ms-1" + (this.state.scanning ? " disabled" : "") + (this.state.user?.admin ? "" : " d-none")} style={{ lineHeight: "18px" }} onClick={ this.handleScanClick.bind(this) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrow-clockwise" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg></Button>
+              <Button variant="dark" className={"ms-1" + (this.state.scanning ? " disabled" : "") + (ctx.user?.admin ? "" : " d-none")} style={{ lineHeight: "18px" }} onClick={ this.handleScanClick.bind(this) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-arrow-clockwise" viewBox="0 0 16 16"><path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg></Button>
               <Button variant="dark" className="ms-1" style={{ lineHeight: "18px" }} onClick={ this.handleOptionsToggle.bind(this, true) }><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16"><path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg></Button>
-              {this.state.user ? <div style={{ cursor: "pointer" }} onClick={this.handleUserSelected.bind(this, undefined)}><img src={`/images/users/${this.state.user.name}.svg`} width="36" className="ms-3"/></div> : null}
+              {ctx.user ? <div style={{ cursor: "pointer" }} onClick={this.handleUserSelected.bind(this, undefined)}><img src={`/images/users/${ctx.user.name}.svg`} width="36" className="ms-3"/></div> : null}
             </Form>
             <Offcanvas
               id={`offcanvasNavbar-expand`}
@@ -287,7 +258,7 @@ export default class App extends React.Component<AppProps, AppState> {
                   </ButtonGroup>
                 </ButtonToolbar>
                 <hr/>
-                <div className={this.state.user?.admin ? "" : "d-none"}>
+                <div className={ctx.user?.admin ? "" : "d-none"}>
                   <Offcanvas.Title>Admin</Offcanvas.Title>
                   <ButtonToolbar className="my-3">
                     <ButtonGroup className="flex-fill">
@@ -296,7 +267,7 @@ export default class App extends React.Component<AppProps, AppState> {
                     </ButtonGroup>
                   </ButtonToolbar>
                   <ButtonToolbar className="my-3">
-                    <Button variant="outline-secondary" className={"flex-fill" + (this.state.user?.admin && ! this.state.scanning ? "" : " disabled")} onClick={this.handleScanClick.bind(this)}>Scanner la bibliothèque</Button>
+                    <Button variant="outline-secondary" className={"flex-fill" + (ctx.user?.admin && ! this.state.scanning ? "" : " disabled")} onClick={this.handleScanClick.bind(this)}>Scanner la bibliothèque</Button>
                     <Spinner animation="border" role="status" className={this.state.scanning ? "ms-3" : "d-none"} />
                   </ButtonToolbar>
                   <div className="overflow-auto" style={{height: "400px"}}>

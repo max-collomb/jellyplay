@@ -16,7 +16,7 @@ const cache = {
   lastUpdate: 0,
 };
 
-class ApiClient {
+export class ApiClient {
 
   clearCache() {
     cache.homeLists = null;
@@ -222,7 +222,7 @@ class ApiClient {
     });
   }
 
-  async setMovieStatus(movie: DbMovie, userName: string, status: SeenStatus): Promise<UserMovieStatus[]> {
+  async setMovieStatus(movie: DbMovie, userName: string|undefined, status: SeenStatus): Promise<UserMovieStatus[]> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/movie/set_status', {
         method: "POST",
@@ -235,7 +235,7 @@ class ApiClient {
     });
   }
 
-  async setTvshowStatus(tvshow: DbTvshow, userName: string, status: SeenStatus): Promise<UserTvshowStatus[]> {
+  async setTvshowStatus(tvshow: DbTvshow, userName: string|undefined, status: SeenStatus): Promise<UserTvshowStatus[]> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/tvshow/set_status', {
         method: "POST",
@@ -248,7 +248,7 @@ class ApiClient {
     });
   }
 
-  async setEpisodeStatus(tvshow: DbTvshow, episode: Episode, userName: string, status: SeenStatus): Promise<UserEpisodeStatus[]> {
+  async setEpisodeStatus(tvshow: DbTvshow, episode: Episode, userName: string|undefined, status: SeenStatus): Promise<UserEpisodeStatus[]> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/tvshow/set_episode_status', {
         method: "POST",
@@ -352,5 +352,5 @@ class ApiClient {
   }
 }
 
-const apiClient: ApiClient = new ApiClient();
+export const apiClient: ApiClient = new ApiClient();
 export default apiClient;

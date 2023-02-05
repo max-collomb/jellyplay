@@ -2,22 +2,17 @@ import React from 'react';
 
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
-import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Spinner from 'react-bootstrap/Spinner';
 import Row from 'react-bootstrap/Row';
-import { TvResult, TvResultsResponse } from 'moviedb-promise/dist/request-types';
+import { TvResult } from 'moviedb-promise/dist/request-types';
 
-import { Config, DbTvshow, DbUser } from '../../api/src/types';
+import { DbTvshow } from '../../api/src/types';
 
-import apiClient from './api-client';
-import TmdbClient from './tmdb';
+import { ctx } from './common';
 
 type FixTvshowMetadataFormProps = {
-  config: Config;
-  user: DbUser;
-  tmdbClient?: TmdbClient;
   tvshow: DbTvshow;
   onClose: (tvshow?: DbTvshow) => void;
 };
@@ -35,7 +30,7 @@ export default class FixTvshowMetadataForm extends React.Component<FixTvshowMeta
       title: "",
       updating: false,
     };
-    apiClient.parseFilename(this.props.tvshow.foldername)
+    ctx.apiClient.parseFilename(this.props.tvshow.foldername)
              .then((data) => {
                let title = data.title;
                if (title.startsWith('['))
@@ -52,7 +47,7 @@ export default class FixTvshowMetadataForm extends React.Component<FixTvshowMeta
     this.setState({ updating: true });
     let tvshow: DbTvshow = this.props.tvshow;
     if (candidate.id) {
-      tvshow = await apiClient.fixTvshowMetadata(this.props.tvshow.foldername, candidate.id);
+      tvshow = await ctx.apiClient.fixTvshowMetadata(this.props.tvshow.foldername, candidate.id);
     }
     this.props.onClose(tvshow);
     evt.preventDefault();
@@ -62,7 +57,7 @@ export default class FixTvshowMetadataForm extends React.Component<FixTvshowMeta
     if (evt) {
       evt.preventDefault();
     }
-    const candidates: TvResult[] | undefined = await this.props.tmdbClient?.getTvCandidates(this.state.title);
+    const candidates: TvResult[] | undefined = await ctx.tmdbClient.getTvCandidates(this.state.title);
     this.setState({ candidates });
   }
 
@@ -82,7 +77,7 @@ export default class FixTvshowMetadataForm extends React.Component<FixTvshowMeta
         console.log("this.state.candidates", this.state.candidates);
       candidates = <div className="d-flex flex-wrap justify-content-evenly mt-3">
         {this.state.candidates.map((candidate, idx) => <div key={idx} className="media-card movie" onClick={this.handleCandidateClick.bind(this, candidate)}>
-          <span className="poster" style={{ backgroundImage: `url(${this.props.tmdbClient?.baseUrl}w342${candidate.poster_path})` }}></span>
+          <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient.baseUrl}w342${candidate.poster_path})` }}></span>
           <span className="title">{candidate.name}</span>
           <span className="infos d-flex justify-content-between">
             <span className="year">{candidate.first_air_date?.substring(0, 4)}</span>

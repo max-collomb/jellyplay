@@ -4,24 +4,18 @@ import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-import { Config, DbCredit, DbMovie, DbUser, UserMovieStatus } from '../../api/src/types';
+import { DbCredit, DbMovie, UserMovieStatus } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
-import { MoreToggle, MultiItem, getMovieDuration, getUserMovieStatus, getMovieProgress, playMovie, renderFileSize, renderVideoInfos, renderAudioInfos } from './common';
-import { router } from './router';
-import apiClient from './api-client';
-import TmdbClient from './tmdb';
+
+import { ctx, MoreToggle, MultiItem, getMovieDuration, getUserMovieStatus, getMovieProgress, playMovie, renderFileSize, renderVideoInfos, renderAudioInfos } from './common';
 import FixMovieMetadataForm from './fix-movie-metadata-form';
 import RenamingForm from './renaming-form';
 import Casting from './casting';
 import TmdbRecommandations from './tmdb-recommandations';
 import YoutubeVideos from './youtube-videos';
-import eventBus from './event-bus';
 
 type MovieDetailsProps = {
   movieId: number;
-  config: Config;
-  user: DbUser;
-  tmdbClient?: TmdbClient;
 };
 type MovieDetailsState = {
   movie: DbMovie;
@@ -41,36 +35,36 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     this.state = {
       movie: { filename: "", tmdbid: 0, title: "", originalTitle: "", year: 0, duration: 0, directors: [], writers: [], cast: [], genres: [], countries: [], audience: 0, created: 0, filesize: 0, video: { width: 0, height: 0, codec: "" }, audio: [], subtitles: [], synopsys: "", backdropPath: "", posterPath: "", userStatus: [], searchableContent: "" },
       credits: [],
-      tabKey: router.currentRoute?.state?.tabKey || "cast",
+      tabKey: ctx.router.currentRoute?.state?.tabKey || "cast",
       fixingMetadata: false,
       renaming: false,
       currentStatus: SeenStatus.unknown,
       percentPos: 0,
     };
     this.loadMovie();
-    apiClient.getCredits().then(credits => this.setState({ credits }));
+    ctx.apiClient.getCredits().then(credits => this.setState({ credits }));
   }
 
   componentDidUpdate(prevProps: MovieDetailsProps, _prevState: MovieDetailsState) {
     if (prevProps.movieId != this.props.movieId) {
-      this.setState({ tabKey: router.currentRoute?.state?.tabKey || "cast" });
+      this.setState({ tabKey: ctx.router.currentRoute?.state?.tabKey || "cast" });
       this.loadMovie();
     }
   }
 
   componentDidMount() {
-    eventBus.on("movie-position-changed", this.handleEventMoviePositionChanged);
+    ctx.eventBus.on("movie-position-changed", this.handleEventMoviePositionChanged);
   }
 
   componentWillUnmount() {
-    eventBus.detach("movie-position-changed", this.handleEventMoviePositionChanged);
+    ctx.eventBus.detach("movie-position-changed", this.handleEventMoviePositionChanged);
   }
 
   loadMovie(): void {
-    apiClient.getMovies().then(movies => {
+    ctx.apiClient.getMovies().then(movies => {
       let movie: DbMovie|undefined = movies.find(m => m.tmdbid == this.props.movieId);
       if (movie) {
-        const us: UserMovieStatus|null = getUserMovieStatus(movie, this.props.user);
+        const us: UserMovieStatus|null = getUserMovieStatus(movie);
         this.setState({
           movie,
           currentStatus: us ? us.currentStatus : SeenStatus.unknown,
@@ -105,7 +99,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
   handleEventMoviePositionChanged(evt: any): void {
     if (evt.filename == this.state.movie.filename) {
       this.state.movie.userStatus = evt.userStatus;
-      const us: UserMovieStatus|null = getUserMovieStatus(this.state.movie, this.props.user);
+      const us: UserMovieStatus|null = getUserMovieStatus(this.state.movie);
       const percentPos = (us && this.state.movie.duration) ? Math.floor(100 * us.position / this.state.movie.duration) : 0;
       const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
       if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
@@ -116,13 +110,13 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
 
   handleCastClick(cast: DbCredit, evt: React.MouseEvent) {
     evt.preventDefault();
-    eventBus.emit("set-search", { search: cast.name });
+    ctx.eventBus.emit("set-search", { search: cast.name });
   }
 
   handleToggleStatus(movie: DbMovie, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
     evt.stopPropagation();
     evt.preventDefault();
-    apiClient.setMovieStatus(movie, this.props.user.name, status).then((userStatus: UserMovieStatus[]) => {
+    ctx.apiClient.setMovieStatus(movie, ctx.user?.name, status).then((userStatus: UserMovieStatus[]) => {
       movie.userStatus = userStatus;
       this.setState({ movie });
     });
@@ -130,8 +124,8 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
 
   handleSetAudience(movie: DbMovie, audience: number, evt: React.MouseEvent<HTMLElement>): void {
     evt.preventDefault();
-    if (this.props.user.admin) {
-      apiClient.setMovieAudience(movie, audience).then((aud: number) => {
+    if (ctx.user?.admin) {
+      ctx.apiClient.setMovieAudience(movie, audience).then((aud: number) => {
         movie.audience = aud;
         this.setState({ movie });
       });
@@ -159,14 +153,14 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
   handleDeleteClick(evt: React.MouseEvent<HTMLElement>): void {
     evt.preventDefault();
     if (this.state.movie) {
-      apiClient.deleteFile(this.state.movie.filename);
+      ctx.apiClient.deleteFile(this.state.movie.filename);
     }
   }
 
   handleClick(evt: React.MouseEvent<HTMLElement>): void {
     evt.stopPropagation();
     evt.preventDefault();
-    playMovie(this.props.config, this.state.movie, this.props.user);
+    playMovie(this.state.movie);
   }
 
   handleChangeTab(tabKey: string|null): void {
@@ -185,7 +179,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
       return <RenamingForm {...this.props} movie={this.state.movie} onClose={this.handleRenamingFormClose.bind(this)}/>;
     }
     const movie: DbMovie = this.state.movie;
-    const userStatus = getUserMovieStatus(movie, this.props.user);
+    const userStatus = getUserMovieStatus(movie);
     return <div className="media-details movie" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdropPath ? `, url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
       <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
         <a href="#" className="link-light" style={{ zIndex: 1 }} onClick={(evt) => { evt.preventDefault(); history.back(); }}>
@@ -201,7 +195,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
             </svg>
            </b>
-          {getMovieProgress(movie, this.props.user)}
+          {getMovieProgress(movie)}
         </span>
       </div>
       <div className="title-bar">
@@ -242,12 +236,12 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
               <Dropdown.Menu align="end">
                 <Dropdown.Header>Audience</Dropdown.Header>
                 <Dropdown.Item as={MultiItem}>
-                  { [0,10,12,16,18,999].map(a => <a key={a} className={"audience-link p-2" + (this.props.user.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, movie, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
+                  { [0,10,12,16,18,999].map(a => <a key={a} className={"audience-link p-2" + (ctx.user?.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, movie, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
                 </Dropdown.Item>
                 <Dropdown.Divider/>
-                <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! this.props.user.admin}>Corriger les métadonnées...</Dropdown.Item>
-                <Dropdown.Item onClick={this.handleRenameClick.bind(this)} disabled={! this.props.user.admin}>Renommer le fichier...</Dropdown.Item>
-                <Dropdown.Item onClick={this.handleDeleteClick.bind(this)} disabled={! this.props.user.admin}>Supprimer</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! ctx.user?.admin}>Corriger les métadonnées...</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleRenameClick.bind(this)} disabled={! ctx.user?.admin}>Renommer le fichier...</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleDeleteClick.bind(this)} disabled={! ctx.user?.admin}>Supprimer</Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>
           </div>
@@ -288,7 +282,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
             <Casting cast={movie.cast} />
           </Tab>
           <Tab eventKey="similar" title="Recommandations">
-            <TmdbRecommandations movieId={this.state.movie.tmdbid} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
+            <TmdbRecommandations movieId={this.state.movie.tmdbid} hidden={this.state.tabKey != "similar"} />
           </Tab>
           <Tab eventKey="trailers" title="Videos">
             <YoutubeVideos search={this.state.movie?.title || ""} />

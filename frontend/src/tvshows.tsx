@@ -1,19 +1,12 @@
 import React from 'react';
 
-import { Config, DbCredit, DbTvshow, DbUser } from '../../api/src/types';
+import { DbCredit, DbTvshow } from '../../api/src/types';
 import { OrderBy } from '../../api/src/enums';
-import { cleanString, selectCurrentSeason } from './common';
-import eventBus from './event-bus';
-import { router } from './router';
-import apiClient from './api-client';
-import TmdbClient from './tmdb';
+
+import { ctx, cleanString } from './common';
 import TvshowCard from './tvshow-card';
-import TvshowDetails from './tvshow-details';
 
 type TvShowsProps = {
-  config: Config;
-  user: DbUser;
-  tmdbClient?: TmdbClient;
   orderBy: OrderBy;
   search: string;
 };
@@ -22,7 +15,6 @@ type TvShowsState = {
   credits: DbCredit[];
   selection?: DbTvshow;
   fixingMetadata: boolean;
-  // renaming: boolean;
   tabSeason: number;
   tabKey: string;
   scrollPosition: number;
@@ -57,23 +49,23 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
   }
 
   componentDidMount() {
-    eventBus.on("set-search", this.handleEventSetSearch);
-    eventBus.on("will-navigate", this.handleEventWillNavigate);
+    ctx.eventBus.on("set-search", this.handleEventSetSearch);
+    ctx.eventBus.on("will-navigate", this.handleEventWillNavigate);
   }
 
   componentWillUnmount() {
-    eventBus.detach("set-search", this.handleEventSetSearch);
-    eventBus.detach("will-navigate", this.handleEventWillNavigate);
+    ctx.eventBus.detach("set-search", this.handleEventSetSearch);
+    ctx.eventBus.detach("will-navigate", this.handleEventWillNavigate);
   }
 
   componentDidUpdate(_prevProps: TvShowsProps, prevState: TvShowsState) {
-    if (router.currentRoute?.state?.windowScrollPosition !== undefined) {
+    if (ctx.router.currentRoute?.state?.windowScrollPosition !== undefined) {
       setTimeout(() => {
         //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        window.scrollTo({left: 0, top: router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant'});
+        window.scrollTo({left: 0, top: ctx.router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant'});
       }, 0);
     }
-    if (apiClient.needRefresh("tvshows")) {
+    if (ctx.apiClient.needRefresh("tvshows")) {
       this.refreshContent();
     }
   }
@@ -87,8 +79,8 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
   }
 
   refreshContent(): void {
-    apiClient.getTvshows().then(tvshows => { this.lastOrderBy = undefined; this.setState({ tvshows }); });
-    apiClient.getCredits().then(credits => this.setState({ credits }));    
+    ctx.apiClient.getTvshows().then(tvshows => { this.lastOrderBy = undefined; this.setState({ tvshows }); });
+    ctx.apiClient.getCredits().then(credits => this.setState({ credits }));    
   }
 
   render(): JSX.Element {
@@ -125,7 +117,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
         return s.searchableContent.includes(cleanString(this.props.search));
       })
     }
-    const typeTitles = this.props.user.name == "thomas"
+    const typeTitles = ctx.user?.name == "thomas"
       ? ["Animes", "Séries", "Emissions"]
       : ["Séries", "Emissions", "Animes"];
     let tvshowsByType: DbTvshow[][] = [ [], [], [] ];
@@ -143,14 +135,8 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
     return <>{tvshowsByType.map((tvshows, idx0) => {
       return <React.Fragment key={idx0}><h4 className="section-title">{typeTitles[idx0]}</h4>
         <div className="d-flex flex-wrap -justify-content-evenly mt-2">{
-          tvshows.filter(t => t.audience <= this.props.user.audience)
-          .map((tvshow, idx) => <TvshowCard key={idx}
-                                            tvshow={tvshow}
-                                            config={this.props.config}
-                                            user={this.props.user}
-                                            showNext={false}/>)
-          // onChanged={this.forceUpdate.bind(this)}
-          // onSelected={(tvshow: DbTvshow) => this.setState({ selection: tvshow, tabSeason: selectCurrentSeason(tvshow, this.props.user), tabKey: "cast", scrollPosition: window.pageYOffset })}
+          tvshows.filter(t => t.audience <= (ctx.user?.audience || 999))
+          .map((tvshow, idx) => <TvshowCard key={idx} tvshow={tvshow} showNext={false}/>)
        }
       </div></React.Fragment>;
     })}</>;

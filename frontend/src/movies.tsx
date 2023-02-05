@@ -1,19 +1,12 @@
 import React from 'react';
 
-import { Config, DbCredit, DbMovie, DbUser } from '../../api/src/types';
+import { DbCredit, DbMovie } from '../../api/src/types';
 import { OrderBy } from '../../api/src/enums';
-import { cleanString } from './common';
-import eventBus from './event-bus';
-import { router } from './router';
-import apiClient from './api-client';
-import TmdbClient from './tmdb';
+
+import { ctx, cleanString } from './common';
 import MovieCard from './movie-card';
-import MovieDetails from './movie-details';
 
 type MoviesProps = {
-  config: Config;
-  user: DbUser;
-  tmdbClient?: TmdbClient;
   orderBy: OrderBy;
   search: string;
 };
@@ -50,23 +43,23 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   }
 
   componentDidMount() {
-    eventBus.on("set-search", this.handleEventSetSearch);
-    eventBus.on("will-navigate", this.handleEventWillNavigate);
+    ctx.eventBus.on("set-search", this.handleEventSetSearch);
+    ctx.eventBus.on("will-navigate", this.handleEventWillNavigate);
   }
 
   componentWillUnmount() {
-    eventBus.detach("set-search", this.handleEventSetSearch);
-    eventBus.detach("will-navigate", this.handleEventWillNavigate);
+    ctx.eventBus.detach("set-search", this.handleEventSetSearch);
+    ctx.eventBus.detach("will-navigate", this.handleEventWillNavigate);
   }
 
   componentDidUpdate(_prevProps: MoviesProps, prevState: MoviesState) {
-    if (router.currentRoute?.state?.windowScrollPosition !== undefined) {
+    if (ctx.router.currentRoute?.state?.windowScrollPosition !== undefined) {
       setTimeout(() => {
         //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        window.scrollTo({left: 0, top: router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant'});
+        window.scrollTo({left: 0, top: ctx.router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant'});
       }, 0);
     }
-    if (apiClient.needRefresh("movies")) {
+    if (ctx.apiClient.needRefresh("movies")) {
       this.refreshContent();
     }
   }
@@ -80,8 +73,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
   }
 
   refreshContent() {
-    apiClient.getMovies().then(movies => { this.lastOrderBy = undefined; this.setState({ movies }); });
-    apiClient.getCredits().then(credits => this.setState({ credits }));    
+    ctx.apiClient.getMovies().then(movies => { this.lastOrderBy = undefined; this.setState({ movies }); });
+    ctx.apiClient.getCredits().then(credits => this.setState({ credits }));    
   }
 
   render(): JSX.Element {
@@ -119,11 +112,8 @@ export default class Movies extends React.Component<MoviesProps, MoviesState> {
       })
     }
     return <div className="d-flex flex-wrap -justify-content-evenly mt-3">{
-      movies.filter(m => m.audience <= this.props.user.audience)
-      .map((movie, idx) => <MovieCard key={idx}
-                                      movie={movie}
-                                      config={this.props.config}
-                                      user={this.props.user}/>)
+      movies.filter(m => m.audience <= (ctx.user?.audience || 999))
+      .map((movie, idx) => <MovieCard key={idx} movie={movie}/>)
     }</div>;
   }
 }

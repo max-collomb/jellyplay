@@ -117,10 +117,12 @@ V1.1
 [x] onglet bande annonce + lecture avec mpv
     https://youtube.googleapis.com/youtube/v3/search?part=snippet&q=bande%20annonce%20titre_du_film&key=[API_KEY]
     https://console.cloud.google.com/apis/credentials?project=jellyplay&supportedpurview=project
+[x] refactoring avec un objet Context global
+[ ] bug ? méthode TvShowDetails.handlePlayCallback() non utilisée (prendre modèle sur MovieDetails)
 [ ] fiche descriptive d'une personne (acteur / réal) : fetch from tmdp + liste de film (local) + liste de films non possédés
 [ ] recherche externe tmdb via api (nécessite de créer une page résultat de recherche au lieu de se contenter de filtrer les films et les séries)
 [ ] [frontend/api] recommandation ou recherche tmdb => ajouter à ma liste d'envie + voir la liste + supprimer de la liste
-[ ] utiliser une seule instance de mpv (manifestement possible en envoyant des message `loadfile` - source : https://github.com/mpv-player/mpv/issues/4954)
+[ ] utiliser une seule instance de mpv (manifestement possible en envoyant des messages `loadfile` - source : https://github.com/mpv-player/mpv/issues/4954)
 
 
 [ ] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode

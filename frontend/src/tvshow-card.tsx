@@ -1,16 +1,12 @@
 import React from 'react';
 
-import { Config, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
+import { DbTvshow, Episode, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
-import { getEpisodeCount, getEpisodeByFilename, getEpisodeProgress, getEpisodeUserStatus, getSeasonCount, getTvshowUserStatus, playTvshow, selectCurrentEpisode } from './common';
-import apiClient from './api-client';
-import { router } from './router';
-import eventBus from './event-bus';
+
+import { ctx, getEpisodeCount, getEpisodeByFilename, getEpisodeProgress, getEpisodeUserStatus, getSeasonCount, getTvshowUserStatus, playTvshow, selectCurrentEpisode } from './common';
 
 type TvShowCardProps = {
   tvshow: DbTvshow
-  config: Config;
-  user: DbUser;
   showNext: boolean;
 };
 type TvShowCardState = {
@@ -30,11 +26,11 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
   }
 
   componentDidMount() {
-    eventBus.on("episode-position-changed", this.handleEventEpisodePositionChanged);
+    ctx.eventBus.on("episode-position-changed", this.handleEventEpisodePositionChanged);
   }
 
   componentWillUnmount() {
-    eventBus.detach("episode-position-changed", this.handleEventEpisodePositionChanged);
+    ctx.eventBus.detach("episode-position-changed", this.handleEventEpisodePositionChanged);
   }
 
   handleEventEpisodePositionChanged(evt: any): void {
@@ -42,7 +38,7 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
       let episode: Episode|null = getEpisodeByFilename(this.props.tvshow, evt.filename);
       if (episode) {
         episode.userStatus = evt.userStatus;
-        const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode, this.props.user);
+        const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode);
         const percentPos = (us && episode.duration) ? Math.floor(100 * us.position / episode.duration) : 0;
         const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
         if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
@@ -53,7 +49,7 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
   }
 
   handleToggleStatus(tvshow: DbTvshow, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
-    apiClient.setTvshowStatus(tvshow, this.props.user.name, status).then((userStatus: UserTvshowStatus[]) => {
+    ctx.apiClient.setTvshowStatus(tvshow, ctx.user?.name, status).then((userStatus: UserTvshowStatus[]) => {
       tvshow.userStatus = userStatus;
     });
     evt.stopPropagation();
@@ -63,13 +59,13 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
   handleClick(evt: React.MouseEvent<HTMLElement>): void {
     evt.stopPropagation();
     evt.preventDefault();
-    router.navigateTo(`#/tvshow/${this.props.tvshow.tmdbid}`);
+    ctx.router.navigateTo(`#/tvshow/${this.props.tvshow.tmdbid}`);
   }
 
   handlePlayTvshow(evt: React.MouseEvent<HTMLElement>): void {
-    const episode: Episode|undefined = playTvshow(this.props.config, this.props.tvshow, undefined, this.props.user);
+    const episode: Episode|undefined = playTvshow(this.props.tvshow, undefined);
     if (episode) {
-      const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode, this.props.user);
+      const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode);
       this.setState({
         currentStatus: us ? us.currentStatus : SeenStatus.unknown,
         percentPos: (us && episode.duration) ? Math.floor(100 * us.position / episode.duration) : 0,
@@ -80,19 +76,19 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
   }
 
   render(): JSX.Element {
-    const userStatus = getTvshowUserStatus(this.props.tvshow, this.props.user);
+    const userStatus = getTvshowUserStatus(this.props.tvshow);
     const infos = [];
     let progress: JSX.Element|null = null;
     let posterPath: string = "";
     if (this.props.showNext) {
-      const episode: Episode|undefined = selectCurrentEpisode(this.props.tvshow, this.props.user);
+      const episode: Episode|undefined = selectCurrentEpisode(this.props.tvshow);
       if (episode) {
         infos.push(<span key={1} className="next-episode text-center">
           {episode.seasonNumber > 0 ? <>S{episode.seasonNumber.toString().padStart(2, '0')}</> : null}
           {episode.episodeNumbers?.length ? <>E{episode.episodeNumbers.map(n => n.toString().padStart(2, '0')).join('/')}&nbsp;&ndash;&nbsp;</> : null}
           {episode.title || episode.filename}
         </span>);
-        progress = getEpisodeProgress(episode, this.props.user);
+        progress = getEpisodeProgress(episode);
         this.props.tvshow.seasons.forEach(s => {
           if (s.seasonNumber == episode.seasonNumber) {
             posterPath = s.posterPath;

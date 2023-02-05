@@ -5,20 +5,15 @@ import Tab from 'react-bootstrap/Tab';
 import Spinner from 'react-bootstrap/Spinner';
 import { Crew, CreditsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
 
-import { Config, DbCredit, DbUser } from '../../api/src/types';
-import { router } from './router';
-import apiClient from './api-client';
-import TmdbClient from './tmdb';
+import { DbCredit } from '../../api/src/types';
+
+import { ctx } from './common';
 import TmdbRecommandations from './tmdb-recommandations';
 import TmdbCasting from './tmdb-casting';
 import YoutubeVideos from './youtube-videos';
-import eventBus from './event-bus';
 
 type TmdbMovieDetailsProps = {
   movieId: number;
-  config: Config;
-  user: DbUser;
-  tmdbClient?: TmdbClient;
 };
 type TmdbMovieDetailsState = {
   movie?: MovieResponse;
@@ -33,10 +28,10 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     super(props);
     this.state = {
       fetchedCredits: [],
-      tabKey: router.currentRoute?.state?.tabKey || "cast",
+      tabKey: ctx.router.currentRoute?.state?.tabKey || "cast",
     };
     this.fetchMovie();
-    apiClient.getCredits().then(fetchedCredits => this.setState({ fetchedCredits }));
+    ctx.apiClient.getCredits().then(fetchedCredits => this.setState({ fetchedCredits }));
   }
 
   componentDidUpdate(prevProps: TmdbMovieDetailsProps, _prevState: TmdbMovieDetailsState) {
@@ -44,15 +39,15 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
       this.setState({
         movie: undefined,
         credits: undefined,
-        tabKey: router.currentRoute?.state?.tabKey || "cast"
+        tabKey: ctx.router.currentRoute?.state?.tabKey || "cast"
       });
       this.fetchMovie();
     }
   }
 
   async fetchMovie(): Promise<void> {
-    const movie = await this.props.tmdbClient?.getMovie(this.props.movieId);
-    const credits = await this.props.tmdbClient?.getMovieCredits(this.props.movieId);
+    const movie = await ctx.tmdbClient?.getMovie(this.props.movieId);
+    const credits = await ctx.tmdbClient?.getMovieCredits(this.props.movieId);
     this.setState({ movie, credits });
   }
 
@@ -118,7 +113,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
 
   handleCastClick(cast: DbCredit, evt: React.MouseEvent) {
     evt.preventDefault();
-    eventBus.emit("set-search", { search: cast.name });
+    ctx.eventBus.emit("set-search", { search: cast.name });
   }
 
   handleChangeTab(tabKey: string|null): void {
@@ -134,7 +129,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     const year: number = parseFloat(movie?.release_date || "0");
     const directors: Crew[]|undefined = this.state.credits?.crew?.filter(c => c.job == "Director").slice(0, 5);
     const writers: Crew[]|undefined = this.state.credits?.crew?.filter(c => c.job == "Writer").slice(0, 5);
-    return <div className="media-details movie" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdrop_path ? `, url(${this.props.tmdbClient?.baseUrl}w1280${movie.backdrop_path}) 100% 0% / cover no-repeat` : '')}}>
+    return <div className="media-details movie" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (movie.backdrop_path ? `, url(${ctx.tmdbClient?.baseUrl}w1280${movie.backdrop_path}) 100% 0% / cover no-repeat` : '')}}>
       <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
         <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); history.back(); }}>
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-arrow-left" viewBox="0 0 16 16">
@@ -143,7 +138,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
         </a>
       </div>
       <div className="media-poster">
-        <span className="poster" style={{ backgroundImage: movie.poster_path ? `url(${this.props.tmdbClient?.baseUrl}w780${movie.poster_path})` : '' }}></span>
+        <span className="poster" style={{ backgroundImage: movie.poster_path ? `url(${ctx.tmdbClient?.baseUrl}w780${movie.poster_path})` : '' }}></span>
       </div>
       <div className="title-bar">
         <div className="d-flex align-items-center">
@@ -181,10 +176,10 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
         </div>
         <Tabs id="cast-similar-tabs" activeKey={this.state.tabKey} onSelect={this.handleChangeTab.bind(this)} className="constrained-width" mountOnEnter={true}>
           <Tab eventKey="cast" title="Casting">
-            <TmdbCasting cast={this.state.credits?.cast} tmdbClient={this.props.tmdbClient} />
+            <TmdbCasting cast={this.state.credits?.cast} />
           </Tab>
           <Tab eventKey="similar" title="Recommandations">
-            <TmdbRecommandations movieId={this.props.movieId} hidden={this.state.tabKey != "similar"} tmdbClient={this.props.tmdbClient} />
+            <TmdbRecommandations movieId={this.props.movieId} hidden={this.state.tabKey != "similar"} />
           </Tab>
           <Tab eventKey="trailers" title="Videos">
             <YoutubeVideos search={this.state.movie?.title || ""} />

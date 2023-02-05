@@ -1,15 +1,10 @@
 import React from 'react';
 
-import { Config, DbMovie, DbTvshow, DbUser, Episode, HomeLists, Season, UserEpisodeStatus, UserTvshowStatus, VideoInfo } from '../../api/src/types';
-import { OrderBy, SeenStatus } from '../../api/src/enums';
-import { router } from './router';
-import apiClient from './api-client';
+import { DbMovie, DbTvshow, HomeLists } from '../../api/src/types';
+import { OrderBy } from '../../api/src/enums';
+import { ctx } from './common';
 import MovieCard from './movie-card';
-import MovieDetails from './movie-details';
 import TvshowCard from './tvshow-card';
-import TvshowDetails from './tvshow-details';
-import TmdbClient from './tmdb';
-import eventBus from './event-bus';
 
 type ListOptions = {
   title: string;
@@ -19,9 +14,6 @@ type ListOptions = {
 };
 
 type HomeProps = {
-  config: Config;
-  user: DbUser;
-  tmdbClient?: TmdbClient;
   orderBy: OrderBy;
   search: string;
 };
@@ -42,27 +34,27 @@ export default class Home extends React.Component<HomeProps, HomeState> {
 
   componentDidMount() {
     window._exited = this.refreshContent.bind(this);
-    eventBus.on("will-navigate", this.handleEventWillNavigate);
+    ctx.eventBus.on("will-navigate", this.handleEventWillNavigate);
   }
 
   componentWillUnmount() {
     window._exited = () => {};
-    eventBus.detach("will-navigate", this.handleEventWillNavigate);
+    ctx.eventBus.detach("will-navigate", this.handleEventWillNavigate);
   }
 
   componentDidUpdate(_prevProps: HomeProps, prevState: HomeState) {
-    if (router.currentRoute?.state?.windowScrollPosition !== undefined) {
+    if (ctx.router.currentRoute?.state?.windowScrollPosition !== undefined) {
       setTimeout(() => {
         //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        window.scrollTo({left: 0, top: router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant'});
+        window.scrollTo({left: 0, top: ctx.router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant'});
         //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        document.getElementById("recent-movies").scrollTo({left: router.currentRoute?.state?.moviesScrollPosition || 0, top: 0, behavior: 'instant'});
+        document.getElementById("recent-movies").scrollTo({left: ctx.router.currentRoute?.state?.moviesScrollPosition || 0, top: 0, behavior: 'instant'});
         //@ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        document.getElementById("recent-tvshows").scrollTo({left: router.currentRoute?.state?.tvshowsScrollPosition || 0, top: 0, behavior: 'instant'});
-        router.currentRoute.state = {};
+        document.getElementById("recent-tvshows").scrollTo({left: ctx.router.currentRoute?.state?.tvshowsScrollPosition || 0, top: 0, behavior: 'instant'});
+        ctx.router.currentRoute.state = {};
       }, 0);
     }
-    if (apiClient.needRefresh("home")) {
+    if (ctx.apiClient.needRefresh("home")) {
       this.refreshContent();
     }
   }
@@ -76,7 +68,9 @@ export default class Home extends React.Component<HomeProps, HomeState> {
   }
 
   refreshContent(): void {
-    apiClient.getHome(this.props.user.name).then(lists => this.setState({ lists }));
+    if (ctx.user) {
+      ctx.apiClient.getHome(ctx.user.name).then(lists => this.setState({ lists }));
+    }
   }
 
   isMovie(item: DbMovie|DbTvshow): boolean {
@@ -115,19 +109,15 @@ export default class Home extends React.Component<HomeProps, HomeState> {
       </h4>
 
       <div className={"d-flex overflow-auto" + (options.mixed ? " mixed-content" : "")} id={options.id}>{
-        list.filter(item => item.audience <= this.props.user.audience)
+        list.filter(item => item.audience <= (ctx.user?.audience || 999))
             .map((item, idx) => {
               if (this.isMovie(item)) {
                 return <MovieCard key={idx}
                                   movie={item as DbMovie}
-                                  config={this.props.config}
-                                  user={this.props.user}
                                   onStatusUpdated={this.refreshContent.bind(this)}/>;
               } else if (this.isTvshow(item)) {
                 return <TvshowCard  key={idx}
                                     tvshow={item as DbTvshow}
-                                    config={this.props.config}
-                                    user={this.props.user}
                                     showNext={options.mixed}/>;
               } else {
                 return <div key={idx}>Elément inconnu</div>;
@@ -135,7 +125,7 @@ export default class Home extends React.Component<HomeProps, HomeState> {
             })
         }
       </div>
-    </>
+    </>;
   }
 
   render(): JSX.Element {

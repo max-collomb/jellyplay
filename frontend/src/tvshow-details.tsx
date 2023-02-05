@@ -6,20 +6,15 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
-import { Config, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
+import { DbTvshow, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
 import { OrderBy, SeenStatus } from '../../api/src/enums';
-import { MoreToggle, MultiItem, getEpisodeByFilename, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
-import apiClient from './api-client';
-import TmdbClient from './tmdb';
+
+import { ctx, MoreToggle, MultiItem, getEpisodeByFilename, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
 import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
 import Casting from './casting';
-import eventBus from './event-bus';
 
 type TvShowDetailsProps = {
   tvshowId: number;
-  config: Config;
-  user: DbUser;
-  tmdbClient?: TmdbClient;
 };
 type TvShowDetailsState = {
   tvshow: DbTvshow;
@@ -45,10 +40,10 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
       currentStatus: SeenStatus.unknown,
       percentPos: 0,
     };
-    apiClient.getTvshows().then(tvshows => {
+    ctx.apiClient.getTvshows().then(tvshows => {
       let tvshow: DbTvshow|undefined = tvshows.find(t => t.tmdbid == this.props.tvshowId);
       if (tvshow) {
-        this.setState({ tvshow, tabSeason: selectCurrentSeason(tvshow, this.props.user) })
+        this.setState({ tvshow, tabSeason: selectCurrentSeason(tvshow) })
       } else {
         this.setState({ tvshow: {...this.state.tvshow, tmdbid: -1 }});
       }
@@ -56,11 +51,11 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   }
 
   componentDidMount() {
-    eventBus.on("episode-position-changed", this.handleEventEpisodePositionChanged);
+    ctx.eventBus.on("episode-position-changed", this.handleEventEpisodePositionChanged);
   }
 
   componentWillUnmount() {
-    eventBus.detach("episode-position-changed", this.handleEventEpisodePositionChanged);
+    ctx.eventBus.detach("episode-position-changed", this.handleEventEpisodePositionChanged);
   }
 
   handleEventEpisodePositionChanged(evt: any): void {
@@ -68,7 +63,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
       let episode: Episode|null = getEpisodeByFilename(this.state.tvshow, evt.filename);
       if (episode) {
         episode.userStatus = evt.userStatus;
-        const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode, this.props.user);
+        const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode);
         const percentPos = (us && episode.duration) ? Math.floor(100 * us.position / episode.duration) : 0;
         const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
         if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
@@ -79,7 +74,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   }
 
   handleToggleStatus(tvshow: DbTvshow, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
-    apiClient.setTvshowStatus(tvshow, this.props.user.name, status).then((userStatus: UserTvshowStatus[]) => {
+    ctx.apiClient.setTvshowStatus(tvshow, ctx.user?.name, status).then((userStatus: UserTvshowStatus[]) => {
       tvshow.userStatus = userStatus;
       this.setState({ tvshow });
     });
@@ -88,7 +83,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   }
 
   handleToggleEpisodeStatus(tvshow: DbTvshow, episode: Episode, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
-    apiClient.setEpisodeStatus(tvshow, episode, this.props.user.name, status).then((userStatus: UserEpisodeStatus[]) => {
+    ctx.apiClient.setEpisodeStatus(tvshow, episode, ctx.user?.name, status).then((userStatus: UserEpisodeStatus[]) => {
       episode.userStatus = userStatus;
       this.setState({ tvshow });
     });
@@ -97,8 +92,8 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   }
 
   handleSetAudience(tvshow: DbTvshow, audience: number, evt: React.MouseEvent<HTMLElement>): void {
-    if (this.props.user.admin) {
-      apiClient.setTvshowAudience(tvshow, audience).then((aud: number) => {
+    if (ctx.user?.admin) {
+      ctx.apiClient.setTvshowAudience(tvshow, audience).then((aud: number) => {
         tvshow.audience = aud;
       this.setState({ tvshow });
       });
@@ -119,9 +114,9 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   }
 
   handlePlayTvshow(episode: Episode|undefined, evt: React.MouseEvent<HTMLElement>): void {
-    const episode2: Episode|undefined = playTvshow(this.props.config, this.state.tvshow, episode, this.props.user, this.handlePlayCallback.bind(this));
+    const episode2: Episode|undefined = playTvshow(this.state.tvshow, episode);
     if (episode2) {
-      const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode2, this.props.user);
+      const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode2);
       this.setState({
         currentStatus: us ? us.currentStatus : SeenStatus.unknown,
         percentPos: (us && episode2.duration) ? Math.floor(100 * us.position / episode2.duration) : 0,
@@ -133,7 +128,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
 
   handlePlayCallback(episode: Episode|undefined): void {
     if (episode) {
-      const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode, this.props.user);
+      const us: UserEpisodeStatus|null = getEpisodeUserStatus(episode);
       const percentPos = (us && episode.duration) ? Math.floor(100 * us.position / episode.duration) : 0;
       const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
       if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
@@ -146,7 +141,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   handleToggleAllStatus(season: number|undefined, status: SeenStatus): void {
     for(const episode of this.state.tvshow.episodes) {
       if (season == undefined || episode.seasonNumber == season) {
-        apiClient.setEpisodeStatus(this.state.tvshow, episode, this.props.user.name, status).then((userStatus: UserEpisodeStatus[]) => {
+        ctx.apiClient.setEpisodeStatus(this.state.tvshow, episode, ctx.user?.name, status).then((userStatus: UserEpisodeStatus[]) => {
           episode.userStatus = userStatus;
           this.setState({ tvshow: this.state.tvshow });
         });
@@ -156,7 +151,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
   }
 
   renderEpisode(tvshow: DbTvshow, episode: Episode): JSX.Element {
-    const userStatus = getEpisodeUserStatus(episode, this.props.user);
+    const userStatus = getEpisodeUserStatus(episode);
     return <div key={episode.filename} className={"episode-card d-flex flex-row my-3" + (tvshow.isSaga ? " saga-episode-card" : "")}>
       {episode.stillPath ? 
         <span className="poster">
@@ -166,7 +161,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
               <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
             </svg>
           </b>
-          {getEpisodeProgress(episode, this.props.user)}
+          {getEpisodeProgress(episode)}
         </span> :
         null
       }
@@ -249,7 +244,7 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
     if (unknownSeasonEpisodeCount > 0) {
       seasons.push({tmdbid: -1, seasonNumber: -1, episodeCount: unknownSeasonEpisodeCount, year: 0, synopsys: "", posterPath: "", cast: [] });
     }
-    const userStatus = getTvshowUserStatus(tvshow, this.props.user);
+    const userStatus = getTvshowUserStatus(tvshow);
     return <div className="media-details tvshow" style={{background: 'linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))' + (tvshow.backdropPath ? `, url(/images/backdrops_w1280${tvshow.backdropPath}) 100% 0% / cover no-repeat` : '')}}>
       <div className="position-fixed" style={{ top: "65px", left: "1rem" }}>
         <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); history.back(); }}>
@@ -305,10 +300,10 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
               <Dropdown.Menu align="end">
                 <Dropdown.Header>Audience</Dropdown.Header>
                 <Dropdown.Item as={MultiItem}>
-                  { [0,10,12,16,18,999].map(a => <a key={a} className={"audience-link p-2" + (this.props.user.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, tvshow, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
+                  { [0,10,12,16,18,999].map(a => <a key={a} className={"audience-link p-2" + (ctx.user?.admin ? "" : " disabled")} onClick={this.handleSetAudience.bind(this, tvshow, a)}><img src={`/images/classification/${a}.svg`} width="20"/></a>) }
                 </Dropdown.Item>
                 <Dropdown.Divider/>
-                <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! this.props.user.admin}>Corriger les métadonnées...</Dropdown.Item>
+                <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={! ctx.user?.admin}>Corriger les métadonnées...</Dropdown.Item>
                 <Dropdown.Item onClick={this.handleToggleAllStatus.bind(this, undefined, SeenStatus.seen)}>Tout marquer comme vu</Dropdown.Item>
                 <Dropdown.Item onClick={this.handleToggleAllStatus.bind(this, undefined, SeenStatus.toSee)}>Tout marquer comme non vu</Dropdown.Item>
                 <Dropdown.Item onClick={this.handleToggleAllStatus.bind(this, this.state.tabSeason, SeenStatus.seen)}>Marquer la saison comme vue</Dropdown.Item>

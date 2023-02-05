@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs';
 import childProcess from 'child_process';
 import { createWriteStream, statSync, existsSync } from 'fs';
 import * as https from 'https';
@@ -11,8 +10,6 @@ import { MovieDb } from 'moviedb-promise';
 import { DbMovie, DbTvshow, DbCredit, Episode, ExtractedMovieInfos, Season } from './types';
 
 // https://github.com/grantholle/moviedb-promise pour l'api TMDB
-// api key (v3) : 3b46e3ee8f7f66bf1449b4c85c0b2819
-// token (v4) : eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYjQ2ZTNlZThmN2Y2NmJmMTQ0OWI0Yzg1YzBiMjgxOSIsInN1YiI6IjUxYjYzODgwMTljMjk1MGQ1ZTYwNDFmNCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.SX-j9yPq_9idDBPIizXNGl-e32MxD3sIPMoeshNLOq8
 
 // https://gitlab.com/demsking/image-downloader/-/blob/main/lib/request.js
 const downloadImage = async (url: string, dest: string): Promise<string> => {

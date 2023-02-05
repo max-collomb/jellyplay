@@ -1,16 +1,12 @@
 import React from 'react';
 
-import { Config, DbMovie, DbUser, UserMovieStatus } from '../../api/src/types';
+import { DbMovie, UserMovieStatus } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
-import { getMovieLanguage, getMovieDuration, getUserMovieStatus, getMovieProgress, playMovie } from './common';
-import apiClient from './api-client';
-import { router } from './router';
-import eventBus from './event-bus';
+
+import { ctx, getMovieLanguage, getMovieDuration, getUserMovieStatus, getMovieProgress, playMovie } from './common';
 
 type MovieCardProps = {
   movie: DbMovie;
-  config: Config;
-  user: DbUser;
   onStatusUpdated?: () => void;
 };
 type MovieCardState = {
@@ -23,7 +19,7 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
   constructor(props: MovieCardProps) {
     super(props);
     this.handleEventMoviePositionChanged = this.handleEventMoviePositionChanged.bind(this);
-    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
+    const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, ctx.user);
     this.state = {
       currentStatus: us ? us.currentStatus : SeenStatus.unknown,
       percentPos: (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0,
@@ -31,17 +27,17 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
   }
 
   componentDidMount() {
-    eventBus.on("movie-position-changed", this.handleEventMoviePositionChanged);
+    ctx.eventBus.on("movie-position-changed", this.handleEventMoviePositionChanged);
   }
 
   componentWillUnmount() {
-    eventBus.detach("movie-position-changed", this.handleEventMoviePositionChanged);
+    ctx.eventBus.detach("movie-position-changed", this.handleEventMoviePositionChanged);
   }
 
   handleEventMoviePositionChanged = (evt: any) => {
     if (evt.filename == this.props.movie.filename) {
       this.props.movie.userStatus = evt.userStatus;
-      const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, this.props.user);
+      const us: UserMovieStatus|null = getUserMovieStatus(this.props.movie, ctx.user);
       const percentPos = (us && this.props.movie.duration) ? Math.floor(100 * us.position / this.props.movie.duration) : 0;
       const currentStatus = us ? us.currentStatus : SeenStatus.unknown;
       if (percentPos != this.state.percentPos || currentStatus != this.state.currentStatus) {
@@ -56,7 +52,7 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
   handleToggleStatus(movie: DbMovie, status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
     evt.stopPropagation();
     evt.preventDefault();
-    apiClient.setMovieStatus(movie, this.props.user.name, status).then((userStatus: UserMovieStatus[]) => {
+    ctx.apiClient.setMovieStatus(movie, ctx.user?.name, status).then((userStatus: UserMovieStatus[]) => {
       movie.userStatus = userStatus;
       this.setState({ currentStatus: status });
       if (this.props.onStatusUpdated != undefined)
@@ -67,17 +63,17 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
   handleClick(evt: React.MouseEvent<HTMLElement>): void {
     evt.stopPropagation();
     evt.preventDefault();
-    router.navigateTo(`#/movie/${this.props.movie.tmdbid}`);
+    ctx.router.navigateTo(`#/movie/${this.props.movie.tmdbid}`);
   }
 
   handlePlayMovie(evt: React.MouseEvent<HTMLElement>): void {
     evt.stopPropagation();
     evt.preventDefault();
-    playMovie(this.props.config, this.props.movie, this.props.user);
+    playMovie(this.props.movie);
   }
 
   render(): JSX.Element {
-    const userStatus = getUserMovieStatus(this.props.movie, this.props.user);
+    const userStatus = getUserMovieStatus(this.props.movie, ctx.user);
     const lang = getMovieLanguage(this.props.movie);
     return <div
       className={"flex-shrink-0 media-card portrait" + (this.props.movie.audience == 999 ? " audience-not-set" : "")}
@@ -115,7 +111,7 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
             </svg>
           </em>
         </i>
-        {getMovieProgress(this.props.movie, this.props.user)}
+        {getMovieProgress(this.props.movie)}
       </span>
       <span className="title">{this.props.movie.title || this.props.movie.filename}</span>
       <span className="infos d-flex justify-content-center">

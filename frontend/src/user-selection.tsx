@@ -2,7 +2,6 @@ import React from 'react';
 
 import { DbUser } from '../../api/src/types';
 
-
 type UserSelectionProps = {
   users: DbUser[];
   onValidation: (user: DbUser) => void;

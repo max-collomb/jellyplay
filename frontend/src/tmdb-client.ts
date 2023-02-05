@@ -1,24 +1,22 @@
 import { MovieDb } from 'moviedb-promise';
-import { MovieResult, TvResult, MovieRecommendationsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
-
-import { DbMovie, DbTvshow, DbCredit, ParsedFilename } from '../../api/src/types';
+import { CreditsResponse, MovieResult, TvResult, MovieRecommendationsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
 
 // https://github.com/grantholle/moviedb-promise pour l'api TMDB
 
-export default class TmdbClient {
-  tmdbApiKey: string;
+export class TmdbClient {
+  apiKey: string = "";
   movieDb: MovieDb | undefined;
-  lang: string;
+  lang: string = "";
   baseUrl: string = "https://image.tmdb.org/t/p/";
 
-  constructor(key: string, language: string) {
-    this.tmdbApiKey = key;
+  public init(key: string, language: string) {
+    this.apiKey = key;
     this.lang = language;
   }
 
   private async initMovieDb(): Promise<void> {
     if (! this.movieDb) {
-      this.movieDb = new MovieDb(this.tmdbApiKey);
+      this.movieDb = new MovieDb(this.apiKey);
       await this.movieDb.configuration().then((config) => {
         if (config.images.secure_base_url) {
           this.baseUrl = config.images.secure_base_url;
@@ -87,3 +85,6 @@ export default class TmdbClient {
   }
 
 }
+
+export const tmdbClient: TmdbClient = new TmdbClient();
+export default tmdbClient;

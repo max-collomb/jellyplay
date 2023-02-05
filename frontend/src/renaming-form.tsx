@@ -2,22 +2,16 @@ import React from 'react';
 
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
-import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Spinner from 'react-bootstrap/Spinner';
 import Row from 'react-bootstrap/Row';
-import { MovieResult, MovieResultsResponse } from 'moviedb-promise/dist/request-types';
 
-import { Config, DbMovie, DbUser } from '../../api/src/types';
+import { DbMovie } from '../../api/src/types';
 
-import apiClient from './api-client';
-import TmdbClient from './tmdb';
+import { ctx } from './common';
 
 type RenamingFormProps = {
-  config: Config;
-  user: DbUser;
-  tmdbClient?: TmdbClient;
   movie: DbMovie;
   onClose: (filename?: string) => void;
 };
@@ -43,7 +37,7 @@ export default class RenamingForm extends React.Component<RenamingFormProps, Ren
   async handleRenameClick(evt: React.MouseEvent<HTMLButtonElement>): Promise<void> {
     evt.preventDefault();
     if (this.state.filename != this.props.movie.filename) {
-      let newFilename = await apiClient.renameFile(this.props.movie.filename, this.state.filename);
+      let newFilename = await ctx.apiClient.renameFile(this.props.movie.filename, this.state.filename);
       if (newFilename) {
         this.props.movie.filename = newFilename;
       }

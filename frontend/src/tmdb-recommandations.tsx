@@ -1,28 +1,14 @@
 import React from 'react';
 
 import Button from 'react-bootstrap/Button';
-import Tabs from 'react-bootstrap/Tabs';
-import Tab from 'react-bootstrap/Tab';
 import Spinner from 'react-bootstrap/Spinner';
-import Dropdown from 'react-bootstrap/Dropdown';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 import { MovieResult, MovieRecommendationsResponse } from 'moviedb-promise/dist/request-types';
 
-import { Cast, Config, DbMovie, DbTvshow, DbUser, Episode, Season, UserEpisodeStatus, UserTvshowStatus } from '../../api/src/types';
-import { OrderBy, SeenStatus } from '../../api/src/enums';
-import { MoreToggle, MultiItem, getEpisodeUserStatus, getTvshowUserStatus, playTvshow, getEpisodeProgress, getEpisodeDuration, renderFileSize, renderVideoInfos, renderAudioInfos, getEpisodeCount, getSeasonCount, selectCurrentSeason } from './common';
-import apiClient from './api-client';
-import eventBus from './event-bus';
-import TmdbClient from './tmdb';
-import { router } from './router';
-
-import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
+import { ctx } from './common';
 
 type TmdbRecommandationsProps = {
   movieId: number;
   hidden?: boolean;
-  tmdbClient?: TmdbClient;
 };
 type TmdbRecommandationsState = {
   recommandations: MovieResult[];
@@ -44,7 +30,7 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
       pageLoaded: 0,
       pageCount: 1,
     };
-    apiClient.getMovies().then(movies => {
+    ctx.apiClient.getMovies().then(movies => {
       movies.forEach(movie => movieIds.add(movie.tmdbid));
       this.setState({ movieIds });
     });
@@ -67,7 +53,7 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
   async loadNextPage() {
     this.setState({ loading: true });
     const pages = this.state.pageLoaded == 0 ? [1, 2] : [this.state.pageLoaded + 1];
-    const response: MovieRecommendationsResponse|undefined = await this.props.tmdbClient?.getMovieRecommandations(this.props.movieId, pages);
+    const response: MovieRecommendationsResponse|undefined = await ctx.tmdbClient?.getMovieRecommandations(this.props.movieId, pages);
     this.setState({
       loading: false,
       recommandations: this.state.recommandations.concat(response?.results || []),
@@ -83,9 +69,9 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
   handleClick(id: number|undefined, evt: React.MouseEvent): void {
     evt.preventDefault();
     if (this.isOwned(id)) {
-      router.navigateTo(`#/movie/${id}/state/` + JSON.stringify({ tabKey: "cast" }));
+      ctx.router.navigateTo(`#/movie/${id}/state/` + JSON.stringify({ tabKey: "cast" }));
     } else {
-      router.navigateTo(`#/tmdb/movie/${id}/state/` + JSON.stringify({ tabKey: "cast" }));
+      ctx.router.navigateTo(`#/tmdb/movie/${id}/state/` + JSON.stringify({ tabKey: "cast" }));
     }
   }
 
@@ -93,7 +79,7 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
     return <div className="d-flex flex-wrap mt-3">{
       movies.map((movie, idx) => {
         return <div key={idx} className="media-card movie" onClick={this.handleClick.bind(this, movie.id)}>
-          <span className="poster" style={{ backgroundImage: `url(${this.props.tmdbClient?.baseUrl}w342${movie.poster_path})` }}></span>
+          <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }}></span>
           <span className="title">{movie.title}</span>
           <span className="infos d-flex justify-content-between">
             <span className="year">{movie.release_date?.substring(0, 4)}</span>
