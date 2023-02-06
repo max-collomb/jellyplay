@@ -1,9 +1,14 @@
 import { MovieDb } from 'moviedb-promise';
 import {
-  CreditsResponse, MovieResult, TvResult, MovieRecommendationsResponse, MovieResponse, Person,
+  CreditsResponse, MovieResult, TvResult, MovieRecommendationsResponse, MovieResponse, Person, PersonMovieCreditsResponse, PersonTvCreditsResponse,
 } from 'moviedb-promise/dist/request-types';
 
 // https://github.com/grantholle/moviedb-promise pour l'api TMDB
+
+export interface PersonWithCredits extends Person {
+  movie_credits: PersonMovieCreditsResponse;
+  tv_credits: PersonTvCreditsResponse;
+}
 
 export class TmdbClient {
   apiKey: string = '';
@@ -88,14 +93,14 @@ export class TmdbClient {
     return response;
   }
 
-  public async getPerson(personId: number): Promise<Person | undefined> {
+  public async getPerson(personId: number): Promise<PersonWithCredits | undefined> {
     await this.initMovieDb();
     const response = await this.movieDb?.personInfo({
       id: personId,
       language: this.lang,
       append_to_response: 'movie_credits,tv_credits',
     });
-    return response;
+    return (response as PersonWithCredits);
   }
 }
 

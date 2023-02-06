@@ -45,6 +45,7 @@ module.exports = {
     'no-underscore-dangle': 'off',
     'no-plusplus': 'off',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    'no-nested-ternary': 'off',
     'class-methods-use-this': 'off',
     'react/jsx-no-bind': 'off',
     'react/jsx-no-useless-fragment': 'off',

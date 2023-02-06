@@ -118,6 +118,7 @@ V1.1
     https://youtube.googleapis.com/youtube/v3/search?part=snippet&q=bande%20annonce%20titre_du_film&key=[API_KEY]
     https://console.cloud.google.com/apis/credentials?project=jellyplay&supportedpurview=project
 [x] refactoring avec un objet Context global
+[x] ajout ESLint + traiter tous les avertissements
 [ ] bug ? TvShowDetails.handlePlayCallback() non utilisé (prendre modèle sur MovieDetails)
 [ ] bug ? TvShowDetails.lastOrderBy non utilisé  (prendre modèle sur MovieDetails)
 [ ] fiche descriptive d'une personne (acteur / réal) : fetch from tmdp + liste de film (local) + liste de films non possédés

@@ -17,7 +17,8 @@ export default class Casting extends React.Component<CastingProps, CastingState>
 
   handleCreditSearch(credit: DbCredit, evt: React.MouseEvent): void {
     evt.preventDefault();
-    ctx.eventBus.emit('set-search', { search: credit.name });
+    // ctx.eventBus.emit('set-search', { search: credit.name });
+    ctx.router.navigateTo(`#/tmdb/person/${credit.tmdbid}`);
   }
 
   getCredit(id: number): DbCredit | null {
@@ -41,7 +42,7 @@ export default class Casting extends React.Component<CastingProps, CastingState>
         cast.map((role) => {
           const credit = this.getCredit(role.tmdbid);
           return credit ? (
-            <div key={credit.tmdbid} className="cast-card">
+            <div key={credit.tmdbid} className="cast-card" onClick={this.handleCreditSearch.bind(this, credit)}>
               {credit.profilePath
                 ? <img src={`/images/profiles_w185${credit.profilePath}`} alt={credit.name} />
                 : (
@@ -52,7 +53,7 @@ export default class Casting extends React.Component<CastingProps, CastingState>
                     </svg>
                   </span>
                 )}
-              <a href="#" className="actor" onClick={this.handleCreditSearch.bind(this, credit)}>{credit.name}</a>
+              <span className="actor">{credit.name}</span>
               <span className="character">{(role.character ? `en tant que ${role.character}` : '-')}</span>
             </div>
           ) : null;

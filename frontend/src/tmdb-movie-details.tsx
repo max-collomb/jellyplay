@@ -132,11 +132,11 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
               <div>
                 {year > 0 ? year : ''}
                 {' '}
-&emsp;
+                &emsp;
                 {' '}
                 {this.getDuration(movie?.runtime || null)}
                 {' '}
-&emsp;
+                &emsp;
                 {' '}
                 <img src={`/images/classification/${this.getAudience(movie)}.svg`} alt="audience" width="18px" />
               </div>

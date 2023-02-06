@@ -92,10 +92,10 @@ input[type="search"]::-webkit-search-cancel-button {
   right: 0;
   border: 4px solid #cb2b2b;
 }
-*/
 .media-card:hover {
-  /*box-shadow: 0px -10px 30px 3px rgba(145,176,255,0.15);*/
+  box-shadow: 0px -10px 30px 3px rgba(145,176,255,0.15);
 }
+*/
 
 .media-card.muted .poster { filter: grayscale(75%); }
 .media-card.muted:hover .poster { filter: none; }
@@ -137,12 +137,10 @@ input[type="search"]::-webkit-search-cancel-button {
   text-align: center;
   opacity: 0.25;
 }
-/*.audience-not-set .poster .no-poster-picture { width: calc(100% - 12px); }  problème de centrage si taille mini des vignettes */
-
-
+/*.audience-not-set .poster .no-poster-picture { width: calc(100% - 12px); }  problème de centrage si taille mini des vignettes
 .media-card:hover .poster {
-  /*opacity: 0.6;*/
-}
+  opacity: 0.6;
+}*/
 .poster b {
   cursor: pointer;
   opacity: 0;
@@ -299,6 +297,7 @@ div.media-card .progress-bar {
   overflow: hidden;
   font-size:  90%;
   background: rgba(0,0,0,0.3);
+  cursor: pointer;
 }
 
 .cast-card .character,

@@ -17,7 +17,8 @@ export default class TmdbCasting extends React.Component<TmdbCastingProps, TmdbC
 
   handleCastSearch(cast: Cast, evt: React.MouseEvent): void {
     evt.preventDefault();
-    ctx.eventBus.emit('set-search', { search: cast.name });
+    // ctx.eventBus.emit('set-search', { search: cast.name });
+    ctx.router.navigateTo(`#/tmdb/person/${cast.id}`);
   }
 
   render(): JSX.Element {
@@ -29,7 +30,7 @@ export default class TmdbCasting extends React.Component<TmdbCastingProps, TmdbC
       <div className="d-flex flex-wrap mt-3">
         {
           cast?.map((person) => (
-            <div key={person.id} className="cast-card">
+            <div key={person.id} className="cast-card" onClick={this.handleCastSearch.bind(this, person)}>
               {person.profile_path
                 ? <img src={`${ctx.tmdbClient?.baseUrl}w185${person.profile_path}`} alt={person.name} />
                 : (
@@ -40,7 +41,7 @@ export default class TmdbCasting extends React.Component<TmdbCastingProps, TmdbC
                     </svg>
                   </span>
                 )}
-              <a href="#" className="actor" onClick={this.handleCastSearch.bind(this, person)}>{person.name}</a>
+              <span className="actor">{person.name}</span>
               <span className="character">{(person.character ? `en tant que ${person.character}` : '-')}</span>
             </div>
           ))
