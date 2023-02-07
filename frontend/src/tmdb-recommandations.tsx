@@ -83,15 +83,15 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
     return (
       <div className="d-flex flex-wrap mt-3">
         {
-              movies.map((movie) => (
-                <div key={movie.id} className="media-card movie" onClick={this.handleClick.bind(this, movie.id)}>
-                  <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
-                  <span className="title">{movie.title}</span>
-                  <span className="infos d-flex justify-content-between">
-                    <span className="year">{movie.release_date?.substring(0, 4)}</span>
-                  </span>
-                </div>
-              ))
+          movies.map((movie) => (
+            <div key={movie.id} className="media-card movie" onClick={this.handleClick.bind(this, movie.id)}>
+              <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
+              <span className="title">{movie.title}</span>
+              <span className="infos d-flex justify-content-between">
+                <span className="year">{movie.release_date?.substring(0, 4)}</span>
+              </span>
+            </div>
+          ))
         }
       </div>
     );

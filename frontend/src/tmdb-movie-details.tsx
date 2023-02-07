@@ -44,6 +44,12 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     window.history.replaceState({}, '', `#/tmdb/movie/${movieId}/state/${JSON.stringify({ tabKey })}`);
   }
 
+  handleCastClick(crew: Crew, evt: React.MouseEvent) {
+    evt.preventDefault();
+    // ctx.eventBus.emit('set-search', { search: cast.name });
+    ctx.router.navigateTo(`#/tmdb/person/${crew.id}`);
+  }
+
   getDuration(duration: number | null): string {
     if (duration) {
       return `${Math.floor(duration / 60)}h${(duration % 60).toString().padStart(2, '0')}`;
@@ -98,7 +104,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     if (!crewList || !crewList.length) { return <>Inconnu</>; }
     const links = [];
     for (const crew of crewList) {
-      links.push(<span className="cast" key={crew.id}><a href="#" onClick={(evt) => evt.preventDefault() /* this.handleCastClick.bind(this, credit) */}>{ crew.name }</a></span>);
+      links.push(<span className="cast" key={crew.id}><a href="#" onClick={this.handleCastClick.bind(this, crew)}>{ crew.name }</a></span>);
     }
     return <>{ links }</>;
   }

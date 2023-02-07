@@ -203,15 +203,12 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
                 {episode.airDate ? (
                   <span>
                     {(new Date(episode.airDate)).toLocaleString().substr(0, 10)}
-                    {' '}
                     &emsp;
                   </span>
                 ) : null}
                 {getEpisodeDuration(episode)}
-                {' '}
                 &emsp;
                 {renderFileSize(episode.filesize)}
-                {' '}
                 &emsp;
               </div>
             </div>
@@ -330,13 +327,9 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
               {tvshow.originalTitle && tvshow.originalTitle !== tvshow.title ? <h6>{tvshow.originalTitle}</h6> : null}
               <div>
                 {getSeasonCount(tvshow)}
-                {' '}
                 &emsp;
-                {' '}
                 {getEpisodeCount(tvshow)}
-                {' '}
                 &emsp;
-                {' '}
                 <img src={`/images/classification/${tvshow.audience}.svg`} alt={`-${tvshow.audience}`} width="18px" />
               </div>
             </div>
@@ -409,7 +402,6 @@ export default class TvShows extends React.Component<TvShowDetailsProps, TvShowD
                       {title}
                       <span className="d-block fst-italic fs-80pc">
                         {season.episodeCount}
-                        {' '}
                         épisodes
                       </span>
                     </>

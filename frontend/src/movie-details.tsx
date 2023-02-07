@@ -79,7 +79,8 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
 
   handleCastClick(cast: DbCredit, evt: React.MouseEvent) {
     evt.preventDefault();
-    ctx.eventBus.emit('set-search', { search: cast.name });
+    // ctx.eventBus.emit('set-search', { search: cast.name });
+    ctx.router.navigateTo(`#/tmdb/person/${cast.tmdbid}`);
   }
 
   handleToggleStatus(status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
@@ -228,13 +229,9 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
               {movie.originalTitle && movie.originalTitle !== movie.title ? <h6>{movie.originalTitle}</h6> : null}
               <div>
                 {movie.year > 0 ? movie.year : ''}
-                {' '}
-&emsp;
-                {' '}
+                &emsp;
                 {getMovieDuration(movie)}
-                {' '}
-&emsp;
-                {' '}
+                &emsp;
                 <img src={`/images/classification/${movie.audience}.svg`} alt={`-${movie.audience}`} width="18px" />
               </div>
             </div>
