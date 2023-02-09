@@ -2,43 +2,43 @@ import React from 'react';
 
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
-import { MovieResult, MovieRecommendationsResponse } from 'moviedb-promise/dist/request-types';
+import { TvResult, TvResultsResponse } from 'moviedb-promise/dist/request-types';
 
 import { ctx } from './common';
 
-type TmdbRecommandationsProps = {
-  movieId: number;
+type TmdbTvshowRecommandationsProps = {
+  tvshowId: number;
   hidden: boolean;
 };
-type TmdbRecommandationsState = {
-  recommandations: MovieResult[];
-  movieIds: Set<number>;
+type TmdbTvshowRecommandationsState = {
+  recommandations: TvResult[];
+  tvshowIds: Set<number>;
   loading: boolean;
   pageLoaded: number;
   pageCount: number;
 };
 
-export default class TmdbRecommandations extends React.Component<TmdbRecommandationsProps, TmdbRecommandationsState> {
-  constructor(props: TmdbRecommandationsProps) {
+export default class TmdbTvshowRecommandations extends React.Component<TmdbTvshowRecommandationsProps, TmdbTvshowRecommandationsState> {
+  constructor(props: TmdbTvshowRecommandationsProps) {
     super(props);
-    const movieIds = new Set<number>();
+    const tvshowIds = new Set<number>();
     this.state = {
       recommandations: [],
-      movieIds,
+      tvshowIds,
       loading: false,
       pageLoaded: 0,
       pageCount: 1,
     };
-    ctx.apiClient.getMovies().then((movies) => {
-      movies.forEach((movie) => movieIds.add(movie.tmdbid));
-      this.setState({ movieIds });
+    ctx.apiClient.getTvshows().then((tvshows) => {
+      tvshows.forEach((tvshow) => tvshowIds.add(tvshow.tmdbid));
+      this.setState({ tvshowIds });
     });
   }
 
-  async componentDidUpdate(prevProps: TmdbRecommandationsProps) {
-    const { movieId, hidden } = this.props;
+  async componentDidUpdate(prevProps: TmdbTvshowRecommandationsProps) {
+    const { tvshowId, hidden } = this.props;
     const { pageLoaded } = this.state;
-    if (prevProps.movieId !== movieId) {
+    if (prevProps.tvshowId !== tvshowId) {
       this.setState({ pageLoaded: 0 });
     }
     if (pageLoaded === 0 && !hidden) {
@@ -54,18 +54,18 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
   handleClick(id: number | undefined, evt: React.MouseEvent): void {
     evt.preventDefault();
     if (this.isOwned(id)) {
-      ctx.router.navigateTo(`#/movie/${id}/state/${JSON.stringify({ tabKey: 'cast' })}`);
+      ctx.router.navigateTo(`#/tvshow/${id}/state/${JSON.stringify({ tabKey: 'cast' })}`);
     } else {
-      ctx.router.navigateTo(`#/tmdb/movie/${id}/state/${JSON.stringify({ tabKey: 'cast' })}`);
+      ctx.router.navigateTo(`#/tmdb/tvshow/${id}/state/${JSON.stringify({ tabKey: 'cast' })}`);
     }
   }
 
   async loadNextPage() {
     const { pageLoaded, pageCount, recommandations } = this.state;
-    const { movieId } = this.props;
+    const { tvshowId } = this.props;
     this.setState({ loading: true });
     const pages = pageLoaded === 0 ? [1, 2] : [pageLoaded + 1];
-    const response: MovieRecommendationsResponse | undefined = await ctx.tmdbClient?.getMovieRecommandations(movieId, pages);
+    const response: TvResultsResponse | undefined = await ctx.tmdbClient?.getTvshowRecommandations(tvshowId, pages);
     this.setState({
       loading: false,
       recommandations: recommandations.concat(response?.results || []),
@@ -75,20 +75,20 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
   }
 
   isOwned(id: number | undefined): boolean {
-    const { movieIds } = this.state;
+    const { tvshowIds: movieIds } = this.state;
     return id ? movieIds.has(id) : false;
   }
 
-  renderList(movies: MovieResult[]): JSX.Element {
+  renderList(movies: TvResult[]): JSX.Element {
     return (
       <div className="d-flex flex-wrap mt-3">
         {
           movies.map((movie) => (
             <div key={movie.id} className="media-card movie" onClick={this.handleClick.bind(this, movie.id)}>
               <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
-              <span className="title">{movie.title}</span>
+              <span className="title">{movie.name}</span>
               <span className="infos d-flex justify-content-between">
-                <span className="year">{movie.release_date?.substring(0, 4)}</span>
+                <span className="year">{movie.first_air_date?.substring(0, 4)}</span>
               </span>
             </div>
           ))
@@ -101,8 +101,8 @@ export default class TmdbRecommandations extends React.Component<TmdbRecommandat
     const {
       recommandations, loading, pageLoaded, pageCount,
     } = this.state;
-    const owned: MovieResult[] = [];
-    const notOwned: MovieResult[] = [];
+    const owned: TvResult[] = [];
+    const notOwned: TvResult[] = [];
     recommandations.forEach((r) => {
       if (this.isOwned(r.id)) { owned.push(r); } else { notOwned.push(r); }
     });

@@ -68,7 +68,7 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
     if (this.isOwnedTvshow(tvshowId)) {
       ctx.router.navigateTo(`#/tvshow/${tvshowId}`);
     } else {
-      // ctx.router.navigateTo(`#/tmdb/tvshow/${tvshowId}/state/${JSON.stringify({ tabKey: 'cast' })}`);
+      ctx.router.navigateTo(`#/tmdb/tvshow/${tvshowId}/state/${JSON.stringify({ tabKey: 'cast' })}`);
     }
   }
 

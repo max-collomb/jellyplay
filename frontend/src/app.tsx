@@ -20,6 +20,7 @@ import Home from './home';
 import Movies from './movies';
 import MovieDetails from './movie-details';
 import TmdbMovieDetails from './tmdb-movie-details';
+import TmdbTvshowDetails from './tmdb-tvshow-details';
 import TmdbPersonDetails from './tmdb-person-details';
 import TvShows from './tvshows';
 import TvshowDetails from './tvshow-details';
@@ -73,10 +74,11 @@ export default class App extends React.Component<AppProps, AppState> {
     ctx.router.add('home', '/home');
     ctx.router.add('movies', '/movies');
     ctx.router.add('tmdb-movie-details', '/tmdb/movie/:id');
+    ctx.router.add('tmdb-tvshow-details', '/tmdb/tvshow/:id');
+    ctx.router.add('tmdb-person-details', '/tmdb/person/:id');
     ctx.router.add('movie-details', '/movie/:id');
     ctx.router.add('tvshows', '/tvshows');
     ctx.router.add('tvshow-details', '/tvshow/:id');
-    ctx.router.add('tmdb-person-details', '/tmdb/person/:id');
   }
 
   componentDidMount() {
@@ -186,6 +188,8 @@ export default class App extends React.Component<AppProps, AppState> {
       content = <TvShows orderBy={orderBy} search={search} />;
     } else if (route.name === 'tvshow-details' && route.id) {
       content = <TvshowDetails tvshowId={route.id} />;
+    } else if (route.name === 'tmdb-tvshow-details' && route.id) {
+      content = <TmdbTvshowDetails tvshowId={route.id} />;
     } else if (route.name === 'tmdb-person-details' && route.id) {
       content = <TmdbPersonDetails personId={route.id} />;
     }

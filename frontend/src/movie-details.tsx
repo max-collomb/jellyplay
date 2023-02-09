@@ -13,7 +13,7 @@ import {
 import FixMovieMetadataForm from './fix-movie-metadata-form';
 import RenamingForm from './renaming-form';
 import Casting from './casting';
-import TmdbRecommandations from './tmdb-recommandations';
+import TmdbMovieRecommandations from './tmdb-movie-recommandations';
 import YoutubeVideos from './youtube-videos';
 
 type MovieDetailsProps = {
@@ -342,7 +342,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
               <Casting cast={movie.cast} />
             </Tab>
             <Tab eventKey="similar" title="Recommandations">
-              <TmdbRecommandations movieId={movie.tmdbid} hidden={tabKey !== 'similar'} />
+              <TmdbMovieRecommandations movieId={movie.tmdbid} hidden={tabKey !== 'similar'} />
             </Tab>
             <Tab eventKey="trailers" title="Videos">
               <YoutubeVideos search={movie?.title || ''} />

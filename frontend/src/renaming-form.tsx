@@ -60,7 +60,6 @@ export default class RenamingForm extends React.Component<RenamingFormProps, Ren
       return (
         <div className="d-flex justify-content-center mt-5">
           Mise à jour &emsp;
-          {' '}
           <Spinner animation="border" variant="light" />
         </div>
       );

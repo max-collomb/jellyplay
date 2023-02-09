@@ -84,7 +84,6 @@ export default class FixMovieMetadataForm extends React.Component<FixMovieMetada
       return (
         <div className="d-flex justify-content-center mt-5">
           Mise à jour des métadonnées &emsp;
-          {' '}
           <Spinner animation="border" variant="light" />
         </div>
       );

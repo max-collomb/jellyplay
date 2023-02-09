@@ -246,8 +246,8 @@ input[type="search"]::-webkit-search-cancel-button {
   float: left;
   overflow: hidden;
 }
+.tvshow .media-poster, /*{ margin: 0 3vw; }*/
 .movie .media-poster { margin: 5vh 3vw 0 3vw; }
-.tvshow .media-poster { margin: 0 3vw; }
 
 span.poster .progress-bar,
 div.media-card .progress-bar {

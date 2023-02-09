@@ -1,6 +1,6 @@
 import { MovieDb } from 'moviedb-promise';
 import {
-  CreditsResponse, MovieResult, TvResult, MovieRecommendationsResponse, MovieResponse, Person, PersonMovieCreditsResponse, PersonTvCreditsResponse,
+  CreditsResponse, MovieResult, TvResult, TvResultsResponse, MovieRecommendationsResponse, MovieResponse, Person, PersonMovieCreditsResponse, PersonTvCreditsResponse, ShowResponse,
 } from 'moviedb-promise/dist/request-types';
 
 // https://github.com/grantholle/moviedb-promise pour l'api TMDB
@@ -74,6 +74,26 @@ export class TmdbClient {
     return response;
   }
 
+  public async getTvshowRecommandations(tvshowId: number, pages: number[]): Promise<TvResultsResponse | undefined> {
+    await this.initMovieDb();
+    let response;
+    let recommandations;
+    for (const p of pages) {
+      if (!response || (response.total_pages || 0) >= p) {
+        // eslint-disable-next-line no-await-in-loop
+        recommandations = await this.movieDb?.tvRecommendations({
+          language: this.lang,
+          id: tvshowId,
+          page: p,
+        });
+        if (!response?.results) { response = recommandations; } else {
+          response.results = response.results.concat(recommandations?.results || []);
+        }
+      }
+    }
+    return response;
+  }
+
   public async getMovieCredits(movieId: number): Promise<CreditsResponse | undefined> {
     await this.initMovieDb();
     const response = await this.movieDb?.movieCredits({
@@ -88,7 +108,26 @@ export class TmdbClient {
     const response = await this.movieDb?.movieInfo({
       id: movieId,
       language: this.lang,
-      append_to_response: 'casts,trailers,release_dates',
+      append_to_response: 'release_dates',
+    });
+    return response;
+  }
+
+  public async getTvshowCredits(tvshowId: number): Promise<CreditsResponse | undefined> {
+    await this.initMovieDb();
+    const response = await this.movieDb?.tvCredits({
+      id: tvshowId,
+      language: this.lang,
+    });
+    return response;
+  }
+
+  public async getTvshow(tvshowId: number): Promise<ShowResponse | undefined> {
+    await this.initMovieDb();
+    const response = await this.movieDb?.tvInfo({
+      id: tvshowId,
+      language: this.lang,
+      append_to_response: 'content_ratings',
     });
     return response;
   }

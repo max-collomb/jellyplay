@@ -27,7 +27,7 @@ export class Router {
     this.routes.push({
       name,
       url,
-      regexp: new RegExp(`${url.replace(':id', '(\\d+)')}(?:/state/({.*}))?`, 'i'),
+      regexp: new RegExp(`^${url.replace(':id', '(\\d+)')}(?:/state/({.*}))?`, 'i'),
     });
   }
 

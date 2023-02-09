@@ -6,7 +6,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import { Crew, CreditsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
 
 import { ctx } from './common';
-import TmdbRecommandations from './tmdb-recommandations';
+import TmdbMovieRecommandations from './tmdb-movie-recommandations';
 import TmdbCasting from './tmdb-casting';
 import YoutubeVideos from './youtube-videos';
 
@@ -137,13 +137,9 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
               {movie?.original_title && movie.original_title !== movie.title ? <h6>{movie.original_title}</h6> : null}
               <div>
                 {year > 0 ? year : ''}
-                {' '}
                 &emsp;
-                {' '}
                 {this.getDuration(movie?.runtime || null)}
-                {' '}
                 &emsp;
-                {' '}
                 <img src={`/images/classification/${this.getAudience(movie)}.svg`} alt="audience" width="18px" />
               </div>
             </div>
@@ -197,7 +193,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
               <TmdbCasting cast={credits?.cast} />
             </Tab>
             <Tab eventKey="similar" title="Recommandations">
-              <TmdbRecommandations movieId={movieId} hidden={tabKey !== 'similar'} />
+              <TmdbMovieRecommandations movieId={movieId} hidden={tabKey !== 'similar'} />
             </Tab>
             <Tab eventKey="trailers" title="Videos">
               <YoutubeVideos search={movie?.title || ''} />
