@@ -1,18 +1,16 @@
 import React from 'react';
 
-import { DbCredit, DbTvshow } from '../../api/src/types';
+import { DbTvshow } from '../../api/src/types';
 import { OrderBy } from '../../api/src/enums';
 
-import { ctx, cleanString } from './common';
+import { ctx } from './common';
 import TvshowCard from './tvshow-card';
 
 type TvShowsProps = {
   orderBy: OrderBy;
-  search: string;
 };
 type TvShowsState = {
   tvshows: DbTvshow[];
-  credits: DbCredit[];
   selection?: DbTvshow;
 };
 
@@ -21,63 +19,30 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
 
   constructor(props: TvShowsProps) {
     super(props);
-    this.handleEventWillNavigate = this.handleEventWillNavigate.bind(this);
-    this.handleEventSetSearch = this.handleEventSetSearch.bind(this);
     this.state = {
       tvshows: [],
-      credits: [],
     };
     this.refreshContent();
+    ctx.eventBus.replace('will-navigate', ctx.router.saveScrollPosition.bind(ctx.router));
   }
 
-  componentDidMount() {
-    ctx.eventBus.on('set-search', this.handleEventSetSearch);
-    ctx.eventBus.on('will-navigate', this.handleEventWillNavigate);
-  }
-
-  componentDidUpdate() {
-    if (ctx.router.currentRoute?.state?.windowScrollPosition !== undefined) {
-      setTimeout(() => {
-        // @ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
-        window.scrollTo({ left: 0, top: ctx.router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant' });
-      }, 0);
+  componentDidUpdate(prevProps: TvShowsProps, prevState: TvShowsState) {
+    const { tvshows } = this.state;
+    if (prevState.tvshows.length === 0 && tvshows.length > 0) {
+      ctx.router.restoreScrollPosition();
     }
     if (ctx.apiClient.needRefresh('tvshows')) {
       this.refreshContent();
     }
   }
 
-  componentWillUnmount() {
-    ctx.eventBus.detach('set-search', this.handleEventSetSearch);
-    ctx.eventBus.detach('will-navigate', this.handleEventWillNavigate);
-  }
-
-  handleEventSetSearch(): void {
-    this.forceUpdate();
-  }
-
-  handleEventWillNavigate(): void {
-    window.history.replaceState({}, '', `#/tvshows/state/${JSON.stringify({ windowScrollPosition: window.pageYOffset })}`);
-  }
-
-  getCreditName(id: number): string {
-    const { credits } = this.state;
-    for (const credit of credits) {
-      if (credit.tmdbid === id) {
-        return credit.name;
-      }
-    }
-    return '';
-  }
-
   refreshContent(): void {
     ctx.apiClient.getTvshows().then((tvshows) => { this.lastOrderBy = undefined; this.setState({ tvshows }); });
-    ctx.apiClient.getCredits().then((credits) => this.setState({ credits }));
   }
 
   render(): JSX.Element {
-    const { orderBy, search } = this.props;
-    let { tvshows } = this.state;
+    const { orderBy } = this.props;
+    const { tvshows } = this.state;
     if (this.lastOrderBy !== orderBy) {
       this.lastOrderBy = orderBy;
       const { compare } = new Intl.Collator('fr', { usage: 'sort', sensitivity: 'base' });
@@ -94,21 +59,6 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
         default: sortFn = (a: DbTvshow, b: DbTvshow) => compare(a.title, b.title); break;
       }
       tvshows.sort(sortFn);
-    }
-    if (search) {
-      tvshows = tvshows.filter((s) => {
-        if (!s.searchableContent) {
-          const cast: Set<string> = new Set<string>();
-          s.seasons.forEach((season) => season.cast.forEach((c) => cast.add(this.getCreditName(c.tmdbid))));
-          // eslint-disable-next-line no-param-reassign
-          s.searchableContent = cleanString(`${s.foldername} ${s.title} ${
-            s.title === s.originalTitle ? '' : `${s.originalTitle} `
-          }${s.genres.join(' ')} ${
-            s.countries.join(' ')
-          }${Array.from(cast).join(' ')}`);
-        }
-        return s.searchableContent.includes(cleanString(search));
-      });
     }
     const typeTitles = ctx.user?.name === 'thomas'
       ? ['Animes', 'Séries', 'Emissions']

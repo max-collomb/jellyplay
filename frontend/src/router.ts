@@ -31,8 +31,34 @@ export class Router {
     });
   }
 
-  navigateTo(url: string) {
+  saveState(state: any) {
+    const route: Route | undefined = this.routes.find((r) => r.name === this.currentRoute.name);
+    if (route) {
+      this.currentRoute.state = { ...this.currentRoute.state, ...state };
+      let url: string;
+      url = route.url;
+      if (this.currentRoute.id) url = url.replace(':id', this.currentRoute.id.toString());
+      window.history.replaceState({}, '', `#${url}/state/${JSON.stringify(this.currentRoute.state)}`);
+    }
+  }
+
+  saveScrollPosition() {
+    this.saveState({ windowScrollPosition: window.pageYOffset });
+  }
+
+  restoreScrollPosition() {
+    if (this.currentRoute?.state?.windowScrollPosition !== undefined) {
+      setTimeout(() => {
+        // @ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
+        window.scrollTo({ left: 0, top: this.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant' });
+      }, 0);
+    }
+  }
+
+  navigateTo(url: string, stateProvider?: () => any) {
+    if (stateProvider) this.saveState(stateProvider());
     const event = { url, getRoute: () => this.resolveRoute(url), cancel: false };
+    eventBus.emit('will-navigate-app', event);
     eventBus.emit('will-navigate', event);
     if (!event.cancel) {
       document.location.href = url;

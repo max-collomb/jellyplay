@@ -17,7 +17,6 @@ export default class TmdbCasting extends React.Component<TmdbCastingProps, TmdbC
 
   handleCastSearch(cast: Cast, evt: React.MouseEvent): void {
     evt.preventDefault();
-    // ctx.eventBus.emit('set-search', { search: cast.name });
     ctx.router.navigateTo(`#/tmdb/person/${cast.id}`);
   }
 

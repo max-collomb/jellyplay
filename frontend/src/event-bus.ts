@@ -15,6 +15,12 @@ export class EventBus {
     this.registerListener(eventName, callback);
   }
 
+  // kills existing event and creates a new one
+  replace(eventName: string, callback: EventCallback) {
+    this.die(eventName);
+    this.registerListener(eventName, callback);
+  }
+
   // creates an event that can be triggered only once. If it is emitted twice, the callback will only be executed once!
   once(eventName: string, callback: EventCallback) {
     this.registerListener(eventName, callback, 1);

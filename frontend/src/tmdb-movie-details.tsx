@@ -5,6 +5,8 @@ import Tab from 'react-bootstrap/Tab';
 import Spinner from 'react-bootstrap/Spinner';
 import { Crew, CreditsResponse, MovieResponse } from 'moviedb-promise/dist/request-types';
 
+import { MediaType } from '../../api/src/enums';
+import { DbWish } from '../../api/src/types';
 import { ctx } from './common';
 import TmdbMovieRecommandations from './tmdb-movie-recommandations';
 import TmdbCasting from './tmdb-casting';
@@ -16,14 +18,21 @@ type TmdbMovieDetailsProps = {
 type TmdbMovieDetailsState = {
   movie?: MovieResponse;
   credits?: CreditsResponse;
+  wishes: DbWish[];
   tabKey: string;
 };
 
 export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsProps, TmdbMovieDetailsState> {
   constructor(props: TmdbMovieDetailsProps) {
     super(props);
-    this.state = { tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast' };
+    this.handleEventWishesChanged = this.handleEventWishesChanged.bind(this);
+    this.state = { tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast', wishes: [] };
     this.fetchMovie();
+    this.fetchWishes();
+  }
+
+  componentDidMount() {
+    ctx.eventBus.on('wishes-changed', this.handleEventWishesChanged);
   }
 
   componentDidUpdate(prevProps: TmdbMovieDetailsProps) {
@@ -38,16 +47,43 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     }
   }
 
+  componentWillUnmount() {
+    ctx.eventBus.detach('wishes-changed', this.handleEventWishesChanged);
+  }
+
   handleChangeTab(tabKey: string | null): void {
     this.setState({ tabKey: tabKey || 'cast' });
     const { movieId } = this.props;
     window.history.replaceState({}, '', `#/tmdb/movie/${movieId}/state/${JSON.stringify({ tabKey })}`);
   }
 
-  handleCastClick(crew: Crew, evt: React.MouseEvent) {
+  handleCastClick(crew: Crew, evt: React.MouseEvent): void {
     evt.preventDefault();
-    // ctx.eventBus.emit('set-search', { search: cast.name });
     ctx.router.navigateTo(`#/tmdb/person/${crew.id}`);
+  }
+
+  handleEventWishesChanged(): void {
+    this.fetchWishes();
+  }
+
+  async handleWishListClick(action: string, evt: React.MouseEvent): Promise<void> {
+    evt.preventDefault();
+    const { movieId } = this.props;
+    const { movie } = this.state;
+    if (action === 'add') {
+      await ctx.apiClient.addToWishList(
+        movieId,
+        movie?.title || '',
+        MediaType.movie,
+        movie?.poster_path || '',
+        parseFloat(movie?.release_date || '0'),
+        ctx.user?.name || '',
+      );
+      this.fetchWishes();
+    } else if (action === 'remove') {
+      await ctx.apiClient.removeFromWishList(movieId, ctx.user?.name || '');
+      this.fetchWishes();
+    }
   }
 
   getDuration(duration: number | null): string {
@@ -100,6 +136,11 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     this.setState({ movie, credits });
   }
 
+  async fetchWishes(): Promise<void> {
+    const wishes = await ctx.apiClient.getWishes();
+    this.setState({ wishes });
+  }
+
   renderCredits(crewList?: Crew[]): JSX.Element {
     if (!crewList || !crewList.length) { return <>Inconnu</>; }
     const links = [];
@@ -111,13 +152,16 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
 
   render(): JSX.Element {
     const { movieId } = this.props;
-    const { movie, credits, tabKey } = this.state;
+    const {
+      movie, credits, tabKey, wishes,
+    } = this.state;
     if (!movie) {
       return <div className="d-flex justify-content-center mt-5"><Spinner animation="border" variant="light" /></div>;
     }
     const year: number = parseFloat(movie?.release_date || '0');
     const directors: Crew[] | undefined = credits?.crew?.filter((c) => c.job === 'Director').slice(0, 5);
     const writers: Crew[] | undefined = credits?.crew?.filter((c) => c.job === 'Writer').slice(0, 5);
+    const isWished: boolean = !!wishes.find((w) => w.tmdbid === movieId && !!w.users.find((uw) => uw.userName === ctx.user?.name));
     return (
       <div className="media-details movie" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${movie.backdrop_path ? `, url(${ctx.tmdbClient?.baseUrl}w1280${movie.backdrop_path}) 100% 0% / cover no-repeat` : ''}` }}>
         <div className="position-fixed" style={{ top: '65px', left: '1rem' }}>
@@ -146,14 +190,14 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
             <div className="actions">
               <a
                 href="#"
-                className="btn btn-primary disabled me-3"
-                onClick={() => {}}
+                className={`btn me-3 ${isWished ? 'btn-danger' : 'btn-primary'}`}
+                onClick={this.handleWishListClick.bind(this, isWished ? 'remove' : 'add')}
               >
                 <svg style={{ verticalAlign: 'baseline' }} xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" className="bi bi-bookmark-plus-fill" viewBox="0 0 16 16">
                   <path fillRule="evenodd" d="M2 15.5V2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.74.439L8 13.069l-5.26 2.87A.5.5 0 0 1 2 15.5zm6.5-11a.5.5 0 0 0-1 0V6H6a.5.5 0 0 0 0 1h1.5v1.5a.5.5 0 0 0 1 0V7H10a.5.5 0 0 0 0-1H8.5V4.5z" />
                 </svg>
                 <span className="d-inline-block ms-3">
-                  Ajouter à ma
+                  {isWished ? 'Retirer de ma' : 'Ajouter à ma'}
                   <br />
                   liste d&apos;envies
                 </span>

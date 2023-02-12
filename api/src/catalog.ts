@@ -5,8 +5,8 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
 
-import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus } from './types';
-import { SeenStatus } from './enums';
+import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, UserWish, DbWish } from './types';
+import { SeenStatus, MediaType } from './enums';
 import { TmdbClient, mediaInfo, extractMovieTitle } from './tmdb';
 
 type CatalogOptions = {
@@ -56,6 +56,15 @@ type FixTvshowMetadataMessage = {
 type RenameFileMessage = {
   oldFilename: string;
   newFilename: string;
+};
+
+type WishMessage = {
+  userName: string;
+  tmdbid: number;
+  type: MediaType;
+  title: string;
+  posterPath: string;
+  year: number;
 };
 
 const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
@@ -136,6 +145,7 @@ export class Catalog {
     // this.db.removeCollection('movies');
     // this.db.removeCollection('tvshows');
     // this.db.removeCollection('credits');
+    // this.db.removeCollection('wishes');
 
     this.tables.users = this.db.getCollection('users');
     if (! this.tables.users) {
@@ -151,6 +161,18 @@ export class Catalog {
       this.tables.users.insert({ name: 'flo',    audience: 999, admin: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
       this.tables.users.insert({ name: 'amélie', audience: 16,  admin: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
       this.tables.users.insert({ name: 'thomas', audience: 12,  admin: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
+    }
+
+    this.tables.wishes = this.db.getCollection('wishes');
+    if (! this.tables.wishes) {
+      this.tables.wishes = this.db.addCollection(
+        'wishes',
+        {
+          unique: ['tmdbid'],
+          autoupdate: true,
+          indices: ['title', 'tmdbid'],
+        }
+      );
     }
 
     this.tables.movies = this.db.getCollection('movies');
@@ -850,5 +872,54 @@ export class Catalog {
     reply.send({});
   }
 
+  public async getWishes(request: FastifyRequest, reply: FastifyReply) {
+    reply.send({ list: this.tables.wishes?.find(), lastUpdate: this.lastUpdate });
+  }
+
+  public async addWish(request: FastifyRequest, reply: FastifyReply) {
+    let body: WishMessage = request.body as WishMessage;
+    let wish = this.tables.wishes?.findOne({ tmdbid: body.tmdbid });
+    if (wish) {
+      let userWish: UserWish | undefined = undefined;
+      for (let uw of wish.users) {
+        if (uw.userName == body.userName) {
+          userWish = uw;
+          break;
+        }
+      }
+      if (!userWish) {
+        userWish = { userName: body.userName, added: (new Date()).toUTCString() };
+        wish.users.push(userWish);
+      }
+      this.tables.wishes?.update(wish);
+    } else {
+      this.tables.wishes?.insert({
+        tmdbid: body.tmdbid,
+        type: body.type,
+        title: body.title,
+        posterPath: body.posterPath,
+        year: body.year,
+        users: [{ userName: body.userName, added: (new Date()).toUTCString() }],
+      });
+    }
+    this.lastUpdate = Date.now();
+    reply.send({ wish });
+  }
+
+  public async removeWish(request: FastifyRequest, reply: FastifyReply) {
+    let body: WishMessage = request.body as WishMessage;
+    let wish = this.tables.wishes?.findOne({ tmdbid: body.tmdbid });
+    if (wish) {
+      wish.users = wish.users.filter((w) => w.userName != body.userName);
+      if (wish.users.length) {
+        this.tables.wishes?.update(wish);
+      } else {
+        this.tables.wishes?.remove(wish);
+        wish = undefined;
+      }
+      this.lastUpdate = Date.now();
+    }
+    reply.send({ wish });
+  }
 }
 

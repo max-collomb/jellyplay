@@ -1,6 +1,6 @@
 import { MovieDb } from 'moviedb-promise';
 import {
-  CreditsResponse, MovieResult, TvResult, TvResultsResponse, MovieRecommendationsResponse, MovieResponse, Person, PersonMovieCreditsResponse, PersonTvCreditsResponse, ShowResponse,
+  CreditsResponse, MovieResult, TvResult, TvResultsResponse, MovieRecommendationsResponse, MovieResponse, Person, PersonMovieCreditsResponse, PersonTvCreditsResponse, ShowResponse, PersonResult,
 } from 'moviedb-promise/dist/request-types';
 
 // https://github.com/grantholle/moviedb-promise pour l'api TMDB
@@ -140,6 +140,15 @@ export class TmdbClient {
       append_to_response: 'movie_credits,tv_credits',
     });
     return (response as PersonWithCredits);
+  }
+
+  public async searchMulti(query: string): Promise<Array<MovieResult | TvResult | PersonResult> | undefined> {
+    await this.initMovieDb();
+    const response = await this.movieDb?.searchMulti({
+      query,
+      language: this.lang,
+    });
+    return response?.results || [];
   }
 }
 

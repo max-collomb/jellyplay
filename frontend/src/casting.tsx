@@ -17,7 +17,6 @@ export default class Casting extends React.Component<CastingProps, CastingState>
 
   handleCreditSearch(credit: DbCredit, evt: React.MouseEvent): void {
     evt.preventDefault();
-    // ctx.eventBus.emit('set-search', { search: credit.name });
     ctx.router.navigateTo(`#/tmdb/person/${credit.tmdbid}`);
   }
 

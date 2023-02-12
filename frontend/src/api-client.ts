@@ -1,8 +1,8 @@
 import {
   Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilename, ScanStatus,
-  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus,
+  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish,
 } from '../../api/src/types';
-import { SeenStatus } from '../../api/src/enums';
+import { SeenStatus, MediaType } from '../../api/src/enums';
 import { eventBus } from './event-bus';
 
 const cache = {
@@ -16,6 +16,8 @@ const cache = {
   tvshowsTs: 0,
   credits: null,
   creditsTs: 0,
+  wishes: null,
+  wishesTs: 0,
   lastUpdate: 0,
 };
 
@@ -29,6 +31,8 @@ export class ApiClient {
     cache.tvshowsTs = 0;
     cache.credits = null;
     cache.creditsTs = 0;
+    cache.wishes = null;
+    cache.wishesTs = 0;
   }
 
   needRefresh(category: string): boolean {
@@ -41,6 +45,8 @@ export class ApiClient {
         return cache.tvshowsTs === 0 || cache.tvshowsTs < cache.lastUpdate;
       case 'credits':
         return cache.creditsTs === 0 || cache.creditsTs < cache.lastUpdate;
+      case 'wishes':
+        return cache.wishesTs === 0 || cache.wishesTs < cache.lastUpdate;
       default:
         return false;
     }
@@ -358,6 +364,68 @@ export class ApiClient {
         body: JSON.stringify({ filename }),
       }).then(async () => {
         resolve();
+      });
+    });
+  }
+
+  async getWishes(): Promise<DbWish[]> {
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async (resolve) => {
+      if (cache.wishes) {
+        if (cache.wishesTs >= cache.lastUpdate) {
+          cache.lastUpdate = await this.getLastUpdate();
+        }
+        if (cache.wishesTs < cache.lastUpdate) {
+          cache.wishes = null;
+        }
+      }
+      if (cache.wishes) {
+        resolve(cache.wishes);
+      } else {
+        fetch('/catalog/wishes/list')
+          .then(async (response) => {
+            const json = await response.json();
+            cache.wishes = json.list;
+            cache.wishesTs = json.lastUpdate;
+            resolve(json.list);
+          });
+      }
+    });
+  }
+
+  async addToWishList(tmdbid: number, title: string, type: MediaType, posterPath: string, year: number, userName: string): Promise<DbWish | undefined> {
+    return new Promise((resolve) => {
+      fetch('/catalog/wishes/add', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({
+          tmdbid, title, type, userName, posterPath, year,
+        }),
+      }).then(async (response) => {
+        const json = await response.json();
+        resolve(json.wish);
+        eventBus.emit('wishes-changed');
+      });
+    });
+  }
+
+  async removeFromWishList(tmdbid: number, userName: string): Promise<DbWish | undefined> {
+    return new Promise((resolve) => {
+      fetch('/catalog/wishes/remove', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({
+          tmdbid,
+          userName,
+          title: '',
+          type: MediaType.unknown,
+          posterPath: '',
+          year: 0,
+        }),
+      }).then(async (response) => {
+        const json = await response.json();
+        resolve(json.wish);
+        eventBus.emit('wishes-changed');
       });
     });
   }

@@ -79,7 +79,6 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
 
   handleCastClick(cast: DbCredit, evt: React.MouseEvent) {
     evt.preventDefault();
-    // ctx.eventBus.emit('set-search', { search: cast.name });
     ctx.router.navigateTo(`#/tmdb/person/${cast.tmdbid}`);
   }
 

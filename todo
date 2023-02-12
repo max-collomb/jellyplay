@@ -123,10 +123,11 @@ V1.1
 [x] fiche descriptive d'une série non possédée
 [x] recommandation série
 [x] UI fiche série : x => <- et alignement poster
-[ ] recherche externe tmdb via api (nécessite de créer une page résultat de recherche au lieu de se contenter de filtrer les films et les séries)
-[ ] ajouter à ma liste d'envie + voir la liste + supprimer de la liste + voir les demandes en tant qu'admin
+[x] recherche externe tmdb via api (nécessite de créer une page résultat de recherche au lieu de se contenter de filtrer les films et les séries)
+[x] ajouter à ma liste d'envie + voir la liste + supprimer de la liste + voir les demandes en tant qu'admin
 [ ] utiliser une seule instance de mpv (manifestement possible en envoyant des messages `loadfile` - source : https://github.com/mpv-player/mpv/issues/4954)
 [ ] généraliser la sauvegarde / restauration du scroll (movie-details, tvshow-details, tmdb-movie-details, tmdb-tvshow-details, tmdb-person)
+[ ] bug : aller sur une page /tmdb/person/id, puis faire une recherche d'une autre personne puis cliquer dessus => reste sur la page de la première personne
 
 
 [ ] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode

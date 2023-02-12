@@ -1,4 +1,4 @@
-import { SeenStatus } from './enums';
+import { SeenStatus, MediaType } from './enums';
 
 export type Config = {
   moviesLocalPath: string;
@@ -14,6 +14,20 @@ export type DbUser = {
   audience: number;
   admin: boolean;
   created: number;
+};
+
+export type UserWish = {
+  userName: string;
+  added: string; // date d'ajout
+};
+
+export type DbWish = {
+  tmdbid: number;
+  type: MediaType;
+  title: string;
+  posterPath: string;
+  year: number;
+  users: UserWish[];
 };
 
 export type DbCredit = {
@@ -154,6 +168,7 @@ export type ParsedFilename = {
 
 export type DataTables = {
   users?: Collection<DbUser>;
+  wishes?: Collection<DbWish>;
   movies?: Collection<DbMovie>;
   tvshows?: Collection<DbTvshow>;
   credits?: Collection<DbCredit>;

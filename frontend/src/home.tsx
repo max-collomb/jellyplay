@@ -20,16 +20,22 @@ type HomeState = {
 export default class Home extends React.Component<HomeProps, HomeState> {
   constructor(props: HomeProps) {
     super(props);
-    this.handleEventWillNavigate = this.handleEventWillNavigate.bind(this);
     this.state = {
       lists: { inProgress: [], recentMovies: [], recentTvshows: [] },
     };
-    this.refreshContent(/* undefined */);
+    this.refreshContent();
+    ctx.eventBus.replace('will-navigate', () => {
+      ctx.router.saveState({
+        windowScrollPosition: window.pageYOffset,
+        inProgressScrollPosition: document.getElementById('in-progress')?.scrollLeft || 0,
+        moviesScrollPosition: document.getElementById('recent-movies')?.scrollLeft || 0,
+        tvshowsScrollPosition: document.getElementById('recent-tvshows')?.scrollLeft || 0,
+      });
+    });
   }
 
   componentDidMount() {
     window._exited = this.refreshContent.bind(this);
-    ctx.eventBus.on('will-navigate', this.handleEventWillNavigate);
   }
 
   componentDidUpdate() {
@@ -37,6 +43,8 @@ export default class Home extends React.Component<HomeProps, HomeState> {
       setTimeout(() => {
         // @ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
         window.scrollTo({ left: 0, top: ctx.router.currentRoute?.state?.windowScrollPosition || 0, behavior: 'instant' });
+        // @ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
+        document.getElementById('in-progress').scrollTo({ left: ctx.router.currentRoute?.state?.inProgressScrollPosition || 0, top: 0, behavior: 'instant' });
         // @ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
         document.getElementById('recent-movies').scrollTo({ left: ctx.router.currentRoute?.state?.moviesScrollPosition || 0, top: 0, behavior: 'instant' });
         // @ts-ignore en attente d'une correction pour https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1195
@@ -51,15 +59,6 @@ export default class Home extends React.Component<HomeProps, HomeState> {
 
   componentWillUnmount() {
     window._exited = () => {};
-    ctx.eventBus.detach('will-navigate', this.handleEventWillNavigate);
-  }
-
-  handleEventWillNavigate(): void {
-    window.history.replaceState({}, '', `#/home/state/${JSON.stringify({
-      windowScrollPosition: window.pageYOffset,
-      moviesScrollPosition: document.getElementById('recent-movies')?.scrollLeft || 0,
-      tvshowsScrollPosition: document.getElementById('recent-tvshows')?.scrollLeft || 0,
-    })}`);
   }
 
   refreshContent(): void {

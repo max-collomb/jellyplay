@@ -1,3 +1,9 @@
+export enum MediaType {
+  unknown = "unknown",
+  movie   = "movie",
+  tvshow  = "tvshow",
+};
+
 export enum SeenStatus {
   unknown = "unknown",
   toSee   = "toSee",
