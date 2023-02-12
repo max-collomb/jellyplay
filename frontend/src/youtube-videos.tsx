@@ -55,6 +55,10 @@ export default class YoutubeVideos extends React.Component<YoutubeVideosProps, Y
     }
   }
 
+  normalizeString(str: string): string {
+    return str.replace(/&#([0-9]+);/g, (_match, code) => String.fromCharCode(code));
+  }
+
   render(): JSX.Element {
     const { videos, loading } = this.state;
     return (
@@ -70,7 +74,7 @@ export default class YoutubeVideos extends React.Component<YoutubeVideosProps, Y
                     </svg>
                   </b>
                 </span>
-                <span className="title" title={video.title}>{video.title}</span>
+                <span className="title" title={this.normalizeString(video.title)}>{this.normalizeString(video.title)}</span>
                 <span className="infos d-flex justify-content-between">
                   <span className="year">{video.date}</span>
                 </span>
