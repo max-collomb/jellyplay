@@ -346,5 +346,5 @@ div.media-card .progress-bar {
 #cast-similar-tabs-tabpane-trailers,
 #cast-similar-tabs-tabpane-similar { width: 100% }
 
-.wish-link .year { display: inline-block; font-size: 80%; opacity: 0.75; font-weight: normal; margin-left: 1rem; }
+.wish-link .year { display: inline-block; font-size: 80%; font-weight: normal; margin-left: 1rem; }
 .wish-link .added { font-size: 80%; opacity: 0.5; font-weight: normal; }

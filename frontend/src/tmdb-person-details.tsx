@@ -42,11 +42,11 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
   componentDidUpdate(prevProps: TmdbPersonDetailsProps) {
     const { personId } = this.props;
     if (prevProps.personId !== personId) {
-    //   this.setState({
-    //     movie: undefined,
-    //     credits: undefined,
-    //   });
-    //   this.fetchMovie();
+      this.setState({
+        person: undefined,
+        tabKey: ctx.router.currentRoute?.state?.tabKey || 'movies',
+      });
+      this.fetchPerson();
     }
   }
 
