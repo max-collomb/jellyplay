@@ -29,13 +29,14 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
     this.state = { tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast', wishes: [] };
     this.fetchTvshow();
     this.fetchWishes();
+    ctx.eventBus.replace('will-navigate', ctx.router.saveScrollPosition.bind(ctx.router));
   }
 
   componentDidMount() {
     ctx.eventBus.on('wishes-changed', this.handleEventWishesChanged);
   }
 
-  componentDidUpdate(prevProps: TmdbTvshowDetailsProps) {
+  componentDidUpdate(prevProps: TmdbTvshowDetailsProps, prevState: TmdbTvshowDetailsState) {
     const { tvshowId } = this.props;
     if (prevProps.tvshowId !== tvshowId) {
       this.setState({
@@ -45,10 +46,9 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
       });
       this.fetchTvshow();
     }
-    if (ctx.apiClient.needRefresh('wishes')) {
-      ctx.apiClient.getWishes().then((wishes) => {
-        this.setState({ wishes });
-      });
+    const { tvshow } = this.state;
+    if (prevState.tvshow?.id !== tvshow?.id) {
+      ctx.router.restoreScrollPosition();
     }
   }
 
@@ -62,8 +62,7 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
 
   handleChangeTab(tabKey: string | null): void {
     this.setState({ tabKey: tabKey || 'cast' });
-    const { tvshowId } = this.props;
-    window.history.replaceState({}, '', `#/tmdb/tvshow/${tvshowId}/state/${JSON.stringify({ tabKey })}`);
+    ctx.router.saveState({ tabKey });
   }
 
   handleCastClick(crew: Crew, evt: React.MouseEvent) {
@@ -170,7 +169,7 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
     const writers: Crew[] | undefined = credits?.crew?.filter((c) => c.job === 'Writer').slice(0, 5);
     const isWished: boolean = !!wishes.find((w) => w.tmdbid === tvshowId && !!w.users.find((uw) => uw.userName === ctx.user?.name));
     return (
-      <div className="media-details movie" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${tvshow.backdrop_path ? `, url(${ctx.tmdbClient?.baseUrl}w1280${tvshow.backdrop_path}) 100% 0% / cover no-repeat` : ''}` }}>
+      <div className="media-details movie" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${tvshow.backdrop_path ? `, url(${ctx.tmdbClient?.baseUrl}w1280${tvshow.backdrop_path}) 100% 0% / cover fixed` : ''}` }}>
         <div className="position-fixed" style={{ top: '65px', left: '1rem' }}>
           <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); window.history.back(); }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-arrow-left" viewBox="0 0 16 16">

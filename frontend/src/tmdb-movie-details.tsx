@@ -29,13 +29,14 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     this.state = { tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast', wishes: [] };
     this.fetchMovie();
     this.fetchWishes();
+    ctx.eventBus.replace('will-navigate', ctx.router.saveScrollPosition.bind(ctx.router));
   }
 
   componentDidMount() {
     ctx.eventBus.on('wishes-changed', this.handleEventWishesChanged);
   }
 
-  componentDidUpdate(prevProps: TmdbMovieDetailsProps) {
+  componentDidUpdate(prevProps: TmdbMovieDetailsProps, prevState: TmdbMovieDetailsState) {
     const { movieId } = this.props;
     if (prevProps.movieId !== movieId) {
       this.setState({
@@ -45,6 +46,10 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
       });
       this.fetchMovie();
     }
+    const { movie } = this.state;
+    if (prevState.movie?.id !== movie?.id) {
+      ctx.router.restoreScrollPosition();
+    }
   }
 
   componentWillUnmount() {
@@ -53,8 +58,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
 
   handleChangeTab(tabKey: string | null): void {
     this.setState({ tabKey: tabKey || 'cast' });
-    const { movieId } = this.props;
-    window.history.replaceState({}, '', `#/tmdb/movie/${movieId}/state/${JSON.stringify({ tabKey })}`);
+    ctx.router.saveState({ tabKey });
   }
 
   handleCastClick(crew: Crew, evt: React.MouseEvent): void {
@@ -163,7 +167,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     const writers: Crew[] | undefined = credits?.crew?.filter((c) => c.job === 'Writer').slice(0, 5);
     const isWished: boolean = !!wishes.find((w) => w.tmdbid === movieId && !!w.users.find((uw) => uw.userName === ctx.user?.name));
     return (
-      <div className="media-details movie" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${movie.backdrop_path ? `, url(${ctx.tmdbClient?.baseUrl}w1280${movie.backdrop_path}) 100% 0% / cover no-repeat` : ''}` }}>
+      <div className="media-details movie" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${movie.backdrop_path ? `, url(${ctx.tmdbClient?.baseUrl}w1280${movie.backdrop_path}) 100% 0% / cover fixed` : ''}` }}>
         <div className="position-fixed" style={{ top: '65px', left: '1rem' }}>
           <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); window.history.back(); }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-arrow-left" viewBox="0 0 16 16">

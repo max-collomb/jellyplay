@@ -46,14 +46,19 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
       percentPos: 0,
     };
     this.loadTvshow();
+    ctx.eventBus.replace('will-navigate', ctx.router.saveScrollPosition.bind(ctx.router));
   }
 
   componentDidMount() {
     ctx.eventBus.on('episode-position-changed', this.handleEventEpisodePositionChanged);
   }
 
-  componentDidUpdate(prevProps: TvshowDetailsProps) {
+  componentDidUpdate(prevProps: TvshowDetailsProps, prevState: TvshowDetailsState) {
     const { tvshowId } = this.props;
+    const { tvshow } = this.state;
+    if (!prevState.tvshow.tmdbid && tvshow.tmdbid) {
+      ctx.router.restoreScrollPosition();
+    }
     if (prevProps.tvshowId !== tvshowId) {
       this.setState({ tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast' });
       this.loadTvshow();
@@ -152,8 +157,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
 
   handleChangeTab(tabKey: string | null): void {
     this.setState({ tabKey: tabKey || 'cast' });
-    const { tvshowId } = this.props;
-    window.history.replaceState({}, '', `#/tvshow/${tvshowId}/state/${JSON.stringify({ tabKey })}`);
+    ctx.router.saveState({ tabKey });
   }
 
   loadTvshow() {
@@ -308,7 +312,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
     }
     const userStatus = getTvshowUserStatus(tvshow);
     return (
-      <div className="media-details tvshow" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${tvshow.backdropPath ? `, url(/images/backdrops_w1280${tvshow.backdropPath}) 100% 0% / cover no-repeat` : ''}` }}>
+      <div className="media-details tvshow" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${tvshow.backdropPath ? `, url(/images/backdrops_w1280${tvshow.backdropPath}) 100% 0% / cover fixed` : ''}` }}>
         <div className="position-fixed" style={{ top: '65px', left: '1rem' }}>
           <a href="#" className="link-light" onClick={(evt) => { evt.preventDefault(); window.history.back(); }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-arrow-left" viewBox="0 0 16 16">

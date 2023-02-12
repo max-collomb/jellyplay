@@ -125,9 +125,8 @@ V1.1
 [x] UI fiche série : x => <- et alignement poster
 [x] recherche externe tmdb via api (nécessite de créer une page résultat de recherche au lieu de se contenter de filtrer les films et les séries)
 [x] ajouter à ma liste d'envie + voir la liste + supprimer de la liste + voir les demandes en tant qu'admin
-[ ] utiliser une seule instance de mpv (manifestement possible en envoyant des messages `loadfile` - source : https://github.com/mpv-player/mpv/issues/4954)
-[ ] généraliser la sauvegarde / restauration du scroll (movie-details, tvshow-details, tmdb-movie-details, tmdb-tvshow-details, tmdb-person)
-[ ] bug : aller sur une page /tmdb/person/id, puis faire une recherche d'une autre personne puis cliquer dessus => reste sur la page de la première personne
+[x] bug : aller sur une page /tmdb/person/id, puis faire une recherche d'une autre personne puis cliquer dessus => reste sur la page de la première personne
+[x] généraliser la sauvegarde / restauration du scroll (movie-details, tvshow-details, tmdb-movie-details, tmdb-tvshow-details, tmdb-person)
 
 
 [ ] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode
@@ -137,5 +136,4 @@ V1.1
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo
 [ ] [frontend] navigation avec les flèches du clavier + entrée + back
-[ ] recherche floue (https://github.com/leeoniya/uFuzzy)
 [ ] suppression collaborative (admin demande l'autorisation de supprimer ? validation par tous les membres ?)

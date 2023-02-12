@@ -46,14 +46,19 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     };
     this.loadMovie();
     ctx.apiClient.getCredits().then((credits) => this.setState({ credits }));
+    ctx.eventBus.replace('will-navigate', ctx.router.saveScrollPosition.bind(ctx.router));
   }
 
   componentDidMount() {
     ctx.eventBus.on('movie-position-changed', this.handleEventMoviePositionChanged);
   }
 
-  componentDidUpdate(prevProps: MovieDetailsProps) {
+  componentDidUpdate(prevProps: MovieDetailsProps, prevState: MovieDetailsState) {
     const { movieId } = this.props;
+    const { movie } = this.state;
+    if (!prevState.movie.tmdbid && movie.tmdbid) {
+      ctx.router.restoreScrollPosition();
+    }
     if (prevProps.movieId !== movieId) {
       this.setState({ tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast' });
       this.loadMovie();
@@ -139,8 +144,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
 
   handleChangeTab(tabKey: string | null): void {
     this.setState({ tabKey: tabKey || 'cast' });
-    const { movieId } = this.props;
-    window.history.replaceState({}, '', `#/movie/${movieId}/state/${JSON.stringify({ tabKey })}`);
+    ctx.router.saveState({ tabKey });
   }
 
   getCredit(id: number): DbCredit | null {
@@ -203,7 +207,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     }
     const userStatus = getUserMovieStatus(movie);
     return (
-      <div className="media-details movie" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${movie.backdropPath ? `, url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover no-repeat` : ''}` }}>
+      <div className="media-details movie" style={{ background: `linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6))${movie.backdropPath ? `, url(/images/backdrops_w1280${movie.backdropPath}) 100% 0% / cover fixed` : ''}` }}>
         <div className="position-fixed" style={{ top: '65px', left: '1rem' }}>
           <a href="#" className="link-light" style={{ zIndex: 1 }} onClick={(evt) => { evt.preventDefault(); window.history.back(); }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" className="bi bi-arrow-left" viewBox="0 0 16 16">

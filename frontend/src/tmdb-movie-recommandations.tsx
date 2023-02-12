@@ -107,7 +107,7 @@ export default class TmdbMovieRecommandations extends React.Component<TmdbMovieR
       if (this.isOwned(r.id)) { owned.push(r); } else { notOwned.push(r); }
     });
     return (
-      <div>
+      <div style={{ minHeight: '800px' }}>
         { owned.length ? (
           <>
             { this.renderList(owned) }

@@ -24,7 +24,7 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
     const movieIds = new Set<number>();
     const tvshowIds = new Set<number>();
     this.state = {
-      tabKey: 'movies',
+      tabKey: ctx.router.currentRoute?.state?.tabKey || 'movies',
       movieIds,
       tvshowIds,
     };
@@ -37,9 +37,10 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
       tvshows.forEach((tvshow) => tvshowIds.add(tvshow.tmdbid));
       this.setState({ tvshowIds });
     });
+    ctx.eventBus.replace('will-navigate', ctx.router.saveScrollPosition.bind(ctx.router));
   }
 
-  componentDidUpdate(prevProps: TmdbPersonDetailsProps) {
+  componentDidUpdate(prevProps: TmdbPersonDetailsProps, prevState: TmdbPersonDetailsState) {
     const { personId } = this.props;
     if (prevProps.personId !== personId) {
       this.setState({
@@ -48,12 +49,15 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
       });
       this.fetchPerson();
     }
+    const { person } = this.state;
+    if (prevState.person?.id !== person?.id) {
+      ctx.router.restoreScrollPosition();
+    }
   }
 
   handleChangeTab(tabKey: string | null): void {
     this.setState({ tabKey: tabKey || 'cast' });
-    const { personId } = this.props;
-    window.history.replaceState({}, '', `#/tmdb/person/${personId}/state/${JSON.stringify({ tabKey })}`);
+    ctx.router.saveState({ tabKey });
   }
 
   handleMovieClick(movieId: number): void {
