@@ -14,7 +14,7 @@ type TmdbMovieRecommandationsState = {
   recommandations: MovieResult[];
   movieIds: Set<number>;
   loading: boolean;
-  pageLoaded: number;
+  pageLoaded?: number;
   pageCount: number;
 };
 
@@ -26,7 +26,7 @@ export default class TmdbMovieRecommandations extends React.Component<TmdbMovieR
       recommandations: [],
       movieIds,
       loading: false,
-      pageLoaded: 0,
+      pageLoaded: undefined,
       pageCount: 1,
     };
     ctx.apiClient.getMovies().then((movies) => {
@@ -39,13 +39,13 @@ export default class TmdbMovieRecommandations extends React.Component<TmdbMovieR
     const { movieId, hidden } = this.props;
     const { pageLoaded } = this.state;
     if (prevProps.movieId !== movieId) {
-      this.setState({ pageLoaded: 0 });
+      this.setState({ pageLoaded: undefined });
     }
-    if (pageLoaded === 0 && !hidden) {
+    if (pageLoaded === undefined && !hidden) {
       this.setState({
         recommandations: [],
         loading: false,
-        pageLoaded: 1,
+        pageLoaded: 0,
         pageCount: 1,
       }, this.loadNextPage.bind(this));
     }
@@ -63,15 +63,17 @@ export default class TmdbMovieRecommandations extends React.Component<TmdbMovieR
   async loadNextPage() {
     const { pageLoaded, pageCount, recommandations } = this.state;
     const { movieId } = this.props;
-    this.setState({ loading: true });
-    const pages = pageLoaded === 0 ? [1, 2] : [pageLoaded + 1];
-    const response: MovieRecommendationsResponse | undefined = await ctx.tmdbClient?.getMovieRecommandations(movieId, pages);
-    this.setState({
-      loading: false,
-      recommandations: recommandations.concat(response?.results || []),
-      pageCount: response?.total_pages || pageCount,
-      pageLoaded: pages[pages.length - 1],
-    });
+    if (pageLoaded !== undefined) {
+      this.setState({ loading: true });
+      const pages = pageLoaded === 0 ? [1, 2] : [pageLoaded + 1];
+      const response: MovieRecommendationsResponse | undefined = await ctx.tmdbClient?.getMovieRecommandations(movieId, pages);
+      this.setState({
+        loading: false,
+        recommandations: recommandations.concat(response?.results || []),
+        pageCount: response?.total_pages || pageCount,
+        pageLoaded: pages[pages.length - 1],
+      });
+    }
   }
 
   isOwned(id: number | undefined): boolean {
@@ -103,8 +105,12 @@ export default class TmdbMovieRecommandations extends React.Component<TmdbMovieR
     } = this.state;
     const owned: MovieResult[] = [];
     const notOwned: MovieResult[] = [];
+    const ids: Set<number> = new Set<number>();
     recommandations.forEach((r) => {
-      if (this.isOwned(r.id)) { owned.push(r); } else { notOwned.push(r); }
+      if (r.id !== undefined && !ids.has(r.id)) {
+        ids.add(r.id);
+        if (this.isOwned(r.id)) { owned.push(r); } else { notOwned.push(r); }
+      }
     });
     return (
       <div style={{ minHeight: '800px' }}>
@@ -118,7 +124,7 @@ export default class TmdbMovieRecommandations extends React.Component<TmdbMovieR
         { loading
           ? <div className="text-center"><Spinner animation="border" variant="light" /></div>
           : null }
-        { pageLoaded < pageCount
+        { pageLoaded !== undefined && pageLoaded < pageCount
           ? (
             <div className="mt-3 text-center">
               <Button variant="outline-secondary" onClick={this.loadNextPage.bind(this)}>Plus</Button>

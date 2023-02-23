@@ -14,7 +14,7 @@ type TmdbTvshowRecommandationsState = {
   recommandations: TvResult[];
   tvshowIds: Set<number>;
   loading: boolean;
-  pageLoaded: number;
+  pageLoaded?: number;
   pageCount: number;
 };
 
@@ -26,7 +26,7 @@ export default class TmdbTvshowRecommandations extends React.Component<TmdbTvsho
       recommandations: [],
       tvshowIds,
       loading: false,
-      pageLoaded: 0,
+      pageLoaded: undefined,
       pageCount: 1,
     };
     ctx.apiClient.getTvshows().then((tvshows) => {
@@ -39,13 +39,13 @@ export default class TmdbTvshowRecommandations extends React.Component<TmdbTvsho
     const { tvshowId, hidden } = this.props;
     const { pageLoaded } = this.state;
     if (prevProps.tvshowId !== tvshowId) {
-      this.setState({ pageLoaded: 0 });
+      this.setState({ pageLoaded: undefined });
     }
-    if (pageLoaded === 0 && !hidden) {
+    if (pageLoaded === undefined && !hidden) {
       this.setState({
         recommandations: [],
         loading: false,
-        pageLoaded: 1,
+        pageLoaded: 0,
         pageCount: 1,
       }, this.loadNextPage.bind(this));
     }
@@ -63,15 +63,17 @@ export default class TmdbTvshowRecommandations extends React.Component<TmdbTvsho
   async loadNextPage() {
     const { pageLoaded, pageCount, recommandations } = this.state;
     const { tvshowId } = this.props;
-    this.setState({ loading: true });
-    const pages = pageLoaded === 0 ? [1, 2] : [pageLoaded + 1];
-    const response: TvResultsResponse | undefined = await ctx.tmdbClient?.getTvshowRecommandations(tvshowId, pages);
-    this.setState({
-      loading: false,
-      recommandations: recommandations.concat(response?.results || []),
-      pageCount: response?.total_pages || pageCount,
-      pageLoaded: pages[pages.length - 1],
-    });
+    if (pageLoaded !== undefined) {
+      this.setState({ loading: true });
+      const pages = pageLoaded === 0 ? [1, 2] : [pageLoaded + 1];
+      const response: TvResultsResponse | undefined = await ctx.tmdbClient?.getTvshowRecommandations(tvshowId, pages);
+      this.setState({
+        loading: false,
+        recommandations: recommandations.concat(response?.results || []),
+        pageCount: response?.total_pages || pageCount,
+        pageLoaded: pages[pages.length - 1],
+      });
+    }
   }
 
   isOwned(id: number | undefined): boolean {
@@ -103,8 +105,12 @@ export default class TmdbTvshowRecommandations extends React.Component<TmdbTvsho
     } = this.state;
     const owned: TvResult[] = [];
     const notOwned: TvResult[] = [];
+    const ids: Set<number> = new Set<number>();
     recommandations.forEach((r) => {
-      if (this.isOwned(r.id)) { owned.push(r); } else { notOwned.push(r); }
+      if (r.id !== undefined && !ids.has(r.id)) {
+        ids.add(r.id);
+        if (this.isOwned(r.id)) { owned.push(r); } else { notOwned.push(r); }
+      }
     });
     return (
       <div style={{ minHeight: '800px' }}>
@@ -118,7 +124,7 @@ export default class TmdbTvshowRecommandations extends React.Component<TmdbTvsho
         { loading
           ? <div className="text-center"><Spinner animation="border" variant="light" /></div>
           : null }
-        { pageLoaded < pageCount
+        {pageLoaded !== undefined && pageLoaded < pageCount
           ? (
             <div className="mt-3 text-center">
               <Button variant="outline-secondary" onClick={this.loadNextPage.bind(this)}>Plus</Button>
