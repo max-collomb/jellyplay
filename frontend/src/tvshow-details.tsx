@@ -411,7 +411,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
                       <>
                         {title}
                         <span className="d-block fst-italic fs-80pc">
-                          {season.episodeCount}
+                          {season.episodeCount}&nbsp;
                           épisodes
                         </span>
                       </>

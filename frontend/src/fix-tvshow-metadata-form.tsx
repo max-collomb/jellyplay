@@ -91,6 +91,10 @@ export default class FixTvshowMetadataForm extends React.Component<FixTvshowMeta
               <span className="title">{candidate.name}</span>
               <span className="infos d-flex justify-content-between">
                 <span className="year">{candidate.first_air_date?.substring(0, 4)}</span>
+                <span className="duration" onClick={(evt) => evt.stopPropagation()}>
+                  id
+                  {candidate.id}
+                </span>
               </span>
             </div>
           ))}

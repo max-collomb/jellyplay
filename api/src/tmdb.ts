@@ -400,29 +400,38 @@ export class TmdbClient {
 
   public async autoIdentifyTvshow(tvshow: DbTvshow): Promise<void> {
     const data: ExtractedMovieInfos = extractMovieTitle(tvshow.foldername);
-    if (tvshow.isSaga) {
-      const response = await this.movieDb.searchCollection({
-        language: this.lang,
-        query: data.title,
-      });
-      if (response.results?.length && response.results[0].id) {
-        tvshow.tmdbid = response.results[0].id;
+    let id: number|null = data.tmdbid;
+    if (! id) {
+      if (tvshow.isSaga) {
+        const response = await this.movieDb.searchCollection({
+          language: this.lang,
+          query: data.title,
+        });
+        if (response.results?.length && response.results[0].id) {
+          id = response.results[0].id;
+        } else {
+          this.log("[error] show not found : " + data.title);
+        }      
+
+      } else {
+        const response = await this.movieDb.searchTv({
+          language: this.lang,
+          query: data.title,
+        });
+        if (response.results?.length && response.results[0].id) {
+          id = response.results[0].id;
+        } else {
+          this.log("[error] show not found : " + data.title);
+        }      
+      }
+    }
+    if (id) {
+      tvshow.tmdbid = id;
+      if (tvshow.isSaga) {
         await this.getCollectionData(tvshow);
       } else {
-        this.log("[error] show not found : " + data.title);
-      }      
-
-    } else {
-      const response = await this.movieDb.searchTv({
-        language: this.lang,
-        query: data.title,
-      });
-      if (response.results?.length && response.results[0].id) {
-        tvshow.tmdbid = response.results[0].id;
         await this.getTvshowData(tvshow);
-      } else {
-        this.log("[error] show not found : " + data.title);
-      }      
+      }
     }
   }
 
