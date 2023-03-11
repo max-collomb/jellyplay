@@ -68,7 +68,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
     const animePos = typeTitles.indexOf('Animes');
     const showPos = typeTitles.indexOf('Séries');
     tvshows.forEach((t) => {
-      if (t.foldername.startsWith('[émission]')) { tvshowsByType[emissionPos].push(t); } else if (t.foldername.startsWith('[anime]')) { tvshowsByType[animePos].push(t); } else { tvshowsByType[showPos].push(t); }
+      if (t.foldername.startsWith('[emission]')) { tvshowsByType[emissionPos].push(t); } else if (t.foldername.startsWith('[anime]')) { tvshowsByType[animePos].push(t); } else { tvshowsByType[showPos].push(t); }
     });
     return (
       <>
