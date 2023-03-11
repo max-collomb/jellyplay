@@ -62,7 +62,7 @@ export const mediaInfo = async (movie: DbMovie|Episode, filename: string, log: (
     var mediainfoDir = path.join(global.process.cwd(), 'mediainfo'),
       executable = process.platform == "win32" ? path.join(mediainfoDir, 'MediaInfo.exe') : 'mediainfo';
 
-    // console.log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
+    // log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
     childProcess.exec(
       `${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`,
       function(error, stdout, stderr) {
@@ -71,7 +71,10 @@ export const mediaInfo = async (movie: DbMovie|Episode, filename: string, log: (
         } else {
           try {
             const json = JSON.parse(stdout);
-            // console.log("media info for " + filename, json);
+            if (! json.general.duration) {
+              log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
+              log("=> " + JSON.stringify(json));
+            }
             movie.created = statSync(filename).birthtime.getTime();
             movie.filesize = json.general.size;
             movie.duration = json.general.duration / 1000; // conversion ms => s
