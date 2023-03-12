@@ -317,6 +317,20 @@ export class ApiClient {
     });
   }
 
+  async reloadMovieMetadata(filename: string): Promise<DbMovie> {
+    return new Promise((resolve) => {
+      fetch('/catalog/movie/reload_metadata', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ filename }),
+      }).then(async (response) => {
+        const json = await response.json();
+        if (json.log) { console.log(json.log); }
+        resolve(json.movie);
+      });
+    });
+  }
+
   async fixMovieMetadata(filename: string, tmdbId: number): Promise<DbMovie> {
     return new Promise((resolve) => {
       fetch('/catalog/movie/fix_metadata', {

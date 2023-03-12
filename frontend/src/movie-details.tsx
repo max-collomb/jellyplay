@@ -3,6 +3,7 @@ import React from 'react';
 import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 import Dropdown from 'react-bootstrap/Dropdown';
+import Spinner from 'react-bootstrap/Spinner';
 
 import { DbCredit, DbMovie, UserMovieStatus } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
@@ -23,6 +24,7 @@ type MovieDetailsState = {
   movie: DbMovie;
   credits: DbCredit[];
   fixingMetadata: boolean;
+  reloadingMetadata: boolean;
   renaming: boolean;
   tabKey: string;
   currentStatus: SeenStatus;
@@ -40,6 +42,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
       credits: [],
       tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast',
       fixingMetadata: false,
+      reloadingMetadata: false,
       renaming: false,
       currentStatus: SeenStatus.unknown,
       percentPos: 0,
@@ -111,6 +114,13 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
   handleFixMetadataClick(evt: React.MouseEvent<HTMLElement>): void {
     evt.preventDefault();
     this.setState({ fixingMetadata: true });
+  }
+
+  handleReloadMetadataClick(evt: React.MouseEvent<HTMLElement>): void {
+    evt.preventDefault();
+    const { movie } = this.state;
+    this.setState({ reloadingMetadata: true });
+    ctx.apiClient.reloadMovieMetadata(movie.filename).then((m) => this.setState({ movie: m, reloadingMetadata: false }));
   }
 
   handleFixingMetadataFormClose(newMovie?: DbMovie): void {
@@ -188,7 +198,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
 
   render(): JSX.Element {
     const {
-      movie, fixingMetadata, renaming, tabKey,
+      movie, reloadingMetadata, fixingMetadata, renaming, tabKey,
     } = this.state;
     if (movie.tmdbid === -1) {
       return (
@@ -196,6 +206,14 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
           Film introuvable.
           {' '}
           <a href="#" onClick={(evt) => { evt.preventDefault(); window.history.back(); }}>Retour</a>
+        </div>
+      );
+    }
+    if (reloadingMetadata) {
+      return (
+        <div className="d-flex justify-content-center mt-5">
+          Mise à jour des métadonnées &emsp;
+          <Spinner animation="border" variant="light" />
         </div>
       );
     }
@@ -275,6 +293,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
                   </Dropdown.Item>
                   <Dropdown.Divider />
                   <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={!ctx.user?.admin}>Corriger les métadonnées...</Dropdown.Item>
+                  <Dropdown.Item onClick={this.handleReloadMetadataClick.bind(this)} disabled={!ctx.user?.admin}>Recharger les métadonnées</Dropdown.Item>
                   <Dropdown.Item onClick={this.handleRenameClick.bind(this)} disabled={!ctx.user?.admin}>Renommer le fichier...</Dropdown.Item>
                   <Dropdown.Item onClick={this.handleDeleteClick.bind(this)} disabled={!ctx.user?.admin}>Supprimer</Dropdown.Item>
                 </Dropdown.Menu>

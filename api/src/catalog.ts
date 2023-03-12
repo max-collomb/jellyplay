@@ -798,6 +798,24 @@ export class Catalog {
     reply.send({ parsedFilename: extractMovieTitle(body.filename)});
   }
 
+  public async reloadMovieMetadata(request: FastifyRequest, reply: FastifyReply) {
+    let body: FilenameMessage = request.body as FilenameMessage;
+    let movie = this.tables.movies?.findOne({ filename: body.filename });
+    if (movie) {
+      movie.directors = [];
+      movie.writers = [];
+      movie.cast = [];
+      movie.genres = [];
+      movie.countries = [];
+
+      this.scanLogs = "";
+      await this.tmdbClient.getMovieData(movie);
+      await mediaInfo(movie, path.join(this.moviesPath, movie.filename), this.log.bind(this));
+      this.lastUpdate = Date.now();
+    }
+    reply.send({ movie, log: this.scanLogs });
+  }
+
   public async fixMovieMetadata(request: FastifyRequest, reply: FastifyReply) {
     let body: FixMovieMetadataMessage = request.body as FixMovieMetadataMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });

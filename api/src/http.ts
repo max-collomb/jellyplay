@@ -49,6 +49,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.post('/catalog/movie/set_position', catalog.setMoviePosition.bind(catalog));
     server.post('/catalog/tvshow/set_position', catalog.setEpisodePosition.bind(catalog));
     server.post('/catalog/parse_filename', catalog.parseFilename.bind(catalog));
+    server.post('/catalog/movie/reload_metadata', catalog.reloadMovieMetadata.bind(catalog));
     server.post('/catalog/movie/fix_metadata', catalog.fixMovieMetadata.bind(catalog));
     server.post('/catalog/tvshow/fix_metadata', catalog.fixTvshowMetadata.bind(catalog));
     server.post('/catalog/rename_file', catalog.renameFile.bind(catalog));
