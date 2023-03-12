@@ -60,39 +60,33 @@ export const extractMovieTitle = function(filename: string): ExtractedMovieInfos
 export const mediaInfo = async (movie: DbMovie|Episode, filename: string, log: (msg: string) => void): Promise<any> => {
   return new Promise((resolve, reject) => {
     var mediainfoDir = path.join(global.process.cwd(), 'mediainfo'),
-      executable = process.platform == "win32" ? path.join(mediainfoDir, 'MediaInfo.exe') : 'mediainfo';
+      executable = process.platform == "win32" ? path.join(mediainfoDir, 'MediaInfo.exe') : 'mediainfo',
+      // problème d'encodage des caractères accentués dans les noms de fichiers depuis la mise à jour de mediainfo vers la version 21.09 sur le nas
+      // => contournement : on encode le nom de fichier en JS et on le décode avec sed
+      fn = process.platform == "win32" ? filename : `$(echo "${encodeURIComponent(filename)}" | echo -e "$(sed 's/+/ /g;s/%\\(..\\)/\\\\x\\1/g;')")`;
 
     // log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
     childProcess.exec(
-      `${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`,
+      `${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${fn}"`,
       function(error, stdout, stderr) {
         if (error) {
-          log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
+          log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${fn}"`);
           log("[ERROR] " + error.toString());
           resolve({});
         } else {
           try {
             const json = JSON.parse(stdout);
             if (! json.general.duration) {
-              log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
+              log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${fn}"`);
               log("=> " + JSON.stringify(json));
-              childProcess.exec(
-                `${executable} --Output=JSON "${filename}"`,
-                function (error2, stdout2, stderr2) {
-                  const json2 = JSON.parse(stdout2);
-                  log(`${executable} --Output=JSON "${filename}"`);
-                  log("=> " + JSON.stringify(json2));
-                  resolve(json2);
-                });
-            } else {
-              movie.created = statSync(filename).birthtime.getTime();
-              movie.filesize = json.general.size;
-              movie.duration = json.general.duration / 1000; // conversion ms => s
-              movie.video = json.video[0];
-              movie.audio = json.audio;
-              movie.subtitles = json.subs || [];
-              resolve(json);
             }
+            movie.created = statSync(filename).birthtime.getTime();
+            movie.filesize = json.general.size;
+            movie.duration = json.general.duration / 1000; // conversion ms => s
+            movie.video = json.video[0];
+            movie.audio = json.audio;
+            movie.subtitles = json.subs || [];
+            resolve(json);
           } catch (e) {
             console.error(e);
             log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
