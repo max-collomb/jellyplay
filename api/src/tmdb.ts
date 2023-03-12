@@ -60,24 +60,20 @@ export const extractMovieTitle = function(filename: string): ExtractedMovieInfos
 export const mediaInfo = async (movie: DbMovie|Episode, filename: string, log: (msg: string) => void): Promise<any> => {
   return new Promise((resolve, reject) => {
     var mediainfoDir = path.join(global.process.cwd(), 'mediainfo'),
-      executable = process.platform == "win32" ? path.join(mediainfoDir, 'MediaInfo.exe') : 'mediainfo',
-      // problème d'encodage des caractères accentués dans les noms de fichiers depuis la mise à jour de mediainfo vers la version 21.09 sur le nas
-      // => contournement : on encode le nom de fichier en JS et on le décode avec sed
-      fn = process.platform == "win32" ? filename : `$(echo "${encodeURIComponent(filename)}" | echo -e "$(sed 's/+/ /g;s/%\\(..\\)/\\\\x\\1/g;')")`;
+      executable = process.platform == "win32" ? path.join(mediainfoDir, 'MediaInfo.exe') : 'mediainfo';
 
-    // log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
     childProcess.exec(
-      `${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${fn}"`,
+      `${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`,
       function(error, stdout, stderr) {
         if (error) {
-          log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${fn}"`);
+          log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
           log("[ERROR] " + error.toString());
           resolve({});
         } else {
           try {
             const json = JSON.parse(stdout);
             if (! json.general.duration) {
-              log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${fn}"`);
+              log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
               log("=> " + JSON.stringify(json));
             }
             movie.created = statSync(filename).birthtime.getTime();
