@@ -1,11 +1,13 @@
 import path from 'path';
 import childProcess from 'child_process';
-import { createWriteStream, statSync, existsSync } from 'fs';
+import { createWriteStream, statSync, existsSync, promises as fsPromises } from 'fs';
 import * as https from 'https';
 
 
 import { filenameParse, ParsedShow } from '@ctrl/video-filename-parser';
 import { MovieDb } from 'moviedb-promise';
+import MediaInfoFactory from 'mediainfo.js';
+import type { MediaInfo, ReadChunkFunc, Result as MediaInfoResult } from 'mediainfo.js'
 
 import { DbMovie, DbTvshow, DbCredit, Episode, ExtractedMovieInfos, Season } from './types';
 
@@ -57,42 +59,64 @@ export const extractMovieTitle = function(filename: string): ExtractedMovieInfos
   };
 }
 
-export const mediaInfo = async (movie: DbMovie|Episode, filename: string, log: (msg: string) => void): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    var mediainfoDir = path.join(global.process.cwd(), 'mediainfo'),
-      executable = process.platform == "win32" ? path.join(mediainfoDir, 'MediaInfo.exe') : 'mediainfo';
+export const mediaInfo = async (media: DbMovie | Episode, filename: string, log: (msg: string) => void): Promise<MediaInfoResult> => {
+  let fileHandle: fsPromises.FileHandle | undefined;
+  let fileSize: number;
+  let mediainfo: MediaInfo | undefined;
+  let mediaInfoResult: MediaInfoResult;
 
-    childProcess.exec(
-      `${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`,
-      function(error, stdout, stderr) {
-        if (error) {
-          log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
-          log("[ERROR] " + error.toString());
-          resolve({});
-        } else {
-          try {
-            const json = JSON.parse(stdout);
-            if (! json.general.duration) {
-              log(`${executable} --Inform=file://${mediainfoDir.replace(/\\/g, '/')}/media_json.txt "${filename}"`);
-              log("=> " + JSON.stringify(json));
+  const readChunk: ReadChunkFunc = async (size, offset) => {
+    const buffer = new Uint8Array(size);
+    await (fileHandle as fsPromises.FileHandle).read(buffer, 0, size, offset);
+    return buffer;
+  }
+
+  try {
+    fileHandle = await fsPromises.open(filename, 'r');
+    fileSize = (await fileHandle.stat()).size;
+    mediainfo = await MediaInfoFactory({ format: "JSON", coverData: false, full: false });
+    if (mediainfo === undefined) {
+      log('Failed to initialize MediaInfo');
+    }
+    mediaInfoResult = JSON.parse(await mediainfo.analyzeData(() => fileSize, readChunk) as string);
+    media.created = statSync(filename).birthtime.getTime();
+    media.audio = [];
+    media.subtitles = [];
+    if ((mediaInfoResult as any).media?.track?.length) {
+      for (let track of (mediaInfoResult as any).media.track) {
+        switch (track['@type']) {
+          case 'General':
+            media.filesize = track.FileSize;
+            media.duration = track.Duration;
+            break;
+          case 'Video':
+            media.video = {
+              width: track.Width,
+              height: track.Height,
+              codec: track.Format || track.CodecId || track.Encoded_Library_Name || "",
+            };
+            break;
+          case 'Audio':
+            media.audio.push({
+              ch: track.Channels || track.Channel || "",
+              codec: track.Title || track.Format || "",
+              lang: track.Language || "",
+            });
+            break;
+          case 'Text':
+            if (track.Language) {
+              media.subtitles.push(track.Language);
             }
-            movie.created = statSync(filename).birthtime.getTime();
-            movie.filesize = json.general.size;
-            movie.duration = json.general.duration / 1000; // conversion ms => s
-            movie.video = json.video[0];
-            movie.audio = json.audio;
-            movie.subtitles = json.subs || [];
-            resolve(json);
-          } catch (e) {
-            console.error(e);
-            log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
-            resolve(null);
-          }
+            break;
         }
       }
-    );
+    }
+  } finally {
+    fileHandle && (await fileHandle.close());
+    mediainfo && mediainfo.close();
+  }
 
-  });
+  return mediaInfoResult;
 };
 
 export class TmdbClient {
