@@ -325,12 +325,7 @@ export class Catalog {
           const credits: DbCredit[] = await this.tmdbClient.autoIdentifyMovie(newMovie);
           await mediaInfo(newMovie, path.join(this.moviesPath, newMovie.filename), this.log.bind(this));
           this.tables.movies.insert(newMovie);
-          for (const credit of credits) {
-            if (this.tables.credits?.find({ tmdbid: credit.tmdbid }).length === 0) {
-              await this.tmdbClient.downloadProfileImage(credit);
-              this.tables.credits.insert(credit);
-            }
-          }
+          await this.insertCredits(credits);
         } catch (e) {
           console.error(e);
           this.log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
@@ -354,7 +349,7 @@ export class Catalog {
     this.log("end scan_movies");
   }
 
-  private async scanTvshows(creditSet: Set<number>, imgFilenameSet: Set<string>) {
+  private async scanTvshows(creditSet: Set<number>, imgFilenameSet: Set<string>): Promise<void> {
     this.log("begin scan_tvshows");
     // scanne le dossier pour détecter changements
     const foldernames: string[] = await this.readDirectories(this.tvshowsPath);
@@ -434,12 +429,7 @@ export class Catalog {
               // season
               if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
                 const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
-                for (const credit of credits) {
-                  if (this.tables.credits?.find({ tmdbid: credit.tmdbid }).length === 0) {
-                    await this.tmdbClient.downloadProfileImage(credit);
-                    this.tables.credits.insert(credit);
-                  }
-                }
+                await this.insertCredits(credits);
               }
               tvshow.episodes.push(episode);
             }
@@ -798,6 +788,22 @@ export class Catalog {
     reply.send({ parsedFilename: extractMovieTitle(body.filename)});
   }
 
+  private async insertCredits(credits: DbCredit[]): Promise<void> {
+    if (this.tables.credits) {
+      for (const credit of credits) {
+        const existingCredits: DbCredit[] | undefined = this.tables.credits?.find({ tmdbid: credit.tmdbid });
+        if (existingCredits.length === 0) {
+          await this.tmdbClient.downloadProfileImage(credit);
+          this.tables.credits.insert(credit);
+        } else if (existingCredits[0].profilePath != credit.profilePath) {
+          existingCredits[0].profilePath = credit.profilePath;
+          await this.tmdbClient.downloadProfileImage(credit);
+          this.tables.credits.update(existingCredits[0]);
+        }
+      }
+    }
+  }
+
   public async reloadMovieMetadata(request: FastifyRequest, reply: FastifyReply) {
     let body: FilenameMessage = request.body as FilenameMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
@@ -809,8 +815,9 @@ export class Catalog {
       movie.countries = [];
 
       this.scanLogs = "";
-      await this.tmdbClient.getMovieData(movie);
+      const credits: DbCredit[] = await this.tmdbClient.getMovieData(movie);
       await mediaInfo(movie, path.join(this.moviesPath, movie.filename), this.log.bind(this));
+      await this.insertCredits(credits);
       this.lastUpdate = Date.now();
     }
     reply.send({ movie, log: this.scanLogs });
@@ -827,7 +834,7 @@ export class Catalog {
       movie.genres = [];
       movie.countries = [];
 
-      await this.tmdbClient.getMovieData(movie);
+      const credits: DbCredit[] = await this.tmdbClient.getMovieData(movie);
       this.lastUpdate = Date.now();
     }
     reply.send({ movie });
@@ -838,12 +845,12 @@ export class Catalog {
     let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
     if (tvshow) {
       // tvshow.episodes = []; on ne veut pas perdre les seenStatus
-      // tvshow.seasons = [];
+      tvshow.seasons = [];
       tvshow.genres = [];
       tvshow.countries = [];
 
       this.scanLogs = "";
-            await this.tmdbClient.getTvshowData(tvshow);
+      await this.tmdbClient.getTvshowData(tvshow);
       for(let episode of tvshow.episodes) {
         if (tvshow.isSaga) {
           await this.tmdbClient.addCollectionEpisode(tvshow, episode);
@@ -851,6 +858,10 @@ export class Catalog {
           await this.tmdbClient.addTvshowEpisode(tvshow, episode);
         }
         await mediaInfo(episode, path.join(this.tvshowsPath, tvshow.foldername, episode.filename), this.log.bind(this));
+        if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
+          const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
+          await this.insertCredits(credits);
+        }
       }
       this.lastUpdate = Date.now();
     }

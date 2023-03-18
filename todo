@@ -127,9 +127,8 @@ V1.1
 [x] ajouter à ma liste d'envie + voir la liste + supprimer de la liste + voir les demandes en tant qu'admin
 [x] bug : aller sur une page /tmdb/person/id, puis faire une recherche d'une autre personne puis cliquer dessus => reste sur la page de la première personne
 [x] généraliser la sauvegarde / restauration du scroll (movie-details, tvshow-details, tmdb-movie-details, tmdb-tvshow-details, tmdb-person)
+[x] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode
 
-
-[ ] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode
 [ ] [api] intégration du script de téléchargement depuis la seedbox
 [ ] [frontend/api] importer les fichiers depuis \\192.168.0.99\share\download
 [ ] recherche ygg + téléchargement
