@@ -325,6 +325,7 @@ export class ApiClient {
         body: JSON.stringify({ filename }),
       }).then(async (response) => {
         const json = await response.json();
+        // eslint-disable-next-line no-console
         if (json.log) { console.log(json.log); }
         resolve(json.movie);
       });
@@ -340,6 +341,21 @@ export class ApiClient {
       }).then(async (response) => {
         const json = await response.json();
         resolve(json.movie);
+      });
+    });
+  }
+
+  async reloadTvshowMetadata(foldername: string): Promise<DbTvshow> {
+    return new Promise((resolve) => {
+      fetch('/catalog/tvshow/reload_metadata', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ foldername }),
+      }).then(async (response) => {
+        const json = await response.json();
+        // eslint-disable-next-line no-console
+        if (json.log) { console.log(json.log); }
+        resolve(json.tvshow);
       });
     });
   }

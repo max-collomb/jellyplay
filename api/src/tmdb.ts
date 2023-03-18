@@ -482,7 +482,7 @@ export class TmdbClient {
           episode.airDate = response.air_date || "";
           episode.synopsys = response.overview || "";
           if (response.still_path) {
-            this.log(`[+] downloading episode still w300/${response.still_path}`);
+            this.log(`[+] downloading episode still w300${response.still_path}`);
             await downloadImage(
               `${this.baseUrl}w300${response.still_path}`,
               path.join(this.imagePath, 'stills_w300', response.still_path)

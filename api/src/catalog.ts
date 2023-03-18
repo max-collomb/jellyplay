@@ -833,6 +833,30 @@ export class Catalog {
     reply.send({ movie });
   }
 
+  public async reloadTvshowMetadata(request: FastifyRequest, reply: FastifyReply) {
+    let body: FixTvshowMetadataMessage = request.body as FixTvshowMetadataMessage;
+    let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
+    if (tvshow) {
+      // tvshow.episodes = []; on ne veut pas perdre les seenStatus
+      // tvshow.seasons = [];
+      tvshow.genres = [];
+      tvshow.countries = [];
+
+      this.scanLogs = "";
+            await this.tmdbClient.getTvshowData(tvshow);
+      for(let episode of tvshow.episodes) {
+        if (tvshow.isSaga) {
+          await this.tmdbClient.addCollectionEpisode(tvshow, episode);
+        } else {
+          await this.tmdbClient.addTvshowEpisode(tvshow, episode);
+        }
+        await mediaInfo(episode, path.join(this.tvshowsPath, tvshow.foldername, episode.filename), this.log.bind(this));
+      }
+      this.lastUpdate = Date.now();
+    }
+    reply.send({ tvshow, log: this.scanLogs });
+  }
+
   public async fixTvshowMetadata(request: FastifyRequest, reply: FastifyReply) {
     let body: FixTvshowMetadataMessage = request.body as FixTvshowMetadataMessage;
     let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });

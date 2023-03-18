@@ -5,6 +5,7 @@ import Tab from 'react-bootstrap/Tab';
 import Dropdown from 'react-bootstrap/Dropdown';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
+import Spinner from 'react-bootstrap/Spinner';
 
 import {
   DbTvshow, Episode, Season, UserEpisodeStatus, UserTvshowStatus,
@@ -25,6 +26,7 @@ type TvshowDetailsProps = {
 type TvshowDetailsState = {
   tvshow: DbTvshow;
   fixingMetadata: boolean;
+  reloadingMetadata: boolean;
   tabSeason: number;
   tabKey: string;
   currentStatus: SeenStatus;
@@ -42,6 +44,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
       tabSeason: -1,
       tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast',
       fixingMetadata: false,
+      reloadingMetadata: false,
       currentStatus: SeenStatus.unknown,
       percentPos: 0,
     };
@@ -120,6 +123,13 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
   handleFixMetadataClick(evt: React.MouseEvent<HTMLElement>): void {
     evt.preventDefault();
     this.setState({ fixingMetadata: true });
+  }
+
+  handleReloadMetadataClick(evt: React.MouseEvent<HTMLElement>): void {
+    evt.preventDefault();
+    const { tvshow } = this.state;
+    this.setState({ reloadingMetadata: true });
+    ctx.apiClient.reloadTvshowMetadata(tvshow.foldername).then((t) => this.setState({ tvshow: t, reloadingMetadata: false }));
   }
 
   handleFixingMetadataFormClose(tvshow?: DbTvshow): void {
@@ -289,13 +299,21 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
 
   render(): JSX.Element {
     const {
-      tvshow, fixingMetadata, tabSeason, tabKey,
+      tvshow, fixingMetadata, reloadingMetadata, tabSeason, tabKey,
     } = this.state;
     if (tvshow.tmdbid === -1) {
       return (
         <div>
           Série introuvable.
           <a href="#" onClick={(evt) => { evt.preventDefault(); window.history.back(); }}>Retour</a>
+        </div>
+      );
+    }
+    if (reloadingMetadata) {
+      return (
+        <div className="d-flex justify-content-center mt-5">
+          Mise à jour des métadonnées &emsp;
+          <Spinner animation="border" variant="light" />
         </div>
       );
     }
@@ -380,6 +398,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
                     </Dropdown.Item>
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={this.handleFixMetadataClick.bind(this)} disabled={!ctx.user?.admin}>Corriger les métadonnées...</Dropdown.Item>
+                    <Dropdown.Item onClick={this.handleReloadMetadataClick.bind(this)} disabled={!ctx.user?.admin}>Recharger les métadonnées</Dropdown.Item>
                     <Dropdown.Item onClick={this.handleToggleAllStatus.bind(this, undefined, SeenStatus.seen)}>Tout marquer comme vu</Dropdown.Item>
                     <Dropdown.Item onClick={this.handleToggleAllStatus.bind(this, undefined, SeenStatus.toSee)}>Tout marquer comme non vu</Dropdown.Item>
                     <Dropdown.Item onClick={this.handleToggleAllStatus.bind(this, tabSeason, SeenStatus.seen)}>Marquer la saison comme vue</Dropdown.Item>
@@ -411,7 +430,8 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
                       <>
                         {title}
                         <span className="d-block fst-italic fs-80pc">
-                          {season.episodeCount}&nbsp;
+                          {season.episodeCount}
+&nbsp;
                           épisodes
                         </span>
                       </>
