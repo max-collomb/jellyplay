@@ -1,6 +1,6 @@
 import {
   Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilename, ScanStatus,
-  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish,
+  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish, DbDownload,
 } from '../../api/src/types';
 import { SeenStatus, MediaType } from '../../api/src/enums';
 import { eventBus } from './event-bus';
@@ -18,6 +18,8 @@ const cache = {
   creditsTs: 0,
   wishes: null,
   wishesTs: 0,
+  downloads: null,
+  downloadsTs: 0,
   lastUpdate: 0,
 };
 
@@ -33,6 +35,8 @@ export class ApiClient {
     cache.creditsTs = 0;
     cache.wishes = null;
     cache.wishesTs = 0;
+    cache.downloads = null;
+    cache.downloadsTs = 0;
   }
 
   needRefresh(category: string): boolean {
@@ -47,6 +51,8 @@ export class ApiClient {
         return cache.creditsTs === 0 || cache.creditsTs < cache.lastUpdate;
       case 'wishes':
         return cache.wishesTs === 0 || cache.wishesTs < cache.lastUpdate;
+      case 'downloads':
+        return cache.downloadsTs === 0 || cache.downloadsTs < cache.lastUpdate;
       default:
         return false;
     }
@@ -425,7 +431,7 @@ export class ApiClient {
 
   async addToWishList(tmdbid: number, title: string, type: MediaType, posterPath: string, year: number, userName: string): Promise<DbWish | undefined> {
     return new Promise((resolve) => {
-      fetch('/catalog/wishes/add', {
+      fetch('/catalog/wish/add', {
         method: 'POST',
         headers: new Headers({ 'content-type': 'application/json' }),
         body: JSON.stringify({
@@ -441,7 +447,7 @@ export class ApiClient {
 
   async removeFromWishList(tmdbid: number, userName: string): Promise<DbWish | undefined> {
     return new Promise((resolve) => {
-      fetch('/catalog/wishes/remove', {
+      fetch('/catalog/wish/remove', {
         method: 'POST',
         headers: new Headers({ 'content-type': 'application/json' }),
         body: JSON.stringify({
@@ -457,6 +463,31 @@ export class ApiClient {
         resolve(json.wish);
         eventBus.emit('wishes-changed');
       });
+    });
+  }
+
+  async getDownloads(): Promise<DbDownload[]> {
+    // eslint-disable-next-line no-async-promise-executor
+    return new Promise(async (resolve) => {
+      if (cache.downloads) {
+        if (cache.downloadsTs >= cache.lastUpdate) {
+          cache.lastUpdate = await this.getLastUpdate();
+        }
+        if (cache.downloadsTs < cache.lastUpdate) {
+          cache.downloads = null;
+        }
+      }
+      if (cache.downloads) {
+        resolve(cache.downloads);
+      } else {
+        fetch('/catalog/downloads/list')
+          .then(async (response) => {
+            const json = await response.json();
+            cache.downloads = json.list;
+            cache.downloadsTs = json.lastUpdate;
+            resolve(json.list);
+          });
+      }
     });
   }
 }

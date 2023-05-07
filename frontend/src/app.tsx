@@ -12,10 +12,14 @@ import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Spinner from 'react-bootstrap/Spinner';
 
-import { DbUser, DbWish, UserWish } from '../../api/src/types';
+import {
+  DbUser, DbDownload, DbWish, UserWish,
+} from '../../api/src/types';
 import { OrderBy, MediaType } from '../../api/src/enums';
 
-import { ctx, initContext } from './common';
+import {
+  ctx, initContext, renderFileSize, renderRelativeTimeString,
+} from './common';
 import { MatchedRoute } from './router';
 import Home from './home';
 import Movies from './movies';
@@ -42,6 +46,7 @@ type AppState = {
   scanLogs: string;
   offcanvasTab: string;
   wishes?: DbWish[];
+  downloads?: DbDownload[];
 };
 
 export default class App extends React.Component<AppProps, AppState> {
@@ -100,6 +105,11 @@ export default class App extends React.Component<AppProps, AppState> {
     if (ctx.apiClient.needRefresh('wishes')) {
       ctx.apiClient.getWishes().then((wishes) => {
         this.setState({ wishes });
+      });
+    }
+    if (ctx.apiClient.needRefresh('downloads')) {
+      ctx.apiClient.getDownloads().then((downloads) => {
+        this.setState({ downloads });
       });
     }
   }
@@ -185,10 +195,14 @@ export default class App extends React.Component<AppProps, AppState> {
   async handleOffCanvasTabCLick(tab: string, evt: React.MouseEvent<HTMLAnchorElement>): Promise<void> {
     evt.preventDefault();
     this.setState({ offcanvasTab: tab });
-    let { wishes } = this.state;
+    let { wishes, downloads } = this.state;
     if (tab === 'wishlist' && wishes === undefined) {
       wishes = await ctx.apiClient.getWishes();
       this.setState({ wishes });
+    }
+    if (tab === 'downloads' && downloads === undefined) {
+      downloads = await ctx.apiClient.getDownloads();
+      this.setState({ downloads });
     }
   }
 
@@ -254,6 +268,7 @@ export default class App extends React.Component<AppProps, AppState> {
     if (offcanvasTab === 'order') {
       offcanvas = (
         <Offcanvas
+          className="offcanvas-size-xl"
           id="offcanvasNavbar-expand"
           aria-labelledby="offcanvasNavbarLabel-expand"
           placement="end"
@@ -263,6 +278,7 @@ export default class App extends React.Component<AppProps, AppState> {
           <Offcanvas.Header closeButton>
             <Nav variant="tabs">
               <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'order')} active>Tri</Nav.Link></Nav.Item>
+              <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'downloads')} active={false}>Téléchargements</Nav.Link></Nav.Item>
               <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'wishlist')} active={false}>Liste d&apos;envies</Nav.Link></Nav.Item>
             </Nav>
           </Offcanvas.Header>
@@ -315,14 +331,11 @@ export default class App extends React.Component<AppProps, AppState> {
           </Offcanvas.Body>
         </Offcanvas>
       );
-    } else if (offcanvasTab === 'wishlist' && ctx.user) {
-      const { wishes } = this.state;
-      const wishesByUser: any = {};
-      for (const user of users) {
-        wishesByUser[user.name] = wishes?.filter((w) => !!w.users.find((wu) => wu.userName === user.name)).reverse() || [];
-      }
+    } else if (offcanvasTab === 'downloads' && ctx.user) {
+      const { downloads } = this.state;
       offcanvas = (
         <Offcanvas
+          className="offcanvas-size-xl"
           id="offcanvasNavbar-expand"
           aria-labelledby="offcanvasNavbarLabel-expand"
           placement="end"
@@ -332,6 +345,56 @@ export default class App extends React.Component<AppProps, AppState> {
           <Offcanvas.Header closeButton>
             <Nav variant="tabs">
               <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'order')} active={false}>Tri</Nav.Link></Nav.Item>
+              <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'downloads')} active>Téléchargements</Nav.Link></Nav.Item>
+              <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'wishlist')} active={false}>Liste d&apos;envies</Nav.Link></Nav.Item>
+            </Nav>
+          </Offcanvas.Header>
+          <Offcanvas.Body>
+            {downloads?.map((download) => {
+              let { path } = download;
+              if (download.path.startsWith(ctx.config.seedboxPath)) {
+                path = download.path.substring(ctx.config.seedboxPath.length + 1);
+              }
+              const pathJsx: JSX.Element[] = [];
+              for (const part of path.split('/')) {
+                if (pathJsx.length > 0) {
+                  pathJsx.push(<span key={pathJsx.length} className="flex-shrink-0">/</span>);
+                }
+                pathJsx.push(<span key={part} className="flex-shrink-1 text-truncate">{part}</span>);
+              }
+              return (
+                <div key={path}>
+                  <hr />
+                  <div className="d-flex" title={path}>{pathJsx}</div>
+                  <div className="d-flex opacity-50">
+                    <span>{renderFileSize(download.size)}</span>
+                    <span className="ms-auto">{renderRelativeTimeString(download.finished || download.started)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </Offcanvas.Body>
+        </Offcanvas>
+      );
+    } else if (offcanvasTab === 'wishlist' && ctx.user) {
+      const { wishes } = this.state;
+      const wishesByUser: any = {};
+      for (const user of users) {
+        wishesByUser[user.name] = wishes?.filter((w) => !!w.users.find((wu) => wu.userName === user.name)).reverse() || [];
+      }
+      offcanvas = (
+        <Offcanvas
+          className="offcanvas-size-xl"
+          id="offcanvasNavbar-expand"
+          aria-labelledby="offcanvasNavbarLabel-expand"
+          placement="end"
+          show={optionsVisible}
+          onHide={this.handleOptionsToggle.bind(this, false)}
+        >
+          <Offcanvas.Header closeButton>
+            <Nav variant="tabs">
+              <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'order')} active={false}>Tri</Nav.Link></Nav.Item>
+              <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'downloads')} active={false}>Téléchargements</Nav.Link></Nav.Item>
               <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'wishlist')} active>Liste d&apos;envies</Nav.Link></Nav.Item>
             </Nav>
           </Offcanvas.Header>
@@ -345,7 +408,7 @@ export default class App extends React.Component<AppProps, AppState> {
             </div>
             {
               wishesByUser[ctx.user.name].map((wish: DbWish) => (
-                <div className="d-flex mb-3">
+                <div className="d-flex mb-3" key={wish.tmdbid}>
                   <Button variant="dark" className="d-block flex-grow-1 wish-link text-start" key={wish.tmdbid} onClick={this.handleWishClick.bind(this, `#/tmdb/${wish.type}/${wish.tmdbid}/state/${JSON.stringify({ tabKey: 'cast' })}`)}>
                     {wish.title}
                     <span className="year">{wish.year}</span>
@@ -387,7 +450,7 @@ export default class App extends React.Component<AppProps, AppState> {
                 </h4>
                 {
                 wishesByUser[user.name].map((wish: DbWish) => (
-                  <div className="d-flex mb-3">
+                  <div className="d-flex mb-3" key={wish.tmdbid}>
                     <Button variant="dark" className="d-block flex-grow-1 wish-link text-start" key={wish.tmdbid} onClick={this.handleWishClick.bind(this, `#/tmdb/${wish.type}/${wish.tmdbid}/state/${JSON.stringify({ tabKey: 'cast' })}`)}>
                       {wish.title}
                       <span className="year">{wish.year}</span>

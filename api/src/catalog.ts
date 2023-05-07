@@ -146,6 +146,7 @@ export class Catalog {
     // this.db.removeCollection('tvshows');
     // this.db.removeCollection('credits');
     // this.db.removeCollection('wishes');
+    // this.db.removeCollection('downloaded');
 
     this.tables.users = this.db.getCollection('users');
     if (! this.tables.users) {
@@ -207,6 +208,18 @@ export class Catalog {
           unique: ['tmdbid'],
           autoupdate: true,
           indices: ['tmdbid'],
+        }
+      );
+    }
+
+    this.tables.downloads = this.db.getCollection('downloads');
+    if (! this.tables.downloads) {
+      this.tables.downloads = this.db.addCollection(
+        'downloads',
+        {
+          unique: ['path'],
+          autoupdate: true,
+          indices: ['path'],
         }
       );
     }
@@ -974,5 +987,10 @@ export class Catalog {
     }
     reply.send({ wish });
   }
+
+  public async getDownloads(request: FastifyRequest, reply: FastifyReply) {
+    reply.send({ list: this.tables.downloads?.find(), lastUpdate: this.lastUpdate });
+  }
+
 }
 

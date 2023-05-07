@@ -43,6 +43,7 @@ html.dark .tooltip-inner { text-align: start; max-width: 400px; background: #000
 html.dark .tooltip.show { opacity: 1 }
 html.dark .bs-tooltip-auto[data-popper-placement^="bottom"] .tooltip-arrow::before, html.dark .bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: #000; }
 
+.offcanvas-size-xl { width: min(95vw, 600px) !important; }
 .fs-80pc { font-size: 80% !important; }
 .offcanvas .navbar-nav { flex-direction: row; }
 

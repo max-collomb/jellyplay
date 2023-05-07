@@ -5,8 +5,14 @@ export type Config = {
   moviesRemotePath: string;
   tvshowsLocalPath: string;
   tvshowsRemotePath: string;
+  tmpPath: string;
   tmdbApiKey: string;
   youtubeApiKey: string;
+  seedboxHost: string;
+  seedboxPort: number;
+  seedboxUser: string;
+  seedboxPassword: string;
+  seedboxPath: string;
 };
 
 export type DbUser = {
@@ -166,12 +172,22 @@ export type ParsedFilename = {
   year: string | null;
 };
 
+export type DbDownload = {
+  path: string;
+  size: number;
+  progress: number;
+  started: number;
+  finished: number;
+  imported: boolean;
+}
+
 export type DataTables = {
   users?: Collection<DbUser>;
   wishes?: Collection<DbWish>;
   movies?: Collection<DbMovie>;
   tvshows?: Collection<DbTvshow>;
   credits?: Collection<DbCredit>;
+  downloads?: Collection<DbDownload>;
 };
 
 export type ExtractedMovieInfos = {

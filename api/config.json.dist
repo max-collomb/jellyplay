@@ -3,6 +3,12 @@
   "moviesRemotePath": "C:/dev/git/jellyplay/sample-library/movies",
   "tvshowsLocalPath": "C:\\dev\\git\\jellyplay\\sample-library\\tvshows",
   "tvshowsRemotePath": "C:/dev/git/jellyplay/sample-library/tvshows",
+  "tmpPath": "C:/dev/git/jellyplay/sample-library/downloads",
   "tmdbApiKey": "",
-  "youtubeApiKey": ""
+  "youtubeApiKey": "",
+  "seedboxHost": "",
+  "seedboxPort": 0,
+  "seedboxUser": "",
+  "seedboxPassword": "",
+  "seedboxPath": ""
 }
