@@ -11,6 +11,13 @@ export type SeedboxOptions = {
   localPath: string;
 }
 
+export function now(): string {
+  const d = new Date();
+  const z = (n: string | number) => (`0${n}`).slice(-2);
+  const zz = (n: string | number) => (`00${n}`).slice(-3);
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+}
+
 export class Seedbox {
   MIN_FILE_SIZE: number = 28 * 1024 * 1024;
   
@@ -41,6 +48,7 @@ export class Seedbox {
 
   async downloadNewFiles(downloads: Collection<DbDownload>) {
     if (! this.downloading) {
+      console.log(now() + " checking for new files on FTP");
       this.downloading = true;
       // get file list from ftp
       const ftpClient = new FTP.Client();
@@ -54,7 +62,7 @@ export class Seedbox {
           if (downloads.find({ path: download.path, progress: 100 }).length === 0) {
             download.started = Date.now();
             downloads.insert(download);
-            console.log("downloading " + download.path);
+            console.log(now() + " downloading " + download.path);
             ftpClient.trackProgress((infos) => {
               download.progress = infos.bytes / download.size * 100;
               downloads.update(download);
@@ -66,6 +74,7 @@ export class Seedbox {
             });
             try {
               await ftpClient.downloadTo(path.join(this.options.localPath, path.basename(download.path)), download.path);
+              console.log(now() + " download finished");
               download.finished = Date.now();
               download.progress = 100;
               downloads.update(download);
