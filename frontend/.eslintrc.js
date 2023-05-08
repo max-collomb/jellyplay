@@ -41,6 +41,7 @@ module.exports = {
       ignoreStrings: false,
       ignoreTemplateLiterals: false,
     }],
+    'prefer-destructuring': ['error', { array: false, object: false }, { enforceForRenamedProperties: false }],
     'no-restricted-syntax': 'off',
     'no-underscore-dangle': 'off',
     'no-plusplus': 'off',

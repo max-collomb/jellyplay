@@ -256,7 +256,8 @@ export function renderAudioInfos(audios: AudioInfo[]): JSX.Element {
   return (
     <>
       {audios.map((audio, idx, all) => (
-        <React.Fragment key={audio.lang}>
+        // eslint-disable-next-line react/no-array-index-key
+        <React.Fragment key={`${audio.lang}${idx}`}>
           {audio.lang}
           {' '}
           {audio.ch}

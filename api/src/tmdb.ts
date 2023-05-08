@@ -1,5 +1,4 @@
 import path from 'path';
-import childProcess from 'child_process';
 import { createWriteStream, statSync, existsSync, promises as fsPromises } from 'fs';
 import * as https from 'https';
 
@@ -9,7 +8,7 @@ import { MovieDb } from 'moviedb-promise';
 import MediaInfoFactory from 'mediainfo.js';
 import type { MediaInfo, ReadChunkFunc, Result as MediaInfoResult } from 'mediainfo.js'
 
-import { DbMovie, DbTvshow, DbCredit, Episode, ExtractedMovieInfos, Season } from './types';
+import { DbMovie, DbTvshow, DbCredit, Episode, FileInfo, ExtractedMovieInfos, Season } from './types';
 
 // https://github.com/grantholle/moviedb-promise pour l'api TMDB
 
@@ -59,7 +58,7 @@ export const extractMovieTitle = function(filename: string): ExtractedMovieInfos
   };
 }
 
-export const mediaInfo = async (media: DbMovie | Episode, filename: string, log: (msg: string) => void): Promise<MediaInfoResult> => {
+export const mediaInfo = async (media: DbMovie | Episode | FileInfo, filename: string, log: (msg: string) => void): Promise<MediaInfoResult> => {
   let fileHandle: fsPromises.FileHandle | undefined;
   let fileSize: number;
   let mediainfo: MediaInfo | undefined;
@@ -87,7 +86,7 @@ export const mediaInfo = async (media: DbMovie | Episode, filename: string, log:
         switch (track['@type']) {
           case 'General':
             media.filesize = track.FileSize;
-            media.duration = track.Duration;
+            media.duration = parseFloat(track.Duration);
             break;
           case 'Video':
             media.video = {

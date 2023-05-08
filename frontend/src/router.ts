@@ -21,6 +21,7 @@ export class Router {
     this.routes = [];
     this.currentRoute = { name: 'home', state: {} };
     window.addEventListener('hashchange', this.onHashChanged.bind(this));
+    window.location.hash = '';
   }
 
   add(name: string, url: string) {

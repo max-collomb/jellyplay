@@ -1,5 +1,5 @@
 import {
-  Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilename, ScanStatus,
+  Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilenameResponse, ScanStatus,
   UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish, DbDownload,
 } from '../../api/src/types';
 import { SeenStatus, MediaType } from '../../api/src/enums';
@@ -310,7 +310,7 @@ export class ApiClient {
     });
   }
 
-  async parseFilename(filename: string): Promise<ParsedFilename> {
+  async parseFilename(filename: string): Promise<ParsedFilenameResponse> {
     return new Promise((resolve) => {
       fetch('/catalog/parse_filename', {
         method: 'POST',
@@ -488,6 +488,35 @@ export class ApiClient {
             resolve(json.list);
           });
       }
+    });
+  }
+
+  async ignoreDownload(path: string): Promise<DbDownload[]> {
+    return new Promise((resolve) => {
+      fetch('/catalog/download/ignore', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ path }),
+      }).then(async (response) => {
+        const json = await response.json();
+        resolve(json.download);
+        eventBus.emit('downloads-changed');
+      });
+    });
+  }
+
+  async importMovieDownload(path: string, tmdbId: number, year: number, filename: string): Promise<DbMovie> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/download/import_movie', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({
+          path, tmdbId, year, filename,
+        }),
+      }).then(async (response) => {
+        const json = await response.json();
+        if (json.newMovie) { resolve(json.newMovie); } else { reject(json.error); }
+      });
     });
   }
 }

@@ -58,7 +58,8 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.post('/catalog/delete_file', catalog.deleteFile.bind(catalog));
     server.post('/catalog/wish/add', catalog.addWish.bind(catalog));
     server.post('/catalog/wish/remove', catalog.removeWish.bind(catalog));
-
+    server.post('/catalog/download/ignore', catalog.ignoreDownload.bind(catalog));
+    server.post('/catalog/download/import_movie', catalog.importMovieDownload.bind(catalog));
 
     await server.listen(3000, '0.0.0.0');
     const address = server.server.address();

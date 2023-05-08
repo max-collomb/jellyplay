@@ -2,10 +2,11 @@ import path from 'path';
 import fs from 'fs';
 
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { filenameParse } from '@ctrl/video-filename-parser';
 import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
 
-import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, UserWish, DbWish } from './types';
+import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, UserWish, ParsedFilenameResponse, ParsedShow, FileInfo } from './types';
 import { SeenStatus, MediaType } from './enums';
 import { TmdbClient, mediaInfo, extractMovieTitle } from './tmdb';
 
@@ -65,6 +66,17 @@ type WishMessage = {
   title: string;
   posterPath: string;
   year: number;
+};
+
+type DownloadMessage = {
+  path: string;
+};
+
+type ImportMovieDownloadMessage = {
+  path: string;
+  tmdbId: number;
+  year: number;
+  filename: string;
 };
 
 const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
@@ -222,6 +234,21 @@ export class Catalog {
           indices: ['path'],
         }
       );
+    } else {
+      for (const download of this.tables.downloads.find()) {
+        // download.ignored = false;
+        // this.tables.downloads.update(download);
+        if (download.started && (new Date(download.started) < new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))) { // si plus vieux que 90 jours
+          console.log(`[-] removing download ${download.path} (older than 90 days)`);
+          this.tables.downloads.remove(download);
+        } else if (!download.ignored && ! download.imported) {
+          if (!fs.existsSync(path.join(global.config.tmpPath, path.basename(download.path)))) {
+            console.log(`[-] ignoring download ${path.join(global.config.tmpPath, path.basename(download.path))} (file doesn't exist anymore)`);
+            download.ignored = true;
+            this.tables.downloads.update(download);
+          }
+        }
+      }
     }
   }
 
@@ -796,9 +823,25 @@ export class Catalog {
     reply.send({});
   }
 
-  public parseFilename(request: FastifyRequest, reply: FastifyReply) {
+  public async parseFilename(request: FastifyRequest, reply: FastifyReply) {
     let body: FilenameMessage = request.body as FilenameMessage;
-    reply.send({ parsedFilename: extractMovieTitle(body.filename)});
+    const parsedFilename: ParsedFilenameResponse = extractMovieTitle(body.filename);
+    
+    if (fs.existsSync(path.join(global.config.tmpPath, path.basename(body.filename)))) {
+      parsedFilename.asMovie = filenameParse(path.basename(body.filename));
+      parsedFilename.asTvshow = filenameParse(path.basename(body.filename), true) as ParsedShow;
+      let fileInfo: FileInfo = {
+        created: 0,
+        filesize: -1,
+        video: { width: -1, height: -1, codec: "" },
+        audio: [],
+        subtitles: [],
+        duration: -1,            
+      }
+      fileInfo.rawData = await mediaInfo(fileInfo, path.join(global.config.tmpPath, path.basename(body.filename)), console.log);
+      parsedFilename.fileInfo = fileInfo;
+    }
+    reply.send({ parsedFilename });
   }
 
   private async insertCredits(credits: DbCredit[]): Promise<void> {
@@ -991,6 +1034,77 @@ export class Catalog {
   public async getDownloads(request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.downloads?.find(), lastUpdate: this.lastUpdate });
   }
+  
+  public async ignoreDownload(request: FastifyRequest, reply: FastifyReply) {
+    let body: DownloadMessage = request.body as DownloadMessage;
+    let download = this.tables.downloads?.findOne({ path: body.path });
+    if (download) {
+      download.ignored = !download.ignored;
+      this.lastUpdate = Date.now();
+    }
+    reply.send({ download });
+  }
 
+  public async importMovieDownload(request: FastifyRequest, reply: FastifyReply) {
+    let body: ImportMovieDownloadMessage = request.body as ImportMovieDownloadMessage;
+    const download = this.tables.downloads?.findOne({ path: body.path });
+    if (!download) {
+      reply.status(404);
+      reply.send({ error: "download not found" });
+      return;
+    }
+    const filename: string = path.basename(body.filename);
+    const filepath: string = path.join(this.moviesPath, filename);
+    //const filepath: string = path.join(global.config.tmpPath, path.basename(body.path));
+    if (this.tables.movies?.find({ filename }).length === 0) {
+      try {
+        await fs.promises.rename(path.join(global.config.tmpPath, path.basename(body.path)), filepath);
+        this.lastUpdate = Date.now();
+      } catch (error) {
+        console.log(error);
+        reply.status(500);
+        return reply.send({ error });
+      }
+      console.log(`[+] file added ${filename}`);
+      try {
+        const newMovie: DbMovie = {
+          filename,
+          tmdbid: body.tmdbId,
+          title: "",
+          originalTitle: "",
+          year: body.year,
+          duration: -1,
+          directors: [],
+          writers: [],
+          cast: [],
+          genres: [],
+          countries: [],
+          audience: 999,
+          synopsys: "",
+          backdropPath: "",
+          posterPath: "",
+          created: 0,
+          filesize: -1,
+          video: { width: -1, height: -1, codec: "" },
+          audio: [],
+          subtitles: [],
+          userStatus: [],
+          searchableContent: "",
+        };
+        const credits: DbCredit[] = await this.tmdbClient.getMovieData(newMovie);
+        await mediaInfo(newMovie, filepath, this.log.bind(this));
+        this.tables.movies.insert(newMovie);
+        await this.insertCredits(credits);
+        download.imported = true;
+        this.tables.downloads?.update(download);
+        return reply.send({ newMovie });
+      } catch (e) {
+        console.error(e);
+        console.log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
+      }
+    }
+    reply.status(500);
+    return reply.send({ error: "File already exists" });
+  }
 }
 

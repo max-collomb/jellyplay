@@ -1,4 +1,6 @@
 import { SeenStatus, MediaType } from './enums';
+import { ParsedShow, ParsedMovie } from '@ctrl/video-filename-parser';
+export { ParsedShow, ParsedMovie } from '@ctrl/video-filename-parser';
 
 export type Config = {
   moviesLocalPath: string;
@@ -94,6 +96,16 @@ export type DbMovie = {
   searchableContent: string; // title + originalTitle + year + genre + countries => toLowerCase + removeAccent
 };
 
+export type FileInfo = {
+  created: number; // timestamp de création du fichier
+  video: VideoInfo;
+  audio: AudioInfo[];
+  subtitles: string[];
+  duration: number;
+  filesize: number;
+  rawData?: any;
+};
+
 export type UserEpisodeStatus = {
   userName: string;
   seenTs: number[];
@@ -167,9 +179,13 @@ export type ScanStatus = {
   finished: boolean;
 };
 
-export type ParsedFilename = {
+export type ParsedFilenameResponse = {
   title: string;
   year: string | null;
+  fileInfo?: FileInfo;
+  asMovie?: ParsedMovie;
+  asTvshow?: ParsedShow;
+  mediaInfo?: any;
 };
 
 export type DbDownload = {
@@ -179,6 +195,7 @@ export type DbDownload = {
   started: number;
   finished: number;
   imported: boolean;
+  ignored: boolean;
 }
 
 export type DataTables = {

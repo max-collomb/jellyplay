@@ -36,7 +36,7 @@ export class Seedbox {
     let fileInfo = list[f];
     if (fileInfo.type == 1) {// file
       if (fileInfo.size > this.MIN_FILE_SIZE)
-        result.push({ path: path + '/' + fileInfo.name, started: -1, finished: -1, progress: 0, size: fileInfo.size, imported: false });
+        result.push({ path: path + '/' + fileInfo.name, started: -1, finished: -1, progress: 0, size: fileInfo.size, imported: false, ignored: false });
     } else if (fileInfo.type == 2) { // folder
       await client.cd(fileInfo.name);
       result.push.apply(result, await this.listRecursive(client, path + '/' + fileInfo.name));
