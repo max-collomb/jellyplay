@@ -41,6 +41,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.get('/catalog/get_scan_progress/:offset', catalog.getScanProgress.bind(catalog));
     server.get('/catalog/wishes/list', catalog.getWishes.bind(catalog));
     server.get('/catalog/downloads/list', catalog.getDownloads.bind(catalog));
+    server.get('/catalog/downloads/check_seedbox', catalog.checkSeedbox.bind(catalog));
     
     server.post('/catalog/movie/set_status', catalog.setMovieStatus.bind(catalog));
     server.post('/catalog/tvshow/set_status', catalog.setTvshowStatus.bind(catalog));
@@ -59,7 +60,9 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.post('/catalog/wish/add', catalog.addWish.bind(catalog));
     server.post('/catalog/wish/remove', catalog.removeWish.bind(catalog));
     server.post('/catalog/download/ignore', catalog.ignoreDownload.bind(catalog));
+    server.post('/catalog/download/delete', catalog.deleteDownload.bind(catalog));
     server.post('/catalog/download/import_movie', catalog.importMovieDownload.bind(catalog));
+    server.post('/catalog/download/import_tvshow', catalog.importTvshowDownload.bind(catalog));
 
     await server.listen(3000, '0.0.0.0');
     const address = server.server.address();

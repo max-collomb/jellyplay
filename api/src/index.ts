@@ -37,6 +37,7 @@ export async function main() {
       path: global.config.seedboxPath,
       localPath: global.config.tmpPath,
     });
+    catalog.seedbox = seedbox;
     if (catalog.tables.downloads)
       seedbox.downloadNewFiles(catalog.tables.downloads);
     cron.schedule(

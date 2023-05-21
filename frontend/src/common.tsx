@@ -84,6 +84,10 @@ export function cleanString(s: string): string {
   return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
+export function cleanFileName(fileName: string): string {
+  return fileName.replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ').replace(/\s{2,}/g, ' ');
+}
+
 export function getMovieLanguage(movie: DbMovie): string {
   const found = movie.filename.match(/([vostfqi+]+)\]/i);
   if (found) {

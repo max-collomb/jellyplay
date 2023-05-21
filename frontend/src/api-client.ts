@@ -466,28 +466,38 @@ export class ApiClient {
     });
   }
 
+  async checkSeedbox(): Promise<void> {
+    return new Promise((resolve) => {
+      fetch('/catalog/downloads/check_seedbox')
+        .then(async (response) => {
+          await response.json();
+          resolve();
+        });
+    });
+  }
+
   async getDownloads(): Promise<DbDownload[]> {
     // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve) => {
-      if (cache.downloads) {
-        if (cache.downloadsTs >= cache.lastUpdate) {
-          cache.lastUpdate = await this.getLastUpdate();
-        }
-        if (cache.downloadsTs < cache.lastUpdate) {
-          cache.downloads = null;
-        }
-      }
-      if (cache.downloads) {
-        resolve(cache.downloads);
-      } else {
-        fetch('/catalog/downloads/list')
-          .then(async (response) => {
-            const json = await response.json();
-            cache.downloads = json.list;
-            cache.downloadsTs = json.lastUpdate;
-            resolve(json.list);
-          });
-      }
+      // if (cache.downloads) {
+      //   if (cache.downloadsTs >= cache.lastUpdate) {
+      //     cache.lastUpdate = await this.getLastUpdate();
+      //   }
+      //   if (cache.downloadsTs < cache.lastUpdate) {
+      //     cache.downloads = null;
+      //   }
+      // }
+      // if (cache.downloads) {
+      //   resolve(cache.downloads);
+      // } else {
+      fetch('/catalog/downloads/list')
+        .then(async (response) => {
+          const json = await response.json();
+          cache.downloads = json.list;
+          cache.downloadsTs = json.lastUpdate;
+          resolve(json.list);
+        });
+      // }
     });
   }
 
@@ -499,7 +509,21 @@ export class ApiClient {
         body: JSON.stringify({ path }),
       }).then(async (response) => {
         const json = await response.json();
-        resolve(json.download);
+        resolve([json.download]);
+        eventBus.emit('downloads-changed');
+      });
+    });
+  }
+
+  async deleteDownload(path: string): Promise<DbDownload[]> {
+    return new Promise((resolve) => {
+      fetch('/catalog/download/delete', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ path }),
+      }).then(async (response) => {
+        const json = await response.json();
+        resolve(json.list);
         eventBus.emit('downloads-changed');
       });
     });
@@ -516,6 +540,21 @@ export class ApiClient {
       }).then(async (response) => {
         const json = await response.json();
         if (json.newMovie) { resolve(json.newMovie); } else { reject(json.error); }
+      });
+    });
+  }
+
+  async importTvshowDownload(path: string, tmdbId: number, foldername: string): Promise<DbMovie> {
+    return new Promise((resolve, reject) => {
+      fetch('/catalog/download/import_tvshow', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({
+          path, tmdbId, foldername,
+        }),
+      }).then(async (response) => {
+        const json = await response.json();
+        if (json.newTvshow) { resolve(json.newTvshow); } else { reject(json.error); }
       });
     });
   }

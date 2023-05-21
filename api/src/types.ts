@@ -186,6 +186,7 @@ export type ParsedFilenameResponse = {
   asMovie?: ParsedMovie;
   asTvshow?: ParsedShow;
   mediaInfo?: any;
+  existingTvshows: { [key: string]: string };
 };
 
 export type DbDownload = {

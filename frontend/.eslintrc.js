@@ -47,6 +47,7 @@ module.exports = {
     'no-plusplus': 'off',
     'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'no-nested-ternary': 'off',
+    'no-control-regex': 'off',
     'class-methods-use-this': 'off',
     'react/jsx-no-bind': 'off',
     'react/jsx-no-useless-fragment': 'off',

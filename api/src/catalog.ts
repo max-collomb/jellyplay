@@ -9,6 +9,7 @@ const { LokiFsAdapter } = Loki;
 import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, UserWish, ParsedFilenameResponse, ParsedShow, FileInfo } from './types';
 import { SeenStatus, MediaType } from './enums';
 import { TmdbClient, mediaInfo, extractMovieTitle } from './tmdb';
+import { Seedbox } from './seedbox';
 
 type CatalogOptions = {
   moviesPath: string;
@@ -79,6 +80,12 @@ type ImportMovieDownloadMessage = {
   filename: string;
 };
 
+type ImportTvshowDownloadMessage = {
+  path: string;
+  tmdbId: number;
+  foldername: string;
+};
+
 const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
 
 const pathExists = async (path: string) => !!(await fs.promises.stat(path).catch(e => false));
@@ -123,6 +130,7 @@ export class Catalog {
   scanning: boolean = false;
   scanLogs: string = "";
   lastUpdate: number = Date.now();
+  seedbox?: Seedbox;
 
   constructor(options: CatalogOptions) {
     this.moviesPath = options.moviesPath;
@@ -825,8 +833,12 @@ export class Catalog {
 
   public async parseFilename(request: FastifyRequest, reply: FastifyReply) {
     let body: FilenameMessage = request.body as FilenameMessage;
-    const parsedFilename: ParsedFilenameResponse = extractMovieTitle(body.filename);
-    
+    const existingTvshows: { [key: string]: string } = {};
+    this.tables.tvshows?.find().forEach(tvshow => {
+      existingTvshows[`id${tvshow.tmdbid}`] = tvshow.foldername;
+    })
+    const parsedFilename: ParsedFilenameResponse = { existingTvshows, ...extractMovieTitle(body.filename) };
+
     if (fs.existsSync(path.join(global.config.tmpPath, path.basename(body.filename)))) {
       parsedFilename.asMovie = filenameParse(path.basename(body.filename));
       parsedFilename.asTvshow = filenameParse(path.basename(body.filename), true) as ParsedShow;
@@ -1034,6 +1046,12 @@ export class Catalog {
   public async getDownloads(request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.downloads?.find(), lastUpdate: this.lastUpdate });
   }
+
+  public async checkSeedbox(request: FastifyRequest, reply: FastifyReply) {
+    if (this.seedbox && this.tables.downloads)
+      this.seedbox.downloadNewFiles(this.tables.downloads);
+    reply.send({});
+  }
   
   public async ignoreDownload(request: FastifyRequest, reply: FastifyReply) {
     let body: DownloadMessage = request.body as DownloadMessage;
@@ -1043,6 +1061,16 @@ export class Catalog {
       this.lastUpdate = Date.now();
     }
     reply.send({ download });
+  }
+
+  public async deleteDownload(request: FastifyRequest, reply: FastifyReply) {
+    let body: DownloadMessage = request.body as DownloadMessage;
+    let download = this.tables.downloads?.findOne({ path: body.path });
+    if (this.tables.downloads && download) {
+      this.tables.downloads.remove(download);
+      this.lastUpdate = Date.now();
+    }
+    reply.send({ list: this.tables.downloads?.find(), lastUpdate: this.lastUpdate });
   }
 
   public async importMovieDownload(request: FastifyRequest, reply: FastifyReply) {
@@ -1105,6 +1133,67 @@ export class Catalog {
     }
     reply.status(500);
     return reply.send({ error: "File already exists" });
+  }
+
+  public async importTvshowDownload(request: FastifyRequest, reply: FastifyReply) {
+    let body: ImportTvshowDownloadMessage = request.body as ImportTvshowDownloadMessage;
+    const download = this.tables.downloads?.findOne({ path: body.path });
+    if (!download) {
+      reply.status(404);
+      reply.send({ error: "download not found" });
+      return;
+    }
+    const foldername: string = path.basename(body.foldername);
+    let folderpath: string = path.join(this.tvshowsPath, foldername);
+    const newTvshow: DbTvshow = {
+      foldername,
+      tmdbid: body.tmdbId,
+      title: "",
+      originalTitle: "",
+      genres: [],
+      countries: [],
+      audience: 999,
+      synopsys: "",
+      backdropPath: "",
+      posterPath: "",
+      userStatus: [],
+      searchableContent: "",
+      episodes: [],
+      seasons: [],
+      isSaga: false,
+      createdMin: 0,
+      createdMax: 0,
+      airDateMin: "",
+      airDateMax: "",
+    };
+    try {
+      if (!fs.existsSync(folderpath)) {
+        await fs.promises.mkdir(folderpath);
+        try {
+          await this.tmdbClient.getTvshowData(newTvshow);
+          this.tables.tvshows?.insert(newTvshow);
+        } catch (e) {
+          console.error(e);
+          console.log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
+        }
+      }
+      else if (fs.existsSync(path.join(folderpath, path.basename(body.path)))) {
+        reply.status(500);
+        return reply.send({ error: "File already exists" });
+      }
+      await fs.promises.rename(path.join(global.config.tmpPath, path.basename(body.path)), path.join(folderpath, path.basename(body.path)));
+      this.lastUpdate = Date.now();
+    } catch (error) {
+      console.log(error);
+      reply.status(500);
+      return reply.send({ error });
+    }
+    console.log(`[+] file added ${path.join(folderpath, path.basename(body.path))}`);
+    await this.scanTvshows(new Set<number>(), new Set<string>());
+
+    download.imported = true;
+    this.tables.downloads?.update(download);
+    return reply.send({ newTvshow });
   }
 }
 
