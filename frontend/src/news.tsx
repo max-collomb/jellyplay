@@ -6,14 +6,22 @@ import Card from 'react-bootstrap/Card';
 import Dropdown from 'react-bootstrap/Dropdown';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 
+import { MovieResult, TvResult } from 'moviedb-promise/dist/request-types';
 import { MediaType } from '../../api/src/enums';
 import {
   DbUser, DbDownload, DbWish, UserWish,
 } from '../../api/src/types';
+
 import {
   ctx, renderFileSize, renderRelativeTimeString,
 } from './common';
 import ImportDownloadForm from './import-download-form';
+import { Trending } from './tmdb-client';
+
+interface CachedTrending {
+  data: Trending;
+  expiration: number;
+}
 
 type NewsProps = {
   users: DbUser[];
@@ -23,6 +31,7 @@ type NewsState = {
   downloads?: DbDownload[];
   showAllDownloads: boolean;
   importingDownload?: DbDownload;
+  trending?: Trending;
 };
 
 export default class News extends React.Component<NewsProps, NewsState> {
@@ -37,6 +46,7 @@ export default class News extends React.Component<NewsProps, NewsState> {
   }
 
   componentDidMount(): void {
+    this.refreshTrending();
     this.timer = setInterval(this.refreshDownloads.bind(this), 3000);
   }
 
@@ -104,9 +114,22 @@ export default class News extends React.Component<NewsProps, NewsState> {
     }
   }
 
+  async refreshTrending() {
+    let trending: CachedTrending | null = JSON.parse(localStorage.getItem('trending') || '{}');
+    console.log('trending: ', trending);
+    //    if (!trending || trending.expiration < Date.now()) {
+    trending = {
+      data: await ctx.tmdbClient.getTrending(),
+      expiration: Date.now() + 1000 * 60 * 60, // 1h
+    };
+    //    }
+    this.setState({ trending: trending.data });
+    localStorage.setItem('trending', JSON.stringify(trending));
+  }
+
   render(): JSX.Element {
     const {
-      wishes, downloads, showAllDownloads, importingDownload,
+      wishes, downloads, showAllDownloads, importingDownload, trending,
     } = this.state;
     const { users } = this.props;
     if (importingDownload) {
@@ -268,10 +291,47 @@ export default class News extends React.Component<NewsProps, NewsState> {
         </>
       );
     }
+
+    let trendingJsx: JSX.Element = <></>;
+    if (trending) {
+      trendingJsx = (
+        <>
+          <h4 className="section-title">Tendances &ndash; films</h4>
+          <div className="d-flex flex-wrap -justify-content-evenly mt-3">
+            {
+              trending.movies.map((movie: MovieResult) => (
+                <div key={movie.id} className="media-card movie" onClick={(evt: React.MouseEvent) => { evt.preventDefault(); ctx.router.navigateTo(`#/tmdb/movie/${movie.id}/state/${JSON.stringify({ tabKey: 'cast' })}`); }}>
+                  <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
+                  <span className="title">{movie.title}</span>
+                  <span className="infos d-flex justify-content-between">
+                    <span className="year">{movie.release_date?.substring(0, 4)}</span>
+                  </span>
+                </div>
+              ))
+            }
+          </div>
+          <h4 className="section-title">Tendances &ndash; séries</h4>
+          <div className="d-flex flex-wrap -justify-content-evenly mt-3">
+            {
+              trending.tvshows.map((movie: TvResult) => (
+                <div key={movie.id} className="media-card movie" onClick={(evt: React.MouseEvent) => { evt.preventDefault(); ctx.router.navigateTo(`#/tmdb/tvshow/${movie.id}/state/${JSON.stringify({ tabKey: 'cast' })}`); }}>
+                  <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
+                  <span className="title">{movie.name}</span>
+                  <span className="infos d-flex justify-content-between">
+                    <span className="year">{movie.first_air_date?.substring(0, 4)}</span>
+                  </span>
+                </div>
+              ))
+            }
+          </div>
+        </>
+      );
+    }
     return (
       <>
         {downloadJsx}
         {wishesJsx}
+        {trendingJsx}
       </>
     );
   }

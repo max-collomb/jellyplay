@@ -10,6 +10,11 @@ export interface PersonWithCredits extends Person {
   tv_credits: PersonTvCreditsResponse;
 }
 
+export interface Trending {
+  movies: MovieResult[],
+  tvshows: TvResult[],
+}
+
 export class TmdbClient {
   apiKey: string = '';
 
@@ -149,6 +154,16 @@ export class TmdbClient {
       language: this.lang,
     });
     return response?.results || [];
+  }
+
+  public async getTrending(): Promise<Trending> {
+    await this.initMovieDb();
+    const movieResponse = await this.movieDb?.trending({ language: this.lang, media_type: 'movie', time_window: 'week' });
+    const tvshowResponse = await this.movieDb?.trending({ language: this.lang, media_type: 'tv', time_window: 'week' });
+    return {
+      movies: (movieResponse?.results as MovieResult[]) || [],
+      tvshows: (tvshowResponse?.results as TvResult[]) || [],
+    };
   }
 }
 
