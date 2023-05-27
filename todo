@@ -130,8 +130,12 @@ V1.1
 [x] ajouter un btn "rafraîchir" pour recharger les données TMDB d'un film / d'une série / d'un épisode
 
 [x] [api] intégration du script de téléchargement depuis la seedbox
-[ ] [frontend/api] importer les fichiers depuis \\192.168.0.99\share\download
+[x] [frontend/api] importer les fichiers depuis \\192.168.0.99\share\download
+[x] pastilles sur l'onglet nouveautés
+[ ] onglet nouveautés : ajouter les tendances tmdb
+[ ] onglet nouveautés : ajouter les RSS ygg + envoi torrent vers seedbox
 [ ] recherche ygg + téléchargement
+
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo
 [ ] [frontend] navigation avec les flèches du clavier + entrée + back

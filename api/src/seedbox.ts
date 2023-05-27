@@ -59,7 +59,7 @@ export class Seedbox {
         await ftpClient.cd(this.options.path);
         fileList = await this.listRecursive(ftpClient, this.options.path);
         for (let download of fileList) {
-          if (downloads.find({ path: download.path, progress: 100 }).length === 0) {
+          if (downloads.find({ path: download.path }).length === 0) {
             download.started = Date.now();
             downloads.insert(download);
             console.log(now() + " downloading " + download.path);

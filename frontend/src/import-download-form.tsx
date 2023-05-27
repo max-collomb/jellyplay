@@ -107,15 +107,16 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
     const {
       importedFilename, selectedMovieCandidate, selectedTvshowCandidate, mediaType,
     } = this.state;
-    this.setState({ importing: true });
     if ((mediaType === 'movie' && selectedMovieCandidate?.id) || (mediaType === 'tvshow' && selectedTvshowCandidate?.id)) {
       try {
         let result: DbMovie | DbTvshow | undefined;
+        this.setState({ importing: true });
         if (mediaType === 'movie' && selectedMovieCandidate?.id) {
           result = await ctx.apiClient.importMovieDownload(download.path, selectedMovieCandidate.id, parseFloat(selectedMovieCandidate.release_date?.substring(0, 4) || ''), importedFilename);
         } else if (mediaType === 'tvshow' && selectedTvshowCandidate?.id) {
           result = await ctx.apiClient.importTvshowDownload(download.path, selectedTvshowCandidate.id, importedFilename);
         }
+        this.setState({ importing: false });
         if (result) {
           onClose();
         }
@@ -123,7 +124,6 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
         // eslint-disable-next-line no-alert
         alert(e);
       }
-      this.setState({ importing: false });
     }
   }
 

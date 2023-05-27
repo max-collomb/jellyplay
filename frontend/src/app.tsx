@@ -1,5 +1,6 @@
 import React from 'react';
 
+import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
@@ -12,7 +13,7 @@ import Navbar from 'react-bootstrap/Navbar';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Spinner from 'react-bootstrap/Spinner';
 
-import { DbUser } from '../../api/src/types';
+import { DbDownload, DbUser } from '../../api/src/types';
 import { OrderBy } from '../../api/src/enums';
 
 import { ctx, initContext } from './common';
@@ -41,6 +42,7 @@ type AppState = {
   searchInputValue: string;
   scanning: boolean;
   scanLogs: string;
+  downloadCount: number;
 };
 
 export default class App extends React.Component<AppProps, AppState> {
@@ -58,6 +60,7 @@ export default class App extends React.Component<AppProps, AppState> {
       searchInputValue: '',
       scanning: false,
       scanLogs: '',
+      downloadCount: 0,
     };
     ctx.apiClient.getConfig().then((config) => initContext(config));
     ctx.apiClient.getScanProgress(0).then((status) => {
@@ -75,6 +78,9 @@ export default class App extends React.Component<AppProps, AppState> {
       ctx.user = user;
       this.setState({ users });
     });
+    ctx.apiClient.getDownloads().then((downloads) => {
+      this.updateNewDownloadCount(downloads);
+    });
     ctx.router.add('home', '/home');
     ctx.router.add('movies', '/movies');
     ctx.router.add('tmdb-movie-details', '/tmdb/movie/:id');
@@ -91,11 +97,13 @@ export default class App extends React.Component<AppProps, AppState> {
     document?.getElementById('search-input')?.addEventListener('search', (evt) => this.setState({ search: (evt?.target as HTMLInputElement).value || '' }));
     ctx.eventBus.on('hash-changed', this.handleEventHashChanged);
     ctx.eventBus.on('will-navigate-app', this.handleEventWillNavigate);
+    ctx.eventBus.on('downloads-fetched', (data) => this.updateNewDownloadCount(data.downloads));
   }
 
   componentWillUnmount() {
     ctx.eventBus.detach('hash-changed', this.handleEventHashChanged);
     ctx.eventBus.detach('will-navigate-app', this.handleEventWillNavigate);
+    ctx.eventBus.off('downloads-fetched');
   }
 
   handleEventHashChanged(data: any): void {
@@ -180,9 +188,13 @@ export default class App extends React.Component<AppProps, AppState> {
     });
   }
 
+  updateNewDownloadCount(downloads: DbDownload[]): void {
+    this.setState({ downloadCount: downloads.filter((d) => !d.imported && !d.ignored).length });
+  }
+
   render(): JSX.Element {
     const {
-      users, route, orderBy, search, searchInputValue, scanning, scanLogs, optionsVisible,
+      users, route, orderBy, search, searchInputValue, scanning, scanLogs, optionsVisible, downloadCount,
     } = this.state;
     let content: JSX.Element = <div />;
     if (!users.length) {
@@ -284,6 +296,7 @@ export default class App extends React.Component<AppProps, AppState> {
               </Nav.Link>
               <Nav.Link href="#/news" active={route.name === 'news' && !search}>
                 Nouveautés
+                { downloadCount > 0 ? <Badge pill bg="primary" className="ms-2">{downloadCount}</Badge> : null }
               </Nav.Link>
             </Nav>
             <Form className="d-flex">

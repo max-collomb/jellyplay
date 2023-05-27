@@ -496,6 +496,7 @@ export class ApiClient {
           cache.downloads = json.list;
           cache.downloadsTs = json.lastUpdate;
           resolve(json.list);
+          eventBus.emit('downloads-fetched', { downloads: json.list });
         });
       // }
     });

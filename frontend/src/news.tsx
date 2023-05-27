@@ -161,7 +161,16 @@ export default class News extends React.Component<NewsProps, NewsState> {
                         <div className="d-flex mt-3">
                           <span className="align-self-center">{renderFileSize(download.size)}</span>
                           {download.finished < 0
-                            ? <ProgressBar variant="primary" now={download.progress} label={`${download.progress.toFixed(1)}%`} className="flex-grow-1 align-self-center mx-3" />
+                            ? (
+                              <>
+                                <ProgressBar variant="primary" now={download.progress} label={`${download.progress.toFixed(1)}%`} className="flex-grow-1 align-self-center mx-3" />
+                                <Button variant="danger" onClick={this.handleDeleteDownload.bind(this, download.path)} title="Supprimer (re-télécharger)" disabled={!ctx.user?.admin}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-x-circle-fill" viewBox="0 0 16 16">
+                                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
+                                  </svg>
+                                </Button>
+                              </>
+                            )
                             : (
                               <>
                                 <span className="opacity-50 mx-3 flex-grow-1 align-self-center" title={(new Date(download.finished)).toLocaleString()}>{renderRelativeTimeString(download.finished)}</span>
@@ -179,7 +188,7 @@ export default class News extends React.Component<NewsProps, NewsState> {
                                       <Dropdown.Toggle split variant="primary" id="dropdown-custom-2" />
                                       <Dropdown.Menu>
                                         <Dropdown.Item eventKey="1" onClick={this.handleIgnoreDownloadClick.bind(this, download.path)} disabled={download.imported}>Ignorer</Dropdown.Item>
-                                        <Dropdown.Item eventKey="2" onClick={this.handleDeleteDownload.bind(this, download.path)}>Supprimer (re-télécharger)</Dropdown.Item>
+                                        <Dropdown.Item eventKey="2" onClick={this.handleDeleteDownload.bind(this, download.path)} disabled={!ctx.user?.admin}>Supprimer (re-télécharger)</Dropdown.Item>
                                       </Dropdown.Menu>
                                     </Dropdown>
                                   ))}
@@ -267,102 +276,3 @@ export default class News extends React.Component<NewsProps, NewsState> {
     );
   }
 }
-
-/* }            <h4 className="mb-3">
-
-            </h4>
-            {
-              wishesByUser[ctx.user.name].map((wish: DbWish) => (
-                <div className="d-flex mb-3" key={wish.tmdbid}>
-                  <Button variant="dark" className="d-block flex-grow-1 wish-link text-start" key={wish.tmdbid} onClick={this.handleWishClick.bind(this, `#/tmdb/${wish.type}/${wish.tmdbid}/state/${JSON.stringify({ tabKey: 'cast' })}`)}>
-                    {wish.title}
-                    <span className="year">{wish.year}</span>
-                    <br />
-                    {
-                      wish.type === MediaType.movie
-                        ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-camera-video" viewBox="0 0 16 16">
-                            <path fillRule="evenodd" d="M0 5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 4.269v7.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2V5zm11.5 5.175 3.5 1.556V4.269l-3.5 1.556v4.35zM2 4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h7.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H2z" />
-                          </svg>
-                        )
-                        : (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-display" viewBox="0 0 16 16">
-                            <path d="M0 4s0-2 2-2h12s2 0 2 2v6s0 2-2 2h-4c0 .667.083 1.167.25 1.5H11a.5.5 0 0 1 0 1H5a.5.5 0 0 1 0-1h.75c.167-.333.25-.833.25-1.5H2s-2 0-2-2V4zm1.398-.855a.758.758 0 0 0-.254.302A1.46 1.46 0 0 0 1 4.01V10c0 .325.078.502.145.602.07.105.17.188.302.254a1.464 1.464 0 0 0 .538.143L2.01 11H14c.325 0 .502-.078.602-.145a.758.758 0 0 0 .254-.302 1.464 1.464 0 0 0 .143-.538L15 9.99V4c0-.325-.078-.502-.145-.602a.757.757 0 0 0-.302-.254A1.46 1.46 0 0 0 13.99 3H2c-.325 0-.502.078-.602.145z" />
-                          </svg>
-                        )
-                    }
-                    &emsp;
-                    <span className="added">
-                      Ajouté le
-                      {' '}
-                      {(new Date((wish.users.find((wu) => wu.userName === ctx.user?.name) as UserWish).added)).toLocaleDateString()}
-                    </span>
-                  </Button>
-                  <Button variant="danger" onClick={this.handleDeleteWishClick.bind(this, wish.tmdbid)} title="Supprimer de la liste d'envies">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-x-circle-fill" viewBox="0 0 16 16">
-                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
-                    </svg>
-                  </Button>
-                </div>
-              ))
-            }
-
-          </div>
-        </>
-        <Offcanvas
-          className="offcanvas-size-xl"
-          id="offcanvasNavbar-expand"
-          aria-labelledby="offcanvasNavbarLabel-expand"
-          placement="end"
-          show={optionsVisible}
-          onHide={this.handleOptionsToggle.bind(this, false)}
-        >
-          <Offcanvas.Header closeButton>
-            <Nav variant="tabs">
-              <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'order')} active={false}>Tri</Nav.Link></Nav.Item>
-              <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'downloads')} active={false}>Téléchargements</Nav.Link></Nav.Item>
-              <Nav.Item><Nav.Link className="px-3" href="#" onClick={this.handleOffCanvasTabCLick.bind(this, 'wishlist')} active>Liste d&apos;envies</Nav.Link></Nav.Item>
-            </Nav>
-          </Offcanvas.Header>
-          <Offcanvas.Body>
-            {users.filter((user) => user.name !== ctx.user?.name && wishesByUser[user.name].length).map((user) => (
-              <>
-                <hr />
-                <h4 className="mb-3">
-                  <img src={`/images/users/${user.name}.svg`} alt={user.name} width="24" className="me-3" />
-                  <span className="text-uppercase">{user.name}</span>
-                </h4>
-                {
-                  wishesByUser[user.name].map((wish: DbWish) => (
-                    <div className="d-flex mb-3" key={wish.tmdbid}>
-                      <Button variant="dark" className="d-block flex-grow-1 wish-link text-start" key={wish.tmdbid} onClick={this.handleWishClick.bind(this, `#/tmdb/${wish.type}/${wish.tmdbid}/state/${JSON.stringify({ tabKey: 'cast' })}`)}>
-                        {wish.title}
-                        <span className="year">{wish.year}</span>
-                        <br />
-                        {
-                          wish.type === MediaType.movie
-                            ? (
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-camera-video" viewBox="0 0 16 16">
-                                <path fillRule="evenodd" d="M0 5a2 2 0 0 1 2-2h7.5a2 2 0 0 1 1.983 1.738l3.11-1.382A1 1 0 0 1 16 4.269v7.462a1 1 0 0 1-1.406.913l-3.111-1.382A2 2 0 0 1 9.5 13H2a2 2 0 0 1-2-2V5zm11.5 5.175 3.5 1.556V4.269l-3.5 1.556v4.35zM2 4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h7.5a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H2z" />
-                              </svg>
-                            )
-                            : (
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-display" viewBox="0 0 16 16">
-                                <path d="M0 4s0-2 2-2h12s2 0 2 2v6s0 2-2 2h-4c0 .667.083 1.167.25 1.5H11a.5.5 0 0 1 0 1H5a.5.5 0 0 1 0-1h.75c.167-.333.25-.833.25-1.5H2s-2 0-2-2V4zm1.398-.855a.758.758 0 0 0-.254.302A1.46 1.46 0 0 0 1 4.01V10c0 .325.078.502.145.602.07.105.17.188.302.254a1.464 1.464 0 0 0 .538.143L2.01 11H14c.325 0 .502-.078.602-.145a.758.758 0 0 0 .254-.302 1.464 1.464 0 0 0 .143-.538L15 9.99V4c0-.325-.078-.502-.145-.602a.757.757 0 0 0-.302-.254A1.46 1.46 0 0 0 13.99 3H2c-.325 0-.502.078-.602.145z" />
-                              </svg>
-                            )
-                        }
-                        &emsp;
-                        <span className="added">
-                          Ajouté le
-                          {(new Date((wish.users.find((wu) => wu.userName === user.name) as UserWish).added)).toLocaleDateString()}
-                        </span>
-                      </Button>
-                      <Button variant="danger" onClick={this.handleDeleteWishClick.bind(this, wish.tmdbid)} className={ctx.user?.admin ? '' : 'd-none'} title="Supprimer de la liste d'envies">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-x-circle-fill" viewBox="0 0 16 16">
-                          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
-                        </svg>
-                      </Button>
-                    </div>
-                  ))
-                } */
