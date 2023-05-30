@@ -1,23 +1,10 @@
 ﻿using Microsoft.Web.WebView2.Core;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Web;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace client
 {
@@ -83,6 +70,15 @@ namespace client
             await webView.CoreWebView2.ExecuteScriptAsync($"window._exited(); console.log(\"exited with code {proc.ExitCode}\");");
           }
         }
+      }
+
+      match = Regex.Match(args.Uri, @"browser:\/\/(.*)");
+      if (match.Success)
+      {
+        args.Cancel = true;
+        string url = HttpUtility.UrlDecode(match.Groups[1].Value);
+        Debug.WriteLine("url= " + url);
+        Process.Start("explorer", url);
       }
     }
 
