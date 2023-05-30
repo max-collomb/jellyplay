@@ -1052,6 +1052,16 @@ export class Catalog {
       this.seedbox.downloadNewFiles(this.tables.downloads);
     reply.send({});
   }
+
+  public async addTorrentToSeedbox(request: FastifyRequest, reply: FastifyReply) {
+    const url = (request.query as any).url;
+    try {
+      this.seedbox?.addTorrent(url);
+      reply.send({})
+    } catch (error) {
+      reply.status(500).send({ error });
+    }
+  }
   
   public async ignoreDownload(request: FastifyRequest, reply: FastifyReply) {
     let body: DownloadMessage = request.body as DownloadMessage;

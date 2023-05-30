@@ -6,9 +6,12 @@
   "tmpPath": "C:/dev/git/jellyplay/sample-library/downloads",
   "tmdbApiKey": "",
   "youtubeApiKey": "",
+  "ruTorrentURL": "",
   "seedboxHost": "",
   "seedboxPort": 0,
   "seedboxUser": "",
   "seedboxPassword": "",
-  "seedboxPath": ""
+  "seedboxPath": "",
+  "yggUrl": "",
+  "yggKey": "",
 }

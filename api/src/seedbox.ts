@@ -1,7 +1,9 @@
 import FTP from "basic-ftp";
 import path from "path";
+import { FastifyRequest, FastifyReply } from 'fastify'; 
 import { DbDownload } from "./types";
 
+declare var fetch: typeof import('undici').fetch;
 export type SeedboxOptions = {
   host: string;
   port: number;
@@ -93,4 +95,22 @@ export class Seedbox {
     }
   }
   
+  async addTorrent(torrentUrl: string): Promise<void> {
+    const url = new URL('http://195.154.179.78/rutorrent');
+    url.pathname = url.pathname.replace(/\/$/, '') + '/php/addtorrent.php';
+    const form = new URLSearchParams();
+    form.append('url', torrentUrl);
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${"easy601"}:${"Z1IW4ABDS1urhUX"}`).toString('base64')}`,
+      },
+      body: form,
+    });
+
+    if (!response.ok) {
+      throw new Error("Error posting torrent");
+    }
+  }
+
 }

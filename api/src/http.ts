@@ -5,6 +5,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyFavicon from 'fastify-favicon';
 
 import { Catalog } from './catalog';
+import { yggProxy } from './ygg-proxy';
 
 export const server: FastifyInstance = Fastify({});
 
@@ -42,6 +43,10 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.get('/catalog/wishes/list', catalog.getWishes.bind(catalog));
     server.get('/catalog/downloads/list', catalog.getDownloads.bind(catalog));
     server.get('/catalog/downloads/check_seedbox', catalog.checkSeedbox.bind(catalog));
+    
+    server.get('/ygg/top', yggProxy.top.bind(yggProxy));
+    server.get('/ygg/details', yggProxy.details.bind(yggProxy));
+    server.get('/ygg/download', catalog.addTorrentToSeedbox.bind(catalog));
     
     server.post('/catalog/movie/set_status', catalog.setMovieStatus.bind(catalog));
     server.post('/catalog/tvshow/set_status', catalog.setTvshowStatus.bind(catalog));

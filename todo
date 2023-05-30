@@ -132,9 +132,13 @@ V1.1
 [x] [api] intégration du script de téléchargement depuis la seedbox
 [x] [frontend/api] importer les fichiers depuis \\192.168.0.99\share\download
 [x] pastilles sur l'onglet nouveautés
-[ ] onglet nouveautés : ajouter les tendances tmdb
-[ ] onglet nouveautés : ajouter les RSS ygg + envoi torrent vers seedbox
-[ ] recherche ygg + téléchargement
+[x] onglet nouveautés : ajouter les tendances tmdb
+[x] onglet nouveautés : ajouter les RSS ygg + envoi torrent vers seedbox
+[ ] onglet nouveautés : choix torrent du jour / de la semaine / du mois
+[ ] onglet nouveautés : choix tendances du jour / de la semaine
+[ ] fiche film non possédé : nouvel onglet avec recherche ygg + téléchargement
+[ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
+[ ] onglet nouveautés : suivi des téléchargements rutorrent
 
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo

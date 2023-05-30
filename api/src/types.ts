@@ -10,11 +10,14 @@ export type Config = {
   tmpPath: string;
   tmdbApiKey: string;
   youtubeApiKey: string;
+  ruTorrentURL: string;
   seedboxHost: string;
   seedboxPort: number;
   seedboxUser: string;
   seedboxPassword: string;
   seedboxPath: string;
+  yggUrl: string;
+  yggKey: string;
 };
 
 export type DbUser = {

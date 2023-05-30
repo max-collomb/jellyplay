@@ -1,10 +1,12 @@
 import React from 'react';
 
+import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Card from 'react-bootstrap/Card';
 import Dropdown from 'react-bootstrap/Dropdown';
 import ProgressBar from 'react-bootstrap/ProgressBar';
+import Spinner from 'react-bootstrap/Spinner';
 
 import { MovieResult, TvResult } from 'moviedb-promise/dist/request-types';
 import { MediaType } from '../../api/src/enums';
@@ -17,6 +19,9 @@ import {
 } from './common';
 import ImportDownloadForm from './import-download-form';
 import { Trending } from './tmdb-client';
+import { YggItem } from './ygg-client';
+
+const torrentDownloaded: string[] = [];
 
 interface CachedTrending {
   data: Trending;
@@ -32,6 +37,8 @@ type NewsState = {
   showAllDownloads: boolean;
   importingDownload?: DbDownload;
   trending?: Trending;
+  tops?: YggItem[];
+  yggItemDetails?: YggItem;
 };
 
 export default class News extends React.Component<NewsProps, NewsState> {
@@ -42,6 +49,7 @@ export default class News extends React.Component<NewsProps, NewsState> {
     this.state = { showAllDownloads: false };
     this.refreshWishes();
     this.refreshDownloads();
+    this.refreshTops();
     // ctx.eventBus.replace('will-navigate', ctx.router.saveScrollPosition.bind(ctx.router));
   }
 
@@ -50,8 +58,8 @@ export default class News extends React.Component<NewsProps, NewsState> {
     this.timer = setInterval(this.refreshDownloads.bind(this), 3000);
   }
 
-  componentDidUpdate(/* _prevProps: NewsProps, prevState: NewsState */) {
-    // const { movies } = this.state;
+  componentDidUpdate(_prevProps: NewsProps, prevState: NewsState) {
+    const { yggItemDetails } = this.state;
     // if (prevState.movies.length === 0 && movies.length > 0) {
     //   ctx.router.restoreScrollPosition();
     // }
@@ -60,6 +68,9 @@ export default class News extends React.Component<NewsProps, NewsState> {
     }
     if (ctx.apiClient.needRefresh('downloads')) {
       this.refreshDownloads();
+    }
+    if (!prevState.yggItemDetails?.id && yggItemDetails?.id) {
+      document.getElementById('ygg-iframe')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
 
@@ -93,6 +104,22 @@ export default class News extends React.Component<NewsProps, NewsState> {
     this.refreshDownloads();
   }
 
+  handleYggDetailsClick(yggItem: YggItem, evt: React.MouseEvent<HTMLAnchorElement>): void {
+    evt.preventDefault();
+    const { yggItemDetails } = this.state;
+    this.setState({ yggItemDetails: yggItemDetails?.id === yggItem.id ? undefined : yggItem });
+  }
+
+  async handleYggDownloadClick(yggItem: YggItem, evt: React.MouseEvent<HTMLAnchorElement>): Promise<void> {
+    evt.preventDefault();
+    if (await ctx.yggClient.download(yggItem.downloadLink)) {
+      torrentDownloaded.push(yggItem.id);
+      this.forceUpdate();
+    } else {
+      alert('Une erreur est survenue'); // eslint-disable-line no-alert
+    }
+  }
+
   handleImportDownloadClick(download: DbDownload, evt: React.MouseEvent<HTMLButtonElement>): void {
     evt.preventDefault();
     this.setState({ importingDownload: download });
@@ -103,20 +130,23 @@ export default class News extends React.Component<NewsProps, NewsState> {
     this.refreshDownloads();
   }
 
-  refreshWishes() {
+  refreshWishes(): void {
     ctx.apiClient.getWishes().then((wishes) => { this.setState({ wishes }); });
   }
 
-  refreshDownloads() {
+  refreshDownloads(): void {
     const { importingDownload } = this.state;
     if (!importingDownload) {
       ctx.apiClient.getDownloads().then((downloads) => { this.setState({ downloads }); });
     }
   }
 
+  refreshTops(): void {
+    ctx.yggClient.getTops().then((tops) => { this.setState({ tops }); });
+  }
+
   async refreshTrending() {
     let trending: CachedTrending | null = JSON.parse(localStorage.getItem('trending') || '{}');
-    console.log('trending: ', trending);
     //    if (!trending || trending.expiration < Date.now()) {
     trending = {
       data: await ctx.tmdbClient.getTrending(),
@@ -129,7 +159,7 @@ export default class News extends React.Component<NewsProps, NewsState> {
 
   render(): JSX.Element {
     const {
-      wishes, downloads, showAllDownloads, importingDownload, trending,
+      wishes, downloads, showAllDownloads, importingDownload, trending, tops, yggItemDetails,
     } = this.state;
     const { users } = this.props;
     if (importingDownload) {
@@ -327,11 +357,69 @@ export default class News extends React.Component<NewsProps, NewsState> {
         </>
       );
     }
+
+    let topsJsx = (
+      <>
+        <h4 className="section-title">Torrents du jour</h4>
+        <div className="text-center m-5"><Spinner animation="border" variant="light" /></div>
+      </>
+    );
+    if (tops) {
+      topsJsx = (
+        <>
+          <h4 className="section-title">Torrents du jour</h4>
+          <table className="table table-bordered table-striped" style={{ tableLayout: 'fixed' }}>
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th style={{ width: '100px' }}>Age</th>
+                <th style={{ width: '100px' }}>Taille</th>
+                <th style={{ width: '75px' }}>Seed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tops.map((top: YggItem) => (
+                <React.Fragment key={top.id}>
+                  <tr>
+                    <td>
+                      <div className="d-flex">
+                        <Badge bg={top.category === 'movies' ? 'primary' : (top.category === 'tvshows' ? 'secondary' : 'warning')} className="align-self-center me-3">{top.category === 'movies' ? 'Film' : (top.category === 'tvshows' ? 'Série' : 'Emission')}</Badge>
+                        <a href={top.detailLink} onClick={this.handleYggDetailsClick.bind(this, top)} className={top.size > (top.category === 'tvshows' ? 2 : 5) * 1073741824 /* 1073741824 = 1Go */ ? 'opacity-50 flex-grow-1 text-truncate align-self-center' : 'flex-grow-1 text-truncate align-self-center'}>{top.name}</a>
+                        { torrentDownloaded.includes(top.id) ? <Button variant="dark" className="mx-3" disabled title="Téléchargement en cours sur la seedbox">Téléchargement...</Button> : <a href="#" className="btn btn-success mx-3" onClick={this.handleYggDownloadClick.bind(this, top)}>Télécharger</a> }
+                        <a href={`browser://${encodeURIComponent(top.detailLink)}`} className="align-self-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+                            <path fillRule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
+                            <path fillRule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
+                          </svg>
+                        </a>
+                      </div>
+                    </td>
+                    <td className="text-truncate" style={{ verticalAlign: 'middle' }}>{top.age.replace(/ /g, '\u00A0')}</td>
+                    <td className="text-truncate" style={{ verticalAlign: 'middle' }}>{top.sizeStr}</td>
+                    <td className="text-truncate" style={{ verticalAlign: 'middle' }}>{top.completed}</td>
+                  </tr>
+                  {top.id === yggItemDetails?.id
+                    ? (
+                      <tr>
+                        <td colSpan={4}>
+                          <iframe id="ygg-iframe" src={`/ygg/details?url=${encodeURIComponent(top.detailLink)}`} style={{ width: '100%', height: '80vh', maxHeight: '1000px' }} title="details" />
+                        </td>
+                      </tr>
+                    )
+                    : null}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </>
+      );
+    }
     return (
       <>
         {downloadJsx}
         {wishesJsx}
         {trendingJsx}
+        {topsJsx}
       </>
     );
   }
