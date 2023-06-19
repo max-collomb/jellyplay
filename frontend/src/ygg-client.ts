@@ -72,12 +72,17 @@ export class YggClient {
     return movies.concat(tvshows).concat(emissions);
   }
 
-  private getRank(name: string): number {
+  private getRank(name: string, seeds: number, sizeStr: string): number {
     if (name.includes('4k') || name.includes('2160p')) return 0;
     if (name.includes('xvid') || name.includes('divx')) return 0;
     if (name.includes('vfq') && !name.includes('vff')) return 0;
+    if (seeds < 5) return 0;
 
-    let rank = 0;
+    let size: number = parseFloat(sizeStr);
+    if (sizeStr.includes('Mo')) size /= 1024;
+    if (size > 5) return 0; // too big if more than 5Gb
+
+    let rank = 50 - size;
     if (name.includes('h265') || name.includes('hevc')) rank += 1000;
     else if (name.includes('h264')) rank += 500;
 
@@ -94,7 +99,7 @@ export class YggClient {
     results.forEach((result) => {
       /* eslint-disable no-param-reassign */
       result.downloadUrl += this.passkey;
-      result.rank = this.getRank(result.name.toLowerCase());
+      result.rank = this.getRank(result.name.toLowerCase(), result.seeds, result.size);
       /* eslint-enable no-param-reassign */
     });
     results.sort((a, b) => b.rank - a.rank);
