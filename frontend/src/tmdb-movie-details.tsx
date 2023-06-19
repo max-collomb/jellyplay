@@ -11,6 +11,7 @@ import { ctx } from './common';
 import TmdbMovieRecommandations from './tmdb-movie-recommandations';
 import TmdbCasting from './tmdb-casting';
 import YoutubeVideos from './youtube-videos';
+import YggSearch from './ygg-search';
 
 type TmdbMovieDetailsProps = {
   movieId: number;
@@ -245,6 +246,9 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
             </Tab>
             <Tab eventKey="trailers" title="Videos">
               <YoutubeVideos search={movie?.title || ''} />
+            </Tab>
+            <Tab eventKey="search" title="Télécharger">
+              <YggSearch search={movie?.title || ''} />
             </Tab>
           </Tabs>
         </div>

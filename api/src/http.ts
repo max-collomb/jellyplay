@@ -46,6 +46,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     
     server.get('/ygg/top', yggProxy.top.bind(yggProxy));
     server.get('/ygg/details', yggProxy.details.bind(yggProxy));
+    server.get('/ygg/search', yggProxy.search.bind(yggProxy));
     server.get('/ygg/download', catalog.addTorrentToSeedbox.bind(catalog));
     
     server.post('/catalog/movie/set_status', catalog.setMovieStatus.bind(catalog));

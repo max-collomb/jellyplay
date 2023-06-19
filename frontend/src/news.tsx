@@ -42,7 +42,7 @@ type NewsState = {
 };
 
 export default class News extends React.Component<NewsProps, NewsState> {
-  timer: number | undefined = undefined;
+  timer: NodeJS.Timer | undefined = undefined;
 
   constructor(props: NewsProps) {
     super(props);
@@ -402,7 +402,7 @@ export default class News extends React.Component<NewsProps, NewsState> {
                     ? (
                       <tr>
                         <td colSpan={4}>
-                          <iframe id="ygg-iframe" src={`/ygg/details?url=${encodeURIComponent(top.detailLink)}`} style={{ width: '100%', height: '80vh', maxHeight: '1000px' }} title="details" />
+                          <iframe id="ygg-iframe" src={`/ygg/details?url=${encodeURIComponent(top.detailLink)}`} style={{ width: '100%', height: '75vh', maxHeight: '1000px' }} title="details" />
                         </td>
                       </tr>
                     )

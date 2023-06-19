@@ -134,11 +134,14 @@ V1.1
 [x] pastilles sur l'onglet nouveautés
 [x] onglet nouveautés : ajouter les tendances tmdb
 [x] onglet nouveautés : ajouter les RSS ygg + envoi torrent vers seedbox
+[x] fiche film non possédé : nouvel onglet avec recherche ygg + téléchargement
 [ ] onglet nouveautés : choix torrent du jour / de la semaine / du mois
-[ ] onglet nouveautés : choix tendances du jour / de la semaine
-[ ] fiche film non possédé : nouvel onglet avec recherche ygg + téléchargement
+[ ] onglet nouveautés : choix tendances tmdb du jour / de la semaine
+[ ] fiche film non possédé : afficher les dates de sortie ciné / dvd
 [ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
 [ ] onglet nouveautés : suivi des téléchargements rutorrent
+[ ] système de téléchargement auto des épisodes de séries avec rss ygg + expression régulière
+[ ] import automatique des films et des nouveaux épisodes de séries (si série non connue => laisser dans nouveautés)
 
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo

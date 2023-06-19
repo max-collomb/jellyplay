@@ -1,3 +1,5 @@
+import { YggResult } from '../../api/src/ygg-proxy';
+
 export interface YggItem {
   id: string;
   category: string;
@@ -16,6 +18,8 @@ export class YggClient {
   passkey: string = '';
 
   categories: { [key: string]: string } = { movies: '2183', tvshows: '2184', emissions: '2182' };
+
+  categoryNames: { [key: string]: string } = { movies: 'Film', tvshows: 'Série', emissions: 'Emission' };
 
   init(url: string, passkey: string) {
     this.baseUrl = url;
@@ -68,6 +72,35 @@ export class YggClient {
     return movies.concat(tvshows).concat(emissions);
   }
 
+  private getRank(name: string): number {
+    if (name.includes('4k') || name.includes('2160p')) return 0;
+    if (name.includes('xvid') || name.includes('divx')) return 0;
+    if (name.includes('vfq') && !name.includes('vff')) return 0;
+
+    let rank = 0;
+    if (name.includes('h265') || name.includes('hevc')) rank += 1000;
+    else if (name.includes('h264')) rank += 500;
+
+    if (name.includes('hdlight')) rank += 1000;
+    else if (name.includes('1080p')) rank += 750;
+    else if (name.includes('720p')) rank += 250;
+    return rank;
+  }
+
+  public async search(query: string, category: string): Promise<YggResult[]> {
+    const url = `${this.baseUrl}/engine/search?name=${encodeURIComponent(query)}&description=&file=&uploader=&category=2145&sub_category=${category || 'all'}&do=search&order=desc&sort=seed`;
+    const response = await fetch(`/ygg/search?url=${encodeURIComponent(url)}`);
+    const results: YggResult[] = await response.json();
+    results.forEach((result) => {
+      /* eslint-disable no-param-reassign */
+      result.downloadUrl += this.passkey;
+      result.rank = this.getRank(result.name.toLowerCase());
+      /* eslint-enable no-param-reassign */
+    });
+    results.sort((a, b) => b.rank - a.rank);
+    return results;
+  }
+
   public async download(url: string): Promise<boolean> {
     try {
       await fetch(`/ygg/download?url=${encodeURIComponent(url)}`);
@@ -75,6 +108,15 @@ export class YggClient {
       return false;
     }
     return true;
+  }
+
+  public getCategoryNameById(id: number): string {
+    for (const cat in this.categories) {
+      if (Object.prototype.hasOwnProperty.call(this.categories, cat) && this.categories[cat] === id.toString()) {
+        return this.categoryNames[cat];
+      }
+    }
+    return id.toString();
   }
 }
 
