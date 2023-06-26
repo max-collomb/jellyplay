@@ -23,11 +23,6 @@ import { YggItem } from './ygg-client';
 
 const torrentDownloaded: string[] = [];
 
-interface CachedTrending {
-  data: Trending;
-  expiration: number;
-}
-
 type NewsProps = {
   users: DbUser[];
 };
@@ -37,7 +32,9 @@ type NewsState = {
   showAllDownloads: boolean;
   importingDownload?: DbDownload;
   trending?: Trending;
+  trendingTimeWindow: 'day' | 'week';
   tops?: YggItem[];
+  topsTimeWindow: 'day' | 'week' | 'month';
   yggItemDetails?: YggItem;
 };
 
@@ -46,7 +43,11 @@ export default class News extends React.Component<NewsProps, NewsState> {
 
   constructor(props: NewsProps) {
     super(props);
-    this.state = { showAllDownloads: false };
+    this.state = {
+      showAllDownloads: false,
+      trendingTimeWindow: localStorage.getItem('trendingTimeWindow') === 'day' ? 'day' : 'week',
+      topsTimeWindow: localStorage.getItem('topsTimeWindow') === 'month' ? 'month' : (localStorage.getItem('topsTimeWindow') === 'week' ? 'week' : 'day'),
+    };
     this.refreshWishes();
     this.refreshDownloads();
     this.refreshTops();
@@ -130,6 +131,16 @@ export default class News extends React.Component<NewsProps, NewsState> {
     this.refreshDownloads();
   }
 
+  handleTrendingTimeWindowClick(timeWidow: 'day' | 'week'): void {
+    localStorage.setItem('trendingTimeWindow', timeWidow);
+    this.setState({ trendingTimeWindow: timeWidow, trending: undefined }, this.refreshTrending.bind(this));
+  }
+
+  handleTopsTimeWindowClick(timeWidow: 'day' | 'week' | 'month'): void {
+    localStorage.setItem('topsTimeWindow', timeWidow);
+    this.setState({ topsTimeWindow: timeWidow, tops: undefined }, this.refreshTops.bind(this));
+  }
+
   refreshWishes(): void {
     ctx.apiClient.getWishes().then((wishes) => { this.setState({ wishes }); });
   }
@@ -142,24 +153,18 @@ export default class News extends React.Component<NewsProps, NewsState> {
   }
 
   refreshTops(): void {
-    ctx.yggClient.getTops().then((tops) => { this.setState({ tops }); });
+    const { topsTimeWindow } = this.state;
+    ctx.yggClient.getTops(topsTimeWindow).then((tops) => { this.setState({ tops }); });
   }
 
   async refreshTrending() {
-    let trending: CachedTrending | null = JSON.parse(localStorage.getItem('trending') || '{}');
-    //    if (!trending || trending.expiration < Date.now()) {
-    trending = {
-      data: await ctx.tmdbClient.getTrending(),
-      expiration: Date.now() + 1000 * 60 * 60, // 1h
-    };
-    //    }
-    this.setState({ trending: trending.data });
-    localStorage.setItem('trending', JSON.stringify(trending));
+    const { trendingTimeWindow } = this.state;
+    this.setState({ trending: await ctx.tmdbClient.getTrending(trendingTimeWindow) });
   }
 
   render(): JSX.Element {
     const {
-      wishes, downloads, showAllDownloads, importingDownload, trending, tops, yggItemDetails,
+      wishes, downloads, showAllDownloads, importingDownload, trending, trendingTimeWindow, tops, topsTimeWindow, yggItemDetails,
     } = this.state;
     const { users } = this.props;
     if (importingDownload) {
@@ -301,7 +306,7 @@ export default class News extends React.Component<NewsProps, NewsState> {
                             }
                             &emsp;
                             <span className="added">
-                              Ajouté le
+                              Ajouté le&nbsp;
                               {(new Date((wish.users.find((wu) => wu.userName === user.name) as UserWish).added)).toLocaleDateString()}
                             </span>
                           </Button>
@@ -326,7 +331,13 @@ export default class News extends React.Component<NewsProps, NewsState> {
     if (trending) {
       trendingJsx = (
         <>
-          <h4 className="section-title">Tendances &ndash; films</h4>
+          <h4 className="section-title">
+            Tendances &ndash; films
+            <ButtonGroup className="ms-5">
+              <Button variant={trendingTimeWindow === 'day' ? 'secondary' : 'outline-secondary'} onClick={this.handleTrendingTimeWindowClick.bind(this, 'day')}>Aujourd&#39;hui</Button>
+              <Button variant={trendingTimeWindow === 'week' ? 'secondary' : 'outline-secondary'} onClick={this.handleTrendingTimeWindowClick.bind(this, 'week')}>Cette semaine</Button>
+            </ButtonGroup>
+          </h4>
           <div className="d-flex flex-wrap -justify-content-evenly mt-3">
             {
               trending.movies.map((movie: MovieResult) => (
@@ -340,7 +351,13 @@ export default class News extends React.Component<NewsProps, NewsState> {
               ))
             }
           </div>
-          <h4 className="section-title">Tendances &ndash; séries</h4>
+          <h4 className="section-title">
+            Tendances &ndash; séries
+            <ButtonGroup className="ms-5">
+              <Button variant={trendingTimeWindow === 'day' ? 'secondary' : 'outline-secondary'} onClick={this.handleTrendingTimeWindowClick.bind(this, 'day')}>Aujourd&#39;hui</Button>
+              <Button variant={trendingTimeWindow === 'week' ? 'secondary' : 'outline-secondary'} onClick={this.handleTrendingTimeWindowClick.bind(this, 'week')}>Cette semaine</Button>
+            </ButtonGroup>
+          </h4>
           <div className="d-flex flex-wrap -justify-content-evenly mt-3">
             {
               trending.tvshows.map((movie: TvResult) => (
@@ -358,16 +375,27 @@ export default class News extends React.Component<NewsProps, NewsState> {
       );
     }
 
+    const topsTitle = (
+      <h4 className="section-title">
+        Top torrents
+        <ButtonGroup className="ms-5">
+          <Button variant={topsTimeWindow === 'day' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'day')}>Aujourd&#39;hui</Button>
+          <Button variant={topsTimeWindow === 'week' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'week')}>Cette semaine</Button>
+          <Button variant={topsTimeWindow === 'month' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'month')}>Ce mois-ci</Button>
+        </ButtonGroup>
+      </h4>
+    );
+
     let topsJsx = (
       <>
-        <h4 className="section-title">Torrents du jour</h4>
+        {topsTitle}
         <div className="text-center m-5"><Spinner animation="border" variant="light" /></div>
       </>
     );
     if (tops) {
       topsJsx = (
         <>
-          <h4 className="section-title">Torrents du jour</h4>
+          {topsTitle}
           <table className="table table-bordered table-striped" style={{ tableLayout: 'fixed' }}>
             <thead>
               <tr>

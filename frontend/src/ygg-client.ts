@@ -17,9 +17,13 @@ export class YggClient {
 
   passkey: string = '';
 
-  categories: { [key: string]: string } = { movies: '2183', tvshows: '2184', emissions: '2182' };
+  categories: { [key: string]: string } = {
+    movies: '2183', tvshows: '2184', emissions: '2182', animation: '2178',
+  };
 
-  categoryNames: { [key: string]: string } = { movies: 'Film', tvshows: 'Série', emissions: 'Emission' };
+  categoryNames: { [key: string]: string } = {
+    movies: 'Film', tvshows: 'Série', emissions: 'Emission', animation: 'Animation',
+  };
 
   init(url: string, passkey: string) {
     this.baseUrl = url;
@@ -61,8 +65,8 @@ export class YggClient {
     });
   }
 
-  public async getTops(): Promise<YggItem[]> {
-    const response = await fetch(`/ygg/top?url=${encodeURIComponent(`${this.baseUrl}/engine/ajax_top_query/day`)}`);
+  public async getTops(timeWindow: 'day' | 'week' | 'month' = 'day'): Promise<YggItem[]> {
+    const response = await fetch(`/ygg/top?url=${encodeURIComponent(`${this.baseUrl}/engine/ajax_top_query/${timeWindow}`)}`);
     const list: { [key: string]: string[][] } = await response.json();
 
     const movies = await this.getTop('movies', list[this.categories.movies]);

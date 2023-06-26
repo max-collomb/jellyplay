@@ -134,6 +134,51 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
     return 999;
   }
 
+  getReleaseDates(movie?: MovieResponse): JSX.Element[] {
+    const jsx: JSX.Element[] = [];
+    const contries = ['FR'/* , 'CA' */, 'US'];
+    const types = [3, 4, 5];
+    const typeNames = ['Cinéma', 'VOD', 'DVD'];
+    if (movie) {
+      if ((movie as any).release_dates?.results) {
+        contries.forEach((searchedCountry) => {
+          const jsxLine: JSX.Element[] = [];
+          for (const country of (movie as any).release_dates.results) {
+            if (country.iso_3166_1 === searchedCountry) {
+              types.forEach((searchedType, idxType) => {
+                let dateMin: Date | undefined;
+                for (const date of country.release_dates) {
+                  if (date.type === searchedType) {
+                    const newDate: Date = new Date(date.release_date);
+                    dateMin = (dateMin !== undefined && dateMin < newDate) ? dateMin : newDate;
+                  }
+                }
+                if (dateMin !== undefined) {
+                  jsxLine.push(
+                    <span className="me-3" key={searchedType}>
+                      {typeNames[idxType]}
+                      {' '}
+                      {dateMin.toLocaleDateString()}
+                    </span>,
+                  );
+                }
+              });
+              if (jsxLine.length) {
+                jsx.push(
+                  <p key={searchedCountry}>
+                    <span className="me-2"><img src={`/images/flags/${searchedCountry.toLowerCase()}.svg`} width="24" alt={searchedCountry} /></span>
+                    {jsxLine}
+                  </p>,
+                );
+              }
+            }
+          }
+        });
+      }
+    }
+    return jsx;
+  }
+
   async fetchMovie(): Promise<void> {
     const { movieId } = this.props;
     const movie = await ctx.tmdbClient?.getMovie(movieId);
@@ -233,6 +278,9 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
                 )
                 : null}
             </div>
+            <div className="flex-grow-1">
+              {this.getReleaseDates(movie)}
+            </div>
           </div>
           <div className="d-flex align-items-start mb-3">
             <p className="synopsis">{movie.overview}</p>
@@ -248,7 +296,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
               <YoutubeVideos search={movie?.title || ''} />
             </Tab>
             <Tab eventKey="search" title="Télécharger">
-              <YggSearch search={movie?.title || ''} />
+              <YggSearch search={movie?.title || ''} isAnim={!!(movie?.genres?.find((genre) => genre.name === 'Animation'))} />
             </Tab>
           </Tabs>
         </div>

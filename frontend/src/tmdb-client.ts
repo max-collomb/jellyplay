@@ -15,6 +15,11 @@ export interface Trending {
   tvshows: TvResult[],
 }
 
+interface CachedTrending {
+  data: Trending;
+  expiration: number;
+}
+
 export class TmdbClient {
   apiKey: string = '';
 
@@ -156,14 +161,23 @@ export class TmdbClient {
     return response?.results || [];
   }
 
-  public async getTrending(): Promise<Trending> {
+  public async getTrending(timeWindow: 'week' | 'day' = 'week'): Promise<Trending> {
     await this.initMovieDb();
-    const movieResponse = await this.movieDb?.trending({ language: this.lang, media_type: 'movie', time_window: 'week' });
-    const tvshowResponse = await this.movieDb?.trending({ language: this.lang, media_type: 'tv', time_window: 'week' });
-    return {
+    const cached: CachedTrending | null = JSON.parse(localStorage.getItem(`trending_${timeWindow}`) || '{}');
+    if (cached && cached.expiration > Date.now()) {
+      return cached.data;
+    }
+    const movieResponse = await this.movieDb?.trending({ language: this.lang, media_type: 'movie', time_window: timeWindow });
+    const tvshowResponse = await this.movieDb?.trending({ language: this.lang, media_type: 'tv', time_window: timeWindow });
+    const trending: Trending = {
       movies: (movieResponse?.results as MovieResult[]) || [],
       tvshows: (tvshowResponse?.results as TvResult[]) || [],
     };
+    localStorage.setItem(`trending_${timeWindow}`, JSON.stringify({
+      data: trending,
+      expiration: new Date(new Date().setHours(23, 59, 59, 999)).getTime(), // today at 23:59:59
+    }));
+    return trending;
   }
 }
 

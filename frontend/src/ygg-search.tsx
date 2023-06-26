@@ -16,6 +16,7 @@ const torrentDownloaded: string[] = [];
 
 type YggSearchProps = {
   search: string;
+  isAnim: boolean;
 };
 type YggSearchState = {
   search: string;
@@ -23,6 +24,7 @@ type YggSearchState = {
   yggItemDetails?: YggResult;
   loading: boolean;
   showMore: boolean;
+  isAnim: boolean;
 };
 
 export default class YggSearch extends React.Component<YggSearchProps, YggSearchState> {
@@ -33,6 +35,7 @@ export default class YggSearch extends React.Component<YggSearchProps, YggSearch
       results: [],
       loading: false,
       showMore: false,
+      isAnim: !!props.isAnim,
     };
   }
 
@@ -80,10 +83,10 @@ export default class YggSearch extends React.Component<YggSearchProps, YggSearch
   }
 
   async search() {
-    const { search } = this.state;
+    const { search, isAnim } = this.state;
     if (search?.length) {
       this.setState({ results: [], loading: true });
-      const results = await ctx.yggClient.search(search, yggClient.categories.movies);
+      const results = await ctx.yggClient.search(search, isAnim ? yggClient.categories.anim : yggClient.categories.movies);
       this.setState({
         loading: false,
         results,
@@ -93,7 +96,7 @@ export default class YggSearch extends React.Component<YggSearchProps, YggSearch
 
   render(): JSX.Element {
     const {
-      search, results, loading, showMore, yggItemDetails,
+      search, results, loading, showMore, yggItemDetails, isAnim,
     } = this.state;
     return (
       <div>
@@ -103,6 +106,7 @@ export default class YggSearch extends React.Component<YggSearchProps, YggSearch
               <InputGroup className="mb-2">
                 <InputGroup.Text>Titre</InputGroup.Text>
                 <Form.Control value={search} onChange={this.handleSearchChange.bind(this)} />
+                <InputGroup.Text><Form.Check type="checkbox" id="is-anim" label="Animation" checked={isAnim} onChange={() => this.setState({ isAnim: !isAnim })} /></InputGroup.Text>
               </InputGroup>
             </Col>
             <Col md="auto">
