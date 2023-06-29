@@ -202,6 +202,16 @@ export type DbDownload = {
   ignored: boolean;
 }
 
+export type SeedboxTorrent = {
+  name: string;
+  size: number;
+  hash: string;
+  downloaded: number;
+  uploaded: number;
+  ratio: number;
+  finished: number;
+}
+
 export type DataTables = {
   users?: Collection<DbUser>;
   wishes?: Collection<DbWish>;

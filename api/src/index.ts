@@ -30,6 +30,7 @@ export async function main() {
 
   if (global.config.seedboxHost && global.config.seedboxPort) {
     const seedbox: Seedbox = new Seedbox({
+      ruTorrentURL: global.config.ruTorrentURL,
       host: global.config.seedboxHost,
       port: global.config.seedboxPort,
       user: global.config.seedboxUser,

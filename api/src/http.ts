@@ -43,6 +43,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.get('/catalog/wishes/list', catalog.getWishes.bind(catalog));
     server.get('/catalog/downloads/list', catalog.getDownloads.bind(catalog));
     server.get('/catalog/downloads/check_seedbox', catalog.checkSeedbox.bind(catalog));
+    server.get('/catalog/downloads/seedbox_list', catalog.getTorrentList.bind(catalog));
     
     server.get('/ygg/top', yggProxy.top.bind(yggProxy));
     server.get('/ygg/details', yggProxy.details.bind(yggProxy));
@@ -69,6 +70,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.post('/catalog/download/delete', catalog.deleteDownload.bind(catalog));
     server.post('/catalog/download/import_movie', catalog.importMovieDownload.bind(catalog));
     server.post('/catalog/download/import_tvshow', catalog.importTvshowDownload.bind(catalog));
+    server.post('/catalog/downloads/seedbox_remove', catalog.removeTorrent.bind(catalog));
 
     await server.listen(3000, '0.0.0.0');
     const address = server.server.address();

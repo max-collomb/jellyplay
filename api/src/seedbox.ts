@@ -1,10 +1,10 @@
 import FTP from "basic-ftp";
 import path from "path";
-import { FastifyRequest, FastifyReply } from 'fastify'; 
-import { DbDownload } from "./types";
+import { DbDownload, SeedboxTorrent } from "./types";
 
 declare var fetch: typeof import('undici').fetch;
 export type SeedboxOptions = {
+  ruTorrentURL: string;
   host: string;
   port: number;
   user: string;
@@ -96,21 +96,63 @@ export class Seedbox {
   }
   
   async addTorrent(torrentUrl: string): Promise<void> {
-    const url = new URL('http://195.154.179.78/rutorrent');
+    const url = new URL(this.options.ruTorrentURL);
     url.pathname = url.pathname.replace(/\/$/, '') + '/php/addtorrent.php';
     const form = new URLSearchParams();
     form.append('url', torrentUrl);
     const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${Buffer.from(`${"easy601"}:${"Z1IW4ABDS1urhUX"}`).toString('base64')}`,
+        Authorization: `Basic ${Buffer.from(`${this.options.user}:${this.options.password}`).toString('base64')}`,
       },
       body: form,
     });
-
     if (!response.ok) {
       throw new Error("Error posting torrent");
     }
   }
 
+  async getTorrentList(): Promise<SeedboxTorrent[]> {
+    const url = new URL(this.options.ruTorrentURL);
+    url.pathname = url.pathname.replace(/\/$/, '') + '/plugins/httprpc/action.php';
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${this.options.user}:${this.options.password}`).toString('base64')}`,
+      },
+      body: 'mode=list&cmd=d.throttle_name%3D&cmd=d.custom%3Dsch_ignore&cmd=cat%3D%22%24t.multicall%3Dd.hash%3D%2Ct.scrape_complete%3D%2Ccat%3D%7B%23%7D%22&cmd=cat%3D%22%24t.multicall%3Dd.hash%3D%2Ct.scrape_incomplete%3D%2Ccat%3D%7B%23%7D%22&cmd=cat%3D%24d.views%3D&cmd=d.custom%3Dseedingtime&cmd=d.custom%3Daddtime',
+    });
+    if (!response.ok) {
+      throw new Error("Error posting torrent");
+    }
+    const list: any = await response.json();
+    const torrents: SeedboxTorrent[] = [];
+    for (const key in list.t) {
+      torrents.push({
+        hash: key,
+        name: list.t[key][4],
+        size: parseFloat(list.t[key][5]),
+        downloaded: parseFloat(list.t[key][8]),
+        uploaded: parseFloat(list.t[key][9]),
+        ratio: parseFloat(list.t[key][10]) / 1000,
+        finished: parseFloat(list.t[key][21]),
+      });
+    }
+    return torrents;
+  }
+
+  async removeTorrent(hash: string): Promise<void> {
+    const url = new URL(this.options.ruTorrentURL);
+    url.pathname = url.pathname.replace(/\/$/, '') + '/plugins/httprpc/action.php';
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${this.options.user}:${this.options.password}`).toString('base64')}`,
+      },
+      body: `<?xml version="1.0" encoding="UTF-8"?><methodCall><methodName>system.multicall</methodName><params><param><value><array><data><value><struct><member><name>methodName</name><value><string>d.custom5.set</string></value></member><member><name>params</name><value><array><data><value><string>${hash}</string></value><value><string>1</string></value></data></array></value></member></struct></value><value><struct><member><name>methodName</name><value><string>d.delete_tied</string></value></member><member><name>params</name><value><array><data><value><string>${hash}</string></value></data></array></value></member></struct></value><value><struct><member><name>methodName</name><value><string>d.erase</string></value></member><member><name>params</name><value><array><data><value><string>${hash}</string></value></data></array></value></member></struct></value></data></array></value></param></params></methodCall>`,
+    });
+    if (!response.ok) {
+      throw new Error("Error posting torrent");
+    }
+  }
 }

@@ -1,6 +1,6 @@
 import {
   Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilenameResponse, ScanStatus,
-  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish, DbDownload,
+  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish, DbDownload, SeedboxTorrent,
 } from '../../api/src/types';
 import { SeenStatus, MediaType } from '../../api/src/enums';
 import { eventBus } from './event-bus';
@@ -477,19 +477,7 @@ export class ApiClient {
   }
 
   async getDownloads(): Promise<DbDownload[]> {
-    // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve) => {
-      // if (cache.downloads) {
-      //   if (cache.downloadsTs >= cache.lastUpdate) {
-      //     cache.lastUpdate = await this.getLastUpdate();
-      //   }
-      //   if (cache.downloadsTs < cache.lastUpdate) {
-      //     cache.downloads = null;
-      //   }
-      // }
-      // if (cache.downloads) {
-      //   resolve(cache.downloads);
-      // } else {
+    return new Promise((resolve) => {
       fetch('/catalog/downloads/list')
         .then(async (response) => {
           const json = await response.json();
@@ -498,7 +486,31 @@ export class ApiClient {
           resolve(json.list);
           eventBus.emit('downloads-fetched', { downloads: json.list });
         });
-      // }
+    });
+  }
+
+  async getSeedboxDownloads(): Promise<SeedboxTorrent[]> {
+    return new Promise((resolve) => {
+      fetch('/catalog/downloads/seedbox_list')
+        .then(async (response) => {
+          const json = await response.json();
+          json.list.reverse();
+          resolve(json.list);
+          // eventBus.emit('seedbox-downloads-fetched', { torrents: json.list });
+        });
+    });
+  }
+
+  async removeSeedboxTorrent(hash: string): Promise<SeedboxTorrent[]> {
+    return new Promise((resolve) => {
+      fetch('/catalog/downloads/seedbox_remove', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ hash }),
+      }).then(async (response) => {
+        const json = await response.json();
+        resolve(json.list);
+      });
     });
   }
 

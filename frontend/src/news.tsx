@@ -11,7 +11,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import { MovieResult, TvResult } from 'moviedb-promise/dist/request-types';
 import { MediaType } from '../../api/src/enums';
 import {
-  DbUser, DbDownload, DbWish, UserWish,
+  DbUser, DbDownload, DbWish, UserWish, SeedboxTorrent,
 } from '../../api/src/types';
 
 import {
@@ -29,6 +29,7 @@ type NewsProps = {
 type NewsState = {
   wishes?: DbWish[];
   downloads?: DbDownload[];
+  torrents?: SeedboxTorrent[];
   showAllDownloads: boolean;
   importingDownload?: DbDownload;
   trending?: Trending;
@@ -141,6 +142,10 @@ export default class News extends React.Component<NewsProps, NewsState> {
     this.setState({ topsTimeWindow: timeWidow, tops: undefined }, this.refreshTops.bind(this));
   }
 
+  handleRemoveTorrent(hash: string): void {
+    ctx.apiClient.removeSeedboxTorrent(hash).then(() => this.refreshDownloads.bind(this));
+  }
+
   refreshWishes(): void {
     ctx.apiClient.getWishes().then((wishes) => { this.setState({ wishes }); });
   }
@@ -149,6 +154,7 @@ export default class News extends React.Component<NewsProps, NewsState> {
     const { importingDownload } = this.state;
     if (!importingDownload) {
       ctx.apiClient.getDownloads().then((downloads) => { this.setState({ downloads }); });
+      ctx.apiClient.getSeedboxDownloads().then((torrents) => { this.setState({ torrents }); });
     }
   }
 
@@ -164,14 +170,15 @@ export default class News extends React.Component<NewsProps, NewsState> {
 
   render(): JSX.Element {
     const {
-      wishes, downloads, showAllDownloads, importingDownload, trending, trendingTimeWindow, tops, topsTimeWindow, yggItemDetails,
+      wishes, downloads, showAllDownloads, importingDownload, trending, trendingTimeWindow, tops, topsTimeWindow, yggItemDetails, torrents,
     } = this.state;
     const { users } = this.props;
     if (importingDownload) {
       return <ImportDownloadForm download={importingDownload} onClose={this.handleImportFormClose.bind(this)} />;
     }
+
     let downloadJsx: JSX.Element = <></>;
-    if (downloads) {
+    if (torrents?.length || downloads) {
       downloadJsx = (
         <>
           <h4 className="section-title">
@@ -204,7 +211,37 @@ export default class News extends React.Component<NewsProps, NewsState> {
           </h4>
           <div className="d-flex flex-wrap -justify-content-evenly mt-3">
             {
-              downloads.filter((dn) => (!dn.ignored && !dn.imported) || showAllDownloads).reverse()
+              (torrents || []).map((torrent) => (
+                <Card className="download-card seedbox" key={torrent.hash}>
+                  <Card.Body>
+                    <div className="text-truncate" title={torrent.name}>{torrent.name}</div>
+                    <div className="d-flex mt-3">
+                      <span className="align-self-center">{renderFileSize(torrent.size)}</span>
+                      <span className="opacity-50 mx-3 align-self-center" title={(new Date(torrent.finished)).toLocaleString()}>{renderRelativeTimeString(torrent.finished * 1000)}</span>
+                      {
+                        torrent.downloaded < torrent.size
+                          ? (
+                            <ProgressBar variant="secondary" now={100 * (torrent.downloaded / torrent.size)} label={`${(100 * (torrent.downloaded / torrent.size)).toFixed(1)}%`} className="flex-grow-1 align-self-center mx-3" />
+                          ) : (
+                            <span className="mx-3 align-self-center flex-grow-1 text-end">
+                              ratio&nbsp;
+                              <span style={{ color: torrent.ratio < 0.5 ? 'red' : (torrent.ratio < 1 ? 'rgb(255, 110, 0)' : 'rgb(170, 255, 0)') }}>{torrent.ratio}</span>
+                              <Button variant="danger" title="Supprimer" onClick={this.handleRemoveTorrent.bind(this, torrent.hash)} disabled={!ctx.user?.admin} className="ms-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-x-circle-fill" viewBox="0 0 16 16">
+                                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
+                                </svg>
+                              </Button>
+                            </span>
+                          )
+                      }
+                    </div>
+                  </Card.Body>
+                </Card>
+              ))
+            }
+            <div style={{ flexBasis: '100%', height: '0' }} />
+            {
+              (downloads || []).filter((dn) => (!dn.ignored && !dn.imported) || showAllDownloads).reverse()
                 .map((download) => {
                   let { path } = download;
                   if (download.path.startsWith(ctx.config.seedboxPath)) path = download.path.substring(ctx.config.seedboxPath.length + 1);

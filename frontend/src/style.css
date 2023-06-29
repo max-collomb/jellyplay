@@ -348,5 +348,6 @@ div.media-card .progress-bar {
 .wish-link .added { font-size: 80%; opacity: 0.5; font-weight: normal; }
 
 .download-card { margin: 0.5rem; min-width: 450px; max-width: 600px; width: calc(25vw - 1.5rem); }
+html.dark .download-card.seedbox { opacity: 0.5; border-color: #fafafa40; }
 .wishlist-card { margin: 0.5rem; min-width: 450px; max-width: 600px; width: calc(25vw - 1.5rem); max-height: 300px; overflow-y: auto; }
 

@@ -1063,6 +1063,25 @@ export class Catalog {
     }
   }
   
+  public async getTorrentList(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const list = await this.seedbox?.getTorrentList();
+      reply.send({ list })
+    } catch (error) {
+      reply.status(500).send({ error });
+    }
+  }
+
+  public async removeTorrent(request: FastifyRequest, reply: FastifyReply) {
+    const hash = (request.body as any).hash;
+    try {
+      const list = await this.seedbox?.removeTorrent(hash);
+      reply.send({})
+    } catch (error) {
+      reply.status(500).send({ error });
+    }
+  }
+
   public async ignoreDownload(request: FastifyRequest, reply: FastifyReply) {
     let body: DownloadMessage = request.body as DownloadMessage;
     let download = this.tables.downloads?.findOne({ path: body.path });
