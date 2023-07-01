@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 
+import checkDiskSpace from 'check-disk-space';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { filenameParse } from '@ctrl/video-filename-parser';
 import Loki from 'lokijs';
@@ -244,14 +245,12 @@ export class Catalog {
       );
     } else {
       for (const download of this.tables.downloads.find()) {
-        // download.ignored = false;
-        // this.tables.downloads.update(download);
-        if (download.started && (new Date(download.started) < new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))) { // si plus vieux que 90 jours
-          console.log(`[-] removing download ${download.path} (older than 90 days)`);
+        if (download.started && (new Date(download.started) < new Date(Date.now() - 60 * 24 * 60 * 60 * 1000))) { // si plus vieux que 60 jours
+          this.log(`[-] removing download ${download.path} (older than 60 days)`);
           this.tables.downloads.remove(download);
         } else if (!download.ignored && ! download.imported) {
           if (!fs.existsSync(path.join(global.config.tmpPath, path.basename(download.path)))) {
-            console.log(`[-] ignoring download ${path.join(global.config.tmpPath, path.basename(download.path))} (file doesn't exist anymore)`);
+            this.log(`[-] ignoring download ${path.join(global.config.tmpPath, path.basename(download.path))} (file doesn't exist anymore)`);
             download.ignored = true;
             this.tables.downloads.update(download);
           }
@@ -1067,6 +1066,17 @@ export class Catalog {
     try {
       const list = await this.seedbox?.getTorrentList();
       reply.send({ list })
+    } catch (error) {
+      reply.status(500).send({ error });
+    }
+  }
+
+  public async getQuotas(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const seedboxQuota = await this.seedbox?.getQuota();
+      const diskspace = await checkDiskSpace(global.config.tmpPath);
+      const nasQuota = { free: diskspace.free, total: diskspace.size };
+      reply.send({ quotas: { seedbox: seedboxQuota, nas: nasQuota }})
     } catch (error) {
       reply.status(500).send({ error });
     }

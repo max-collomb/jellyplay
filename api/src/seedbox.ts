@@ -1,6 +1,6 @@
 import FTP from "basic-ftp";
 import path from "path";
-import { DbDownload, SeedboxTorrent } from "./types";
+import { DbDownload, SeedboxTorrent, Quota } from "./types";
 
 declare var fetch: typeof import('undici').fetch;
 export type SeedboxOptions = {
@@ -123,7 +123,7 @@ export class Seedbox {
       body: 'mode=list&cmd=d.throttle_name%3D&cmd=d.custom%3Dsch_ignore&cmd=cat%3D%22%24t.multicall%3Dd.hash%3D%2Ct.scrape_complete%3D%2Ccat%3D%7B%23%7D%22&cmd=cat%3D%22%24t.multicall%3Dd.hash%3D%2Ct.scrape_incomplete%3D%2Ccat%3D%7B%23%7D%22&cmd=cat%3D%24d.views%3D&cmd=d.custom%3Dseedingtime&cmd=d.custom%3Daddtime',
     });
     if (!response.ok) {
-      throw new Error("Error posting torrent");
+      throw new Error("Error getting torrent list");
     }
     const list: any = await response.json();
     const torrents: SeedboxTorrent[] = [];
@@ -141,6 +141,23 @@ export class Seedbox {
     return torrents;
   }
 
+  async getQuota(): Promise<Quota> {
+    const url = new URL(this.options.ruTorrentURL);
+    url.pathname = url.pathname.replace(/\/$/, '') + '/plugins/diskspace/action.php';
+    url.searchParams.append('_', Date.now().toString());
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${this.options.user}:${this.options.password}`).toString('base64')}`,
+      }
+    });
+    if (!response.ok) {
+      throw new Error("Error posting torrent");
+    }
+    const quota = await response.json();
+    return quota as Quota;
+  }
+
   async removeTorrent(hash: string): Promise<void> {
     const url = new URL(this.options.ruTorrentURL);
     url.pathname = url.pathname.replace(/\/$/, '') + '/plugins/httprpc/action.php';
@@ -152,7 +169,7 @@ export class Seedbox {
       body: `<?xml version="1.0" encoding="UTF-8"?><methodCall><methodName>system.multicall</methodName><params><param><value><array><data><value><struct><member><name>methodName</name><value><string>d.custom5.set</string></value></member><member><name>params</name><value><array><data><value><string>${hash}</string></value><value><string>1</string></value></data></array></value></member></struct></value><value><struct><member><name>methodName</name><value><string>d.delete_tied</string></value></member><member><name>params</name><value><array><data><value><string>${hash}</string></value></data></array></value></member></struct></value><value><struct><member><name>methodName</name><value><string>d.erase</string></value></member><member><name>params</name><value><array><data><value><string>${hash}</string></value></data></array></value></member></struct></value></data></array></value></param></params></methodCall>`,
     });
     if (!response.ok) {
-      throw new Error("Error posting torrent");
+      throw new Error("Error removing torrent");
     }
   }
 }

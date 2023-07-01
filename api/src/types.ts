@@ -212,6 +212,16 @@ export type SeedboxTorrent = {
   finished: number;
 }
 
+export type Quota = {
+  total: number;
+  free: number;
+}
+
+export type Quotas = {
+  seedbox: Quota;
+  nas: Quota;
+}
+
 export type DataTables = {
   users?: Collection<DbUser>;
   wishes?: Collection<DbWish>;

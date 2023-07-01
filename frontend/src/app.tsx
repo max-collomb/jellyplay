@@ -28,7 +28,8 @@ import TvShows from './tvshows';
 import TvshowDetails from './tvshow-details';
 import UserSelection from './user-selection';
 import SearchResults from './search-results';
-import News from './news';
+import Trendings from './trendings';
+import Downloads from './downloads';
 
 const SCAN_POLL_INTERVAL: number = 1000;
 
@@ -89,7 +90,8 @@ export default class App extends React.Component<AppProps, AppState> {
     ctx.router.add('movie-details', '/movie/:id');
     ctx.router.add('tvshows', '/tvshows');
     ctx.router.add('tvshow-details', '/tvshow/:id');
-    ctx.router.add('news', '/news');
+    ctx.router.add('trendings', '/trendings');
+    ctx.router.add('downloads', '/downloads');
   }
 
   componentDidMount() {
@@ -217,8 +219,10 @@ export default class App extends React.Component<AppProps, AppState> {
       content = <TmdbTvshowDetails tvshowId={route.id} />;
     } else if (route.name === 'tmdb-person-details' && route.id) {
       content = <TmdbPersonDetails personId={route.id} />;
-    } else if (route.name === 'news') {
-      content = <News users={users} />;
+    } else if (route.name === 'trendings') {
+      content = <Trendings users={users} />;
+    } else if (route.name === 'downloads') {
+      content = <Downloads />;
     }
 
     const offcanvas: JSX.Element = (
@@ -294,8 +298,11 @@ export default class App extends React.Component<AppProps, AppState> {
               <Nav.Link href="#/tvshows" active={route.name === 'tvshows' && !search}>
                 Séries
               </Nav.Link>
-              <Nav.Link href="#/news" active={route.name === 'news' && !search}>
-                Nouveautés
+              <Nav.Link href="#/trendings" active={route.name === 'trendings' && !search}>
+                Tendances
+              </Nav.Link>
+              <Nav.Link href="#/downloads" active={route.name === 'downloads' && !search}>
+                Téléchargements
                 { downloadCount > 0 ? <Badge pill bg="primary" className="ms-2">{downloadCount}</Badge> : null }
               </Nav.Link>
             </Nav>
