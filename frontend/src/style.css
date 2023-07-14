@@ -16,7 +16,7 @@
 ::-webkit-scrollbar-track:active { background: #0c0d0e }
 ::-webkit-scrollbar-corner { background: transparent }
 
-.simplified-ui-hidden { display: none!important; }
+.simplified-ui .simplified-ui-hidden { display: none!important; }
 
 html.dark a { color: #a0cfff; }
 html.dark a:active,
