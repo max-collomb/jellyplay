@@ -143,6 +143,8 @@ V1.1
 [x] onglet nouveautés : pouvoir supprimer un torrent de la seedbox
 [x] séparer l'onglet "nouveautés" en 2 onglets "tendances" et "téléchargements"
 [x] afficher l'espace disque disponible sur la seedbox et sur le nas
+[x] Ajouter utilisateur Monique + ignorer les nouveautés
+[ ] Disposer d'un rating sur les films
 [ ] import automatique des films et des nouveaux épisodes de séries (si série non connue => laisser dans nouveautés)
 [ ] système de téléchargement auto des épisodes de séries avec rss ygg + expression régulière
 [ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement

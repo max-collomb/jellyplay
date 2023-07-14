@@ -77,6 +77,7 @@ export default class App extends React.Component<AppProps, AppState> {
         }
       }
       ctx.user = user;
+      document.body.classList.toggle('simplified-ui', !!user?.simplifiedUI);
       this.setState({ users });
     });
     ctx.apiClient.getDownloads().then((downloads) => {
@@ -129,6 +130,7 @@ export default class App extends React.Component<AppProps, AppState> {
 
   handleUserSelected(user?: DbUser): void {
     ctx.user = user;
+    document.body.classList.toggle('simplified-ui', !!user?.simplifiedUI);
     this.forceUpdate();
     localStorage.setItem('userName', user ? user.name : 'none');
   }
@@ -269,7 +271,7 @@ export default class App extends React.Component<AppProps, AppState> {
             <ButtonToolbar className="my-3">
               <ButtonGroup className="flex-fill">
                 <Button variant={document.location.host === '127.0.0.1:3000' ? 'secondary' : 'outline-secondary'} onClick={this.handleServerClick.bind(this, '127.0.0.1:3000')}>127.0.0.1:3000</Button>
-                <Button variant={document.location.host === '192.168.0.99:3000' ? 'secondary' : 'outline-secondary'} onClick={this.handleServerClick.bind(this, '192.168.0.99:3000')}>192.168.0.99:3000</Button>
+                <Button variant={document.location.host === 'nas.colors.ovh:3000' ? 'secondary' : 'outline-secondary'} onClick={this.handleServerClick.bind(this, 'nas.colors.ovh:3000')}>nas.colors.ovh:3000</Button>
               </ButtonGroup>
             </ButtonToolbar>
             <ButtonToolbar className="my-3">
@@ -298,10 +300,10 @@ export default class App extends React.Component<AppProps, AppState> {
               <Nav.Link href="#/tvshows" active={route.name === 'tvshows' && !search}>
                 Séries
               </Nav.Link>
-              <Nav.Link href="#/trendings" active={route.name === 'trendings' && !search}>
+              <Nav.Link href="#/trendings" active={route.name === 'trendings' && !search} className="simplified-ui-hidden">
                 Tendances
               </Nav.Link>
-              <Nav.Link href="#/downloads" active={route.name === 'downloads' && !search}>
+              <Nav.Link href="#/downloads" active={route.name === 'downloads' && !search} className="simplified-ui-hidden">
                 Téléchargements
                 { downloadCount > 0 ? <Badge pill bg="primary" className="ms-2">{downloadCount}</Badge> : null }
               </Nav.Link>

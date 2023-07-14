@@ -15,22 +15,24 @@ namespace client
   public partial class MainWindow : Window
   {
     bool initialized = false;
-    string defaultNasIp = "192.168.0.99";
-    string nasIp = "192.168.0.99";
+    // string defaultNasIp = "192.168.0.99";
+    // string nasIp = "192.168.0.99";
     public MainWindow()
     {
       InitializeComponent();
       ((App)Application.Current).WindowPlace.Register(this);
-      foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces())
-        foreach (UnicastIPAddressInformation addr in adapter.GetIPProperties().UnicastAddresses)
-          if (addr.Address.ToString().StartsWith("10.244"))
-            nasIp = "10.244.0.99";
+      // foreach (NetworkInterface adapter in NetworkInterface.GetAllNetworkInterfaces())
+      //   foreach (UnicastIPAddressInformation addr in adapter.GetIPProperties().UnicastAddresses)
+      //     if (addr.Address.ToString().StartsWith("10.244"))
+      //       nasIp = "10.244.0.99";
 #if DEBUG
-      webView.Source = new Uri("http://127.0.0.1:3000/frontend/");
+      // webView.Source = new Uri("http://127.0.0.1:3000/frontend/");
 #else
-      webView.Source = new Uri($"http://{nasIp}:3000/frontend/");
+      // webView.Source = new Uri($"http://{nasIp}:3000/frontend/");
 #endif
-      window.Title = $"Jellyplay - {nasIp}";
+      // window.Title = $"Jellyplay - {nasIp}";
+      webView.Source = new Uri("http://nas.colors.ovh:3000/frontend/");
+      window.Title = "Jellyplay - http://nas.colors.ovh:3000/frontend/";
       webView.DefaultBackgroundColor = System.Drawing.Color.Black;
       webView.Visibility = Visibility.Collapsed;
       webView.NavigationStarting += MpvScheme;
@@ -39,13 +41,15 @@ namespace client
 
     async void MpvScheme(object? sender, CoreWebView2NavigationStartingEventArgs args)
     {
+      if (args.Uri.StartsWith("http"))
+        window.Title = "Jellyplay - " + args.Uri;
       Match match = Regex.Match(args.Uri, @"mpv:\/\/(.*)\?pos=([0-9]*)");
       if (match.Success)
       {
         args.Cancel = true;
         string path = HttpUtility.UrlDecode(match.Groups[1].Value);
-        if (defaultNasIp != nasIp && path.Contains(defaultNasIp))
-          path = path.Replace(defaultNasIp, nasIp);
+        // if (path.Contains("192.168.0.99"))
+        //   path = path.Replace("192.168.0.99", "nas.colors.ovh");
         int position = int.Parse(match.Groups[2].Value);
         Debug.WriteLine("path = " + path);
         Debug.WriteLine("position = " + position);

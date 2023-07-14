@@ -24,6 +24,7 @@ export type DbUser = {
   name: string;
   audience: number;
   admin: boolean;
+  simplifiedUI: boolean;
   created: number;
 };
 
