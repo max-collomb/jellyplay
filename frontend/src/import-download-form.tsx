@@ -209,7 +209,7 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
     } else if (hasEN && hasFRsubs) {
       language = 'vost';
     }
-    return `${title} (${year}) [${duration}'${definition}${language}]${path.substring(path.lastIndexOf('.'))}`;
+    return cleanFileName(`${title} (${year}) [${duration}'${definition}${language}]${path.substring(path.lastIndexOf('.'))}`);
   }
 
   generateFoldername(title: string, id?: number, includeId: boolean = false): string {

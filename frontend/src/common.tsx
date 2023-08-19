@@ -92,7 +92,7 @@ export function cleanString(s: string): string {
 }
 
 export function cleanFileName(fileName: string): string {
-  return fileName.replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ').replace(/\s{2,}/g, ' ');
+  return fileName.replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ').replace(/\s{2,}/g, ' ').trim();
 }
 
 export function getMovieLanguage(movie: DbMovie): string {

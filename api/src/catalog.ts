@@ -840,7 +840,7 @@ export class Catalog {
     const parsedFilename: ParsedFilenameResponse = { existingTvshows, ...extractMovieTitle(body.filename) };
 
     if (fs.existsSync(path.join(global.config.tmpPath, path.basename(body.filename)))) {
-      parsedFilename.asMovie = filenameParse(path.basename(body.filename));
+      parsedFilename.asMovie = filenameParse(path.basename(body.filename).replace("[FR-EN]", "")); // supprime manuellement [FR-EN] qui est mal géré par la librairie
       parsedFilename.asTvshow = filenameParse(path.basename(body.filename), true) as ParsedShow;
       let fileInfo: FileInfo = {
         created: 0,
