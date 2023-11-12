@@ -40,6 +40,7 @@ export const ctx: Context = {
     seedboxPath: '',
     yggUrl: '',
     yggKey: '',
+    flareSolverrUrl: '',
   },
   user: undefined,
   eventBus,

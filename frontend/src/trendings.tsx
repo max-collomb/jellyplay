@@ -81,12 +81,20 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
 
   handleYggDetailsClick(yggItem: YggItem, evt: React.MouseEvent<HTMLAnchorElement>): void {
     evt.preventDefault();
+    if (ctx.yggClient.isCloudFlareActive) {
+      document.location.href = `browser://${encodeURIComponent(yggItem.detailLink)}`;
+      return;
+    }
     const { yggItemDetails } = this.state;
     this.setState({ yggItemDetails: yggItemDetails?.id === yggItem.id ? undefined : yggItem });
   }
 
   async handleYggDownloadClick(yggItem: YggItem, evt: React.MouseEvent<HTMLAnchorElement>): Promise<void> {
     evt.preventDefault();
+    if (ctx.yggClient.isCloudFlareActive) {
+      alert('Le téléchargement ne fonctionne pas pour le moment.\nUtliser la liste d\'envies'); // eslint-disable-line no-alert
+      return;
+    }
     if (await ctx.yggClient.download(yggItem.downloadLink)) {
       torrentDownloaded.push(yggItem.id);
       this.forceUpdate();

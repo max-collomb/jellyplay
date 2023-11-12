@@ -18,6 +18,7 @@ export type Config = {
   seedboxPath: string;
   yggUrl: string;
   yggKey: string;
+  flareSolverrUrl: string;
 };
 
 export type DbUser = {

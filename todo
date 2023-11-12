@@ -149,6 +149,7 @@ V1.1
 [ ] système de téléchargement auto des épisodes de séries avec rss ygg + expression régulière
 [ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
 [ ] recherche série non possédée : gérer séries et séries animé selon le genre
+[ ] serie : pas intéressé => manque le refresh
 
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo

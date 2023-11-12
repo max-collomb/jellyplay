@@ -22,12 +22,77 @@ const getNextText = (element: any) => {
 };
 
 declare var fetch: typeof import('undici').fetch;
+
 export class YggProxy {
+
+  cloudFlareActive = false;
+
+  private async fetchFlare(href: string, isJson: boolean = false): Promise<any> {
+    if (!this.cloudFlareActive) {
+      let response = await fetch(href);
+      console.log("response.status", response.status);
+      if (response.status == 403)
+        this.cloudFlareActive = true;
+      else if (isJson)
+        return await response.json();
+      else
+        return response.text();
+    }
+    console.log("CloudFlare is active");
+    let fsResponse = await fetch(global.config.flareSolverrUrl, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cmd: "sessions.list" }),
+    });
+    const sessionList: any = await fsResponse.json();
+    // console.log("A) session.list", sessionList);
+    let session = "session_" + Date.now();
+    if (sessionList.sessions.length) {
+      session = sessionList.sessions[0];
+    } else {
+      await fetch(global.config.flareSolverrUrl, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cmd: "sessions.create", session }),
+      });
+      fsResponse = await fetch(global.config.flareSolverrUrl, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cmd: "sessions.list" }),
+      });
+      // console.log("B) session.list", await fsResponse.json());
+    }
+    fsResponse = await fetch(global.config.flareSolverrUrl, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cmd: "request.get", session, url: href, maxTimeout: 60000, session_ttl_minutes: 10 }),
+    });
+    const responseJson: any = await fsResponse.json();
+    // console.log('responseJson: ', responseJson);
+    if (responseJson.status == 'ok' && responseJson.solution) {
+      if (isJson) {
+        let json = responseJson.solution.response
+          .replace(`<html><head><meta name="color-scheme" content="light dark"></head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">`, "")
+          .replace(`</pre></body></html>`, "")
+          .replace(/&gt;/g, '>')
+          .replace(/&lt;/g, '<')
+          .replace(/&amp;/g, '&');
+        return JSON.parse(json);
+      } else {
+        return responseJson.solution.response.replace('\\n', '\n').replace('\\t', '\t');
+      }
+    }
+    return "";
+  }
+
+  async isCloudFlareActive(_request: FastifyRequest, reply: FastifyReply) {
+    reply.type('text/json').send({ isActive: this.cloudFlareActive });
+  }
+
   async top(request: FastifyRequest, reply: FastifyReply) {
     const url = (request.query as any).url;
     try {
-      const response = await fetch(url);
-      const content = await response.json();
+      const content = await this.fetchFlare(url, true);
       reply.type('text/json').send(content);
     } catch (error) {
       reply.status(500).send('Error fetching URL');
@@ -40,8 +105,7 @@ export class YggProxy {
     const scheme = urlObject.protocol.replace(':', '');
     const host = urlObject.host;
     try {
-      const response = await fetch(url);
-      const html = await response.text();
+      const html = await this.fetchFlare(url);
 
       const $ = cheerio.load(html);
       $('head').prepend(`<base href="${scheme}://${host}/"/>`);
@@ -58,8 +122,7 @@ export class YggProxy {
     const scheme = urlObject.protocol.replace(':', '');
     const host = urlObject.host;
     try {
-      const response = await fetch(url);
-      const html = await response.text();
+      const html = await this.fetchFlare(url);
 
       const $ = cheerio.load(html);
       const results: YggResult[] = [];

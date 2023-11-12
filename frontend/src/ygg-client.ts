@@ -17,6 +17,8 @@ export class YggClient {
 
   passkey: string = '';
 
+  isCloudFlareActive = false;
+
   categories: { [key: string]: string } = {
     movies: '2183', tvshows: '2184', emissions: '2182', animation: '2178',
   };
@@ -73,6 +75,7 @@ export class YggClient {
     const emissions = await this.getTop('emissions', list[this.categories.emissions]);
     const tvshows = await this.getTop('tvshows', list[this.categories.tvshows]);
 
+    this.isCloudFlareActive = (await (await fetch('/ygg/cloudflare_active')).json()).isActive;
     return movies.concat(tvshows).concat(emissions);
   }
 

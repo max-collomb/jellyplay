@@ -62,12 +62,20 @@ export default class YggSearch extends React.Component<YggSearchProps, YggSearch
 
   handleYggDetailsClick(yggItem: YggResult, evt: React.MouseEvent<HTMLAnchorElement>): void {
     evt.preventDefault();
+    if (ctx.yggClient.isCloudFlareActive) {
+      document.location.href = `browser://${encodeURIComponent(yggItem.url)}`;
+      return;
+    }
     const { yggItemDetails } = this.state;
     this.setState({ yggItemDetails: yggItemDetails?.id === yggItem.id ? undefined : yggItem });
   }
 
   async handleYggDownloadClick(yggItem: YggResult, evt: React.MouseEvent<HTMLAnchorElement>): Promise<void> {
     evt.preventDefault();
+    if (ctx.yggClient.isCloudFlareActive) {
+      alert('Le téléchargement ne fonctionne pas pour le moment.\nUtliser la liste d\'envies'); // eslint-disable-line no-alert
+      return;
+    }
     if (await ctx.yggClient.download(yggItem.downloadUrl)) {
       torrentDownloaded.push(yggItem.id);
       this.forceUpdate();

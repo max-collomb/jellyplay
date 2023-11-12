@@ -50,6 +50,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.get('/ygg/details', yggProxy.details.bind(yggProxy));
     server.get('/ygg/search', yggProxy.search.bind(yggProxy));
     server.get('/ygg/download', catalog.addTorrentToSeedbox.bind(catalog));
+    server.get('/ygg/cloudflare_active', yggProxy.isCloudFlareActive.bind(yggProxy));
     
     server.post('/catalog/movie/set_status', catalog.setMovieStatus.bind(catalog));
     server.post('/catalog/tvshow/set_status', catalog.setTvshowStatus.bind(catalog));
