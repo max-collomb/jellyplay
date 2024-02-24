@@ -1,6 +1,6 @@
 import {
   Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilenameResponse, ScanStatus,
-  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish, DbDownload, SeedboxTorrent, Quotas,
+  UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish, DbDownload, SeedboxTorrent, SeedboxFilter, Quotas,
 } from '../../api/src/types';
 import { SeenStatus, MediaType } from '../../api/src/enums';
 import { eventBus } from './event-bus';
@@ -508,6 +508,17 @@ export class ApiClient {
           json.list.reverse();
           resolve(json.list);
           // eventBus.emit('seedbox-downloads-fetched', { torrents: json.list });
+        });
+    });
+  }
+
+  async getSeedboxFilters(): Promise<SeedboxFilter[]> {
+    return new Promise((resolve) => {
+      fetch('/catalog/downloads/seedbox_filters')
+        .then(async (response) => {
+          const json = await response.json();
+          resolve(json.list);
+          // eventBus.emit('seedbox-filters-fetched', { filters: json.list });
         });
     });
   }

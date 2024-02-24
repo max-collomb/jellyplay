@@ -1072,6 +1072,15 @@ export class Catalog {
     }
   }
 
+  public async getTorrentFilters(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const list = await this.seedbox?.getTorrentFilters();
+      reply.send({ list })
+    } catch (error) {
+      reply.status(500).send({ error });
+    }
+  }
+
   public async getQuotas(request: FastifyRequest, reply: FastifyReply) {
     try {
       const seedboxQuota = await this.seedbox?.getQuota();

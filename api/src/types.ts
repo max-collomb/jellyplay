@@ -214,6 +214,12 @@ export type SeedboxTorrent = {
   finished: number;
 }
 
+export type SeedboxFilter = {
+  name: string;
+  pattern: string;
+  enabled: number;
+}
+
 export type Quota = {
   total: number;
   free: number;

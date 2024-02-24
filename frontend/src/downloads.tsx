@@ -5,10 +5,13 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Card from 'react-bootstrap/Card';
 import Col from 'react-bootstrap/Col';
 import Dropdown from 'react-bootstrap/Dropdown';
+import Form from 'react-bootstrap/Form';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import Row from 'react-bootstrap/Row';
 
-import { DbDownload, SeedboxTorrent, Quotas } from '../../api/src/types';
+import {
+  DbDownload, SeedboxTorrent, SeedboxFilter, Quotas,
+} from '../../api/src/types';
 
 import {
   ctx, renderFileSize, renderRelativeTimeString,
@@ -22,6 +25,7 @@ type DownloadsState = {
   showAllDownloads: boolean;
   importingDownload?: DbDownload;
   quotas?: Quotas;
+  filters?: SeedboxFilter[];
 };
 
 export default class Downloads extends React.Component<DownloadsProps, DownloadsState> {
@@ -31,7 +35,8 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
     super(props);
     this.state = { showAllDownloads: false };
     this.refreshDownloads();
-    ctx.apiClient.getSeedboxQuota().then((seedboxQuota) => this.setState({ quotas: seedboxQuota }));
+    ctx.apiClient.getSeedboxQuota().then((quotas) => this.setState({ quotas }));
+    ctx.apiClient.getSeedboxFilters().then((filters) => this.setState({ filters }));
   }
 
   componentDidMount(): void {
@@ -84,7 +89,7 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
 
   render(): JSX.Element {
     const {
-      downloads, showAllDownloads, importingDownload, torrents, quotas,
+      downloads, showAllDownloads, importingDownload, torrents, filters, quotas,
     } = this.state;
     if (importingDownload) {
       return <ImportDownloadForm download={importingDownload} onClose={this.handleImportFormClose.bind(this)} />;
@@ -153,6 +158,29 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
                 ))
               }
           </div>
+          <div className="mt-5 border">
+            <h5 className="my-3 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#555" className="bi bi-rss" viewBox="0 0 16 16">
+                <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+                <path d="M5.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m-3-8.5a1 1 0 0 1 1-1c5.523 0 10 4.477 10 10a1 1 0 1 1-2 0 8 8 0 0 0-8-8 1 1 0 0 1-1-1m0 4a1 1 0 0 1 1-1 6 6 0 0 1 6 6 1 1 0 1 1-2 0 4 4 0 0 0-4-4 1 1 0 0 1-1-1" />
+              </svg>
+              &emsp;Filtres RSS
+            </h5>
+            {
+              (filters || []).map((filter) => (
+                <Card className="download-card seedbox" key={filter.name}>
+                  <Card.Body>
+                    <div className="d-flex mt-3">
+                      <div className="text-truncate" title={filter.name}>{filter.name}</div>
+                      <div className="mx-3 align-self-center flex-grow-1 text-end"><Form.Check disabled type="switch" checked={filter.enabled === 1} /></div>
+                    </div>
+                    <div className="opacity-50 text-truncate font-monospace" title={filter.pattern}>{filter.pattern}</div>
+                  </Card.Body>
+                </Card>
+              ))
+            }
+          </div>
+
         </Col>
         <Col xs={6} className="p-3 ps-0">
           <div className="border">

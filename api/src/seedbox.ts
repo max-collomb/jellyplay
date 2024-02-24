@@ -1,6 +1,6 @@
 import FTP from "basic-ftp";
 import path from "path";
-import { DbDownload, SeedboxTorrent, Quota } from "./types";
+import { DbDownload, SeedboxTorrent, SeedboxFilter, Quota } from "./types";
 
 declare var fetch: typeof import('undici').fetch;
 export type SeedboxOptions = {
@@ -139,6 +139,32 @@ export class Seedbox {
       });
     }
     return torrents;
+  }
+
+  async getTorrentFilters(): Promise<SeedboxFilter[]> {
+    const url = new URL(this.options.ruTorrentURL);
+    url.pathname = url.pathname.replace(/\/$/, '') + '/plugins/rss/action.php';
+    console.log('url.toString(): ', url.toString() + "?mode=getfilters");
+    const response = await fetch(url.toString() + "?mode=getfilters", {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${this.options.user}:${this.options.password}`).toString('base64')}`,
+      },
+    });
+    console.log('response: ', response);
+    if (!response.ok) {
+      throw new Error("Error getting seedbox rss filters");
+    }
+    const list: any = await response.json();
+    const filters: SeedboxFilter[] = [];
+    for (const f of list) {
+      filters.push({
+        name: f.name,
+        pattern: f.pattern,
+        enabled: f.enabled,
+      });
+    }
+    return filters;
   }
 
   async getQuota(): Promise<Quota> {
