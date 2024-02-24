@@ -146,7 +146,7 @@ V1.1
 [x] Ajouter utilisateur Monique + ignorer les nouveautés
 [x] système de téléchargement auto des épisodes de séries avec rss ygg + expression régulière
 [x] bandes annonces : ouvrir navigateur externe (+ supprimer yt-dlp.exe)
-[ ] serie : pas intéressé => manque le refresh
+[x] serie : pas intéressé => manque le refresh
 [ ] import automatique des films et des nouveaux épisodes de séries (si série non connue => laisser dans nouveautés)
 [ ] Disposer d'un rating sur les films
 [ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement

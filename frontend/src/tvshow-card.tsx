@@ -12,6 +12,7 @@ import {
 type TvShowCardProps = {
   tvshow: DbTvshow
   showNext: boolean;
+  onStatusUpdated: () => void;
 };
 type TvShowCardState = {
   currentStatus: SeenStatus;
@@ -37,7 +38,7 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
   }
 
   handleEventEpisodePositionChanged(evt: any): void {
-    const { tvshow } = this.props;
+    const { tvshow, onStatusUpdated } = this.props;
     const { percentPos, currentStatus } = this.state;
     if (evt.foldername === tvshow.foldername) {
       const episode: Episode | null = getEpisodeByFilename(tvshow, evt.filename);
@@ -47,6 +48,9 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
         const newPercentPos = (us && episode.duration) ? Math.floor(100 * (us.position / episode.duration)) : 0;
         const newStatus = us ? us.currentStatus : SeenStatus.unknown;
         if (newPercentPos !== percentPos || newStatus !== currentStatus) {
+          if (newStatus !== currentStatus && onStatusUpdated !== undefined) {
+            onStatusUpdated();
+          }
           this.setState({ percentPos: newPercentPos, currentStatus: newStatus });
         }
       }
@@ -54,9 +58,11 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
   }
 
   handleToggleStatus(status: SeenStatus, evt: React.MouseEvent<HTMLElement>): void {
-    const { tvshow } = this.props;
+    const { tvshow, onStatusUpdated } = this.props;
     ctx.apiClient.setTvshowStatus(tvshow, ctx.user?.name, status).then((userStatus: UserTvshowStatus[]) => {
       tvshow.userStatus = userStatus;
+      this.setState({ currentStatus: status });
+      if (onStatusUpdated !== undefined) { onStatusUpdated(); }
     });
     evt.stopPropagation();
     evt.preventDefault();

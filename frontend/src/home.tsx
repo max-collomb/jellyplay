@@ -122,6 +122,7 @@ export default class Home extends React.Component<HomeProps, HomeState> {
                       key={(item as DbTvshow).tmdbid}
                       tvshow={item as DbTvshow}
                       showNext={options.mixed}
+                      onStatusUpdated={this.refreshContent.bind(this)}
                     />
                   );
                 }
