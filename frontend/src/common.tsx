@@ -151,8 +151,8 @@ export function playUrl(url: string): void {
   const path = encodeURIComponent(url);
   if (window._mpvSchemeSupported) {
     window._setPosition = () => {};
-    console.log(`mpv://${path}?pos=0`); // eslint-disable-line no-console
-    document.location.href = `mpv://${path}?pos=0`;
+    console.log(`browser://${path}`); // eslint-disable-line no-console
+    document.location.href = `browser://${path}`;
   } else {
     window.open(url);
   }

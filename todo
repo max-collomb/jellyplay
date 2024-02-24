@@ -144,12 +144,13 @@ V1.1
 [x] séparer l'onglet "nouveautés" en 2 onglets "tendances" et "téléchargements"
 [x] afficher l'espace disque disponible sur la seedbox et sur le nas
 [x] Ajouter utilisateur Monique + ignorer les nouveautés
-[ ] Disposer d'un rating sur les films
+[x] système de téléchargement auto des épisodes de séries avec rss ygg + expression régulière
+[x] bandes annonces : ouvrir navigateur externe (+ supprimer yt-dlp.exe)
+[ ] serie : pas intéressé => manque le refresh
 [ ] import automatique des films et des nouveaux épisodes de séries (si série non connue => laisser dans nouveautés)
-[ ] système de téléchargement auto des épisodes de séries avec rss ygg + expression régulière
+[ ] Disposer d'un rating sur les films
 [ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
 [ ] recherche série non possédée : gérer séries et séries animé selon le genre
-[ ] serie : pas intéressé => manque le refresh
 
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo
