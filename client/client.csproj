@@ -18,7 +18,6 @@
     <None Remove="mpv\mpv\fonts.conf" />
     <None Remove="mpv\portable_config\input.conf" />
     <None Remove="mpv\portable_config\mpv.conf" />
-    <None Remove="mpv\yt-dlp.exe" />
   </ItemGroup>
 
   <ItemGroup>
@@ -42,9 +41,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="mpv\portable_config\mpv.conf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="mpv\yt-dlp.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

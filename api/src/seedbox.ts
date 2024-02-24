@@ -144,14 +144,12 @@ export class Seedbox {
   async getTorrentFilters(): Promise<SeedboxFilter[]> {
     const url = new URL(this.options.ruTorrentURL);
     url.pathname = url.pathname.replace(/\/$/, '') + '/plugins/rss/action.php';
-    console.log('url.toString(): ', url.toString() + "?mode=getfilters");
     const response = await fetch(url.toString() + "?mode=getfilters", {
       method: 'GET',
       headers: {
         Authorization: `Basic ${Buffer.from(`${this.options.user}:${this.options.password}`).toString('base64')}`,
       },
     });
-    console.log('response: ', response);
     if (!response.ok) {
       throw new Error("Error getting seedbox rss filters");
     }

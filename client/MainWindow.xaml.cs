@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web;
 using System.Windows;
-using System.Net.NetworkInformation;
 
 namespace client
 {
@@ -93,7 +92,7 @@ namespace client
         args.Cancel = true;
         string url = HttpUtility.UrlDecode(match.Groups[1].Value);
         Debug.WriteLine("url= " + url);
-        Process.Start("explorer", url);
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
       }
     }
 

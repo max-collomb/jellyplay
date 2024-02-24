@@ -84,7 +84,7 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
     const lang = getMovieLanguage(movie);
     return (
       <div
-        className={`flex-shrink-0 media-card portrait${movie.audience === 999 ? ' audience-not-set' : ''}`}
+        className={`flex-shrink-0 media-card portrait${ctx.user?.admin && (movie.audience === 999) ? ' audience-not-set' : ''}`}
         onClick={this.handleClick.bind(this)}
       >
         <span className="poster">

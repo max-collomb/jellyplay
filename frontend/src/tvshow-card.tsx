@@ -126,7 +126,7 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
     posterPath = posterPath || tvshow.posterPath;
     return /* <React.Fragment> */(
       <div
-        className={`flex-shrink-0 media-card portrait${tvshow.audience === 999 ? ' audience-not-set' : ''}`}
+        className={`flex-shrink-0 media-card portrait${ctx.user?.admin && (tvshow.audience === 999) ? ' audience-not-set' : ''}`}
         onClick={this.handleClick.bind(this)}
       >
         <span className="poster">

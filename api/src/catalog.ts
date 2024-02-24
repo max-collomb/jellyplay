@@ -181,9 +181,9 @@ export class Catalog {
        );
       this.tables.users.insert({ name: 'max',    audience: 999, admin: true,  simplifiedUI: false, created: 1650837600000 /* UTC 2022-04-25 00:00:00.000 */ }); 
       this.tables.users.insert({ name: 'flo',    audience: 999, admin: false, simplifiedUI: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
-      this.tables.users.insert({ name: 'amélie', audience: 16,  admin: false, simplifiedUI: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
-      this.tables.users.insert({ name: 'thomas', audience: 12,  admin: false, simplifiedUI: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
-      this.tables.users.insert({ name: 'mjl',    audience: 16,  admin: false, simplifiedUI: true,  created: 2145916800000 /* UTC 2038-01-01 00:00:00.000 */ });
+      this.tables.users.insert({ name: 'amélie', audience: 999, admin: false, simplifiedUI: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
+      this.tables.users.insert({ name: 'thomas', audience: 999, admin: false, simplifiedUI: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
+      this.tables.users.insert({ name: 'mjl',    audience: 999, admin: false, simplifiedUI: true,  created: 2145916800000 /* UTC 2038-01-01 00:00:00.000 */ });
     }
 
     this.tables.wishes = this.db.getCollection('wishes');
