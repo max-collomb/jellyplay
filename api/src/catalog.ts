@@ -276,30 +276,30 @@ export class Catalog {
     //   this.lastUpdate = Date.now();
     // }
 
-    for (let tvshow of (this.tables.tvshows?.find() || [])) {
-      if (!tvshow.rating) {
-        this.log(`updating tvshow ${tvshow.foldername}`);
-        tvshow.seasons = [];
-        tvshow.genres = [];
-        tvshow.countries = [];
+    // for (let tvshow of (this.tables.tvshows?.find() || [])) {
+    //   if (!tvshow.rating) {
+    //     this.log(`updating tvshow ${tvshow.foldername}`);
+    //     tvshow.seasons = [];
+    //     tvshow.genres = [];
+    //     tvshow.countries = [];
 
-        this.scanLogs = "";
-        await this.tmdbClient.getTvshowData(tvshow);
-        // for (let episode of tvshow.episodes) {
-        //   if (tvshow.isSaga) {
-        //     await this.tmdbClient.addCollectionEpisode(tvshow, episode);
-        //   } else {
-        //     await this.tmdbClient.addTvshowEpisode(tvshow, episode);
-        //   }
-        //   await mediaInfo(episode, path.join(this.tvshowsPath, tvshow.foldername, episode.filename), this.log.bind(this));
-        //   if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
-        //     const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
-        //     await this.insertCredits(credits);
-        //   }
-        // }
-        this.lastUpdate = Date.now();
-      }
-    }
+    //     this.scanLogs = "";
+    //     await this.tmdbClient.getTvshowData(tvshow);
+    //     // for (let episode of tvshow.episodes) {
+    //     //   if (tvshow.isSaga) {
+    //     //     await this.tmdbClient.addCollectionEpisode(tvshow, episode);
+    //     //   } else {
+    //     //     await this.tmdbClient.addTvshowEpisode(tvshow, episode);
+    //     //   }
+    //     //   await mediaInfo(episode, path.join(this.tvshowsPath, tvshow.foldername, episode.filename), this.log.bind(this));
+    //     //   if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
+    //     //     const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
+    //     //     await this.insertCredits(credits);
+    //     //   }
+    //     // }
+    //     this.lastUpdate = Date.now();
+    //   }
+    // }
   }
 
   private log(message: string): void {
