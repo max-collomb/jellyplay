@@ -18,12 +18,17 @@ import {
 } from './common';
 import ImportDownloadForm from './import-download-form';
 
+type GroupedDownloads = {
+  [key: string]: DbDownload[];
+};
+
 type DownloadsProps = {};
 type DownloadsState = {
   downloads?: DbDownload[];
   torrents?: SeedboxTorrent[];
   showAllDownloads: boolean;
-  importingDownload?: DbDownload;
+  showAllImportButtons: boolean;
+  importingDownloads?: DbDownload[];
   quotas?: Quotas;
   filters?: SeedboxFilter[];
 };
@@ -33,7 +38,7 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
 
   constructor(props: DownloadsProps) {
     super(props);
-    this.state = { showAllDownloads: false };
+    this.state = { showAllDownloads: false, showAllImportButtons: false };
     this.refreshDownloads();
     ctx.apiClient.getSeedboxQuota().then((quotas) => this.setState({ quotas }));
     ctx.apiClient.getSeedboxFilters().then((filters) => this.setState({ filters }));
@@ -65,13 +70,13 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
     this.refreshDownloads();
   }
 
-  handleImportDownloadClick(download: DbDownload, evt: React.MouseEvent<HTMLButtonElement>): void {
+  handleImportDownloadClick(downloads: DbDownload[], evt: React.MouseEvent<HTMLButtonElement>): void {
     evt.preventDefault();
-    this.setState({ importingDownload: download });
+    this.setState({ importingDownloads: downloads });
   }
 
   handleImportFormClose(): void {
-    this.setState({ importingDownload: undefined });
+    this.setState({ importingDownloads: undefined });
     this.refreshDownloads();
   }
 
@@ -80,7 +85,7 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
   }
 
   refreshDownloads(): void {
-    const { importingDownload } = this.state;
+    const { importingDownloads: importingDownload } = this.state;
     if (!importingDownload) {
       ctx.apiClient.getDownloads().then((downloads) => { this.setState({ downloads }); });
       ctx.apiClient.getSeedboxDownloads().then((torrents) => { this.setState({ torrents }); });
@@ -89,10 +94,10 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
 
   render(): JSX.Element {
     const {
-      downloads, showAllDownloads, importingDownload, torrents, filters, quotas,
+      downloads, showAllDownloads, showAllImportButtons, importingDownloads, torrents, filters, quotas,
     } = this.state;
-    if (importingDownload) {
-      return <ImportDownloadForm download={importingDownload} onClose={this.handleImportFormClose.bind(this)} />;
+    if (importingDownloads) {
+      return <ImportDownloadForm downloads={importingDownloads} onClose={this.handleImportFormClose.bind(this)} />;
     }
 
     let seedboxQuotaProgressBar: JSX.Element = <></>;
@@ -112,6 +117,101 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
           <ProgressBar variant={nasQuotaUsed < 90 ? 'success' : (nasQuotaUsed < 95 ? 'warning' : 'danger')} now={nasQuotaUsed} label={`${nasQuotaUsed}%`} className="mx-3 flex-grow-1 align-self-center" />
         </>
       );
+    }
+
+    const groupedDownloads: GroupedDownloads = {};
+    (downloads || []).filter((dn) => (!dn.ignored && !dn.imported) || showAllDownloads).reverse().forEach((dn) => {
+      let prefix: string = dn.path;
+      let match = dn.path.match(/(.*?)S\d{1,2}E\d{1,3}(?!\d)/i);
+      if (match) { prefix = match[1]; }
+      match = dn.path.match(/(.*?)\d{1,2}x\d{2,3}(?!\d)/i);
+      if (match) { prefix = match[1]; }
+      if (!groupedDownloads[prefix]) { groupedDownloads[prefix] = []; }
+      groupedDownloads[prefix].push(dn);
+    });
+
+    const downloadCards: JSX.Element[] = [];
+    for (const prefix in groupedDownloads) {
+      if (Object.prototype.hasOwnProperty.call(groupedDownloads, prefix)) {
+        const showImportButton = groupedDownloads[prefix].length === 1 || showAllImportButtons;
+        if (groupedDownloads[prefix].length > 1) {
+          const groupCanBeImported = groupedDownloads[prefix].every((dn) => dn.finished > 0 && !dn.imported && !dn.ignored);
+          downloadCards.push(
+            <Card className="download-card" key={prefix}>
+              <Card.Body>
+                <div className="d-flex mt-3">
+                  <span className="align-self-center flex-grow-1">{(prefix.startsWith(ctx.config.seedboxPath)) ? prefix.substring(ctx.config.seedboxPath.length + 1) : prefix}</span>
+                  <Dropdown as={ButtonGroup}>
+                    <Button className="ms-auto align-self-center" disabled={!groupCanBeImported || showAllImportButtons} variant="primary" onClick={this.handleImportDownloadClick.bind(this, groupedDownloads[prefix])}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-download" viewBox="0 0 16 16">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+                      </svg>
+                      &ensp;Importer
+                    </Button>
+                    <Dropdown.Toggle split variant="primary" id="dropdown-custom-3" />
+                    <Dropdown.Menu>
+                      <Dropdown.Item eventKey="1" onClick={() => this.setState({ showAllImportButtons: !showAllImportButtons })}>{showAllImportButtons ? 'Importer par lot' : 'Importer individuellement'}</Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                </div>
+              </Card.Body>
+            </Card>,
+          );
+        }
+        for (const download of groupedDownloads[prefix]) {
+          let { path } = download;
+          if (download.path.startsWith(ctx.config.seedboxPath)) path = download.path.substring(ctx.config.seedboxPath.length + 1);
+          const title = path;
+          const isNew = !download.imported && !download.ignored;
+          const isIgnored = !download.imported && download.ignored;
+          if (path.includes('/')) path = path.substring(path.lastIndexOf('/') + 1);
+          downloadCards.push(
+            <Card className={`download-card${groupedDownloads[prefix].length > 1 ? ' grouped' : ''}`} key={path}>
+              <Card.Body>
+                <div className="text-truncate" title={title}>{path}</div>
+                <div className="d-flex mt-3">
+                  <span className="align-self-center">{renderFileSize(download.size)}</span>
+                  {download.finished < 0
+                    ? (
+                      <>
+                        <ProgressBar variant="primary" now={download.progress} label={`${download.progress.toFixed(1)}%`} className="flex-grow-1 align-self-center mx-3" />
+                        <Button variant="danger" onClick={this.handleDeleteDownload.bind(this, download.path)} title="Supprimer (re-télécharger)" disabled={!ctx.user?.admin}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-x-circle-fill" viewBox="0 0 16 16">
+                            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
+                          </svg>
+                        </Button>
+                      </>
+                    )
+                    : (
+                      <>
+                        <span className="opacity-50 mx-3 flex-grow-1 align-self-center" title={(new Date(download.finished)).toLocaleString()}>{renderRelativeTimeString(download.finished)}</span>
+                        {(isIgnored
+                          ? <Button className="ms-auto align-self-center" variant="link" onClick={this.handleIgnoreDownloadClick.bind(this, download.path)}>Importer</Button>
+                          : (
+                            <Dropdown as={ButtonGroup} className={showImportButton ? '' : 'd-none'}>
+                              <Button variant="primary" className={isNew ? '' : ' invisible'} onClick={this.handleImportDownloadClick.bind(this, [download])}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-download" viewBox="0 0 16 16">
+                                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                                  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+                                </svg>
+                                &ensp;Importer
+                              </Button>
+                              <Dropdown.Toggle split variant="primary" id="dropdown-custom-2" />
+                              <Dropdown.Menu>
+                                <Dropdown.Item eventKey="1" onClick={this.handleIgnoreDownloadClick.bind(this, download.path)} disabled={download.imported}>Ignorer</Dropdown.Item>
+                                <Dropdown.Item eventKey="2" onClick={this.handleDeleteDownload.bind(this, download.path)} disabled={!ctx.user?.admin}>Supprimer (re-télécharger)</Dropdown.Item>
+                              </Dropdown.Menu>
+                            </Dropdown>
+                          ))}
+                      </>
+                    )}
+                </div>
+              </Card.Body>
+            </Card>,
+          );
+        }
+      }
     }
 
     return (
@@ -220,61 +320,7 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
                 </ButtonGroup>
               </Card.Body>
             </Card>
-            {
-                (downloads || []).filter((dn) => (!dn.ignored && !dn.imported) || showAllDownloads).reverse()
-                  .map((download) => {
-                    let { path } = download;
-                    if (download.path.startsWith(ctx.config.seedboxPath)) path = download.path.substring(ctx.config.seedboxPath.length + 1);
-                    const title = path;
-                    const isNew = !download.imported && !download.ignored;
-                    const isIgnored = !download.imported && download.ignored;
-                    if (path.includes('/')) path = path.substring(path.lastIndexOf('/') + 1);
-                    return (
-                      <Card className="download-card" key={path}>
-                        <Card.Body>
-                          <div className="text-truncate" title={title}>{path}</div>
-                          <div className="d-flex mt-3">
-                            <span className="align-self-center">{renderFileSize(download.size)}</span>
-                            {download.finished < 0
-                              ? (
-                                <>
-                                  <ProgressBar variant="primary" now={download.progress} label={`${download.progress.toFixed(1)}%`} className="flex-grow-1 align-self-center mx-3" />
-                                  <Button variant="danger" onClick={this.handleDeleteDownload.bind(this, download.path)} title="Supprimer (re-télécharger)" disabled={!ctx.user?.admin}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-x-circle-fill" viewBox="0 0 16 16">
-                                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z" />
-                                    </svg>
-                                  </Button>
-                                </>
-                              )
-                              : (
-                                <>
-                                  <span className="opacity-50 mx-3 flex-grow-1 align-self-center" title={(new Date(download.finished)).toLocaleString()}>{renderRelativeTimeString(download.finished)}</span>
-                                  {(isIgnored
-                                    ? <Button className="ms-auto align-self-center" variant="link" onClick={this.handleIgnoreDownloadClick.bind(this, download.path)}>Importer</Button>
-                                    : (
-                                      <Dropdown as={ButtonGroup}>
-                                        <Button variant="primary" className={isNew ? '' : ' invisible'} onClick={this.handleImportDownloadClick.bind(this, download)}>
-                                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-download" viewBox="0 0 16 16">
-                                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
-                                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
-                                          </svg>
-                                          &ensp;Importer
-                                        </Button>
-                                        <Dropdown.Toggle split variant="primary" id="dropdown-custom-2" />
-                                        <Dropdown.Menu>
-                                          <Dropdown.Item eventKey="1" onClick={this.handleIgnoreDownloadClick.bind(this, download.path)} disabled={download.imported}>Ignorer</Dropdown.Item>
-                                          <Dropdown.Item eventKey="2" onClick={this.handleDeleteDownload.bind(this, download.path)} disabled={!ctx.user?.admin}>Supprimer (re-télécharger)</Dropdown.Item>
-                                        </Dropdown.Menu>
-                                      </Dropdown>
-                                    ))}
-                                </>
-                              )}
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    );
-                  })
-              }
+            { downloadCards }
           </div>
         </Col>
       </Row>

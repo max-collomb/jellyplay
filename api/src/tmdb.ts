@@ -231,7 +231,11 @@ export class TmdbClient {
         }
       }
     }
-    movie.audience = (audiences.length) ? Math.max.apply(null, audiences) : 999;
+    if (movie.audience === 999 && audiences.length) movie.audience = Math.max.apply(null, audiences);
+    if (movieInfo.vote_count! > 0 && movieInfo.vote_average !== undefined) {
+      movie.rating = movieInfo.vote_average;
+      movie.ratingTs = (new Date()).getTime();
+    }
     if (movieInfo.backdrop_path) {
       this.log(`[+] downloading movie backdrop w1280${movieInfo.backdrop_path}`);
       await downloadImage(
@@ -334,7 +338,11 @@ export class TmdbClient {
         }
       }
     }
-    tvshow.audience = (audiences.length) ? Math.min.apply(null, audiences) : 999;
+    if (tvshow.audience === 999 && audiences.length) tvshow.audience = (audiences.length) ? Math.min.apply(null, audiences) : 999;
+    if (tvshowInfo.vote_count! > 0 && tvshowInfo.vote_average !== undefined) {
+      tvshow.rating = tvshowInfo.vote_average;
+      tvshow.ratingTs = (new Date()).getTime();
+    }
     if (tvshowInfo.backdrop_path) {
       this.log(`[+] downloading tvshow backdrop w1280${tvshowInfo.backdrop_path}`);
       await downloadImage(

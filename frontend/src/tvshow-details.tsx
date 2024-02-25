@@ -19,6 +19,7 @@ import FixTvshowMetadataForm from './fix-tvshow-metadata-form';
 import Casting from './casting';
 import TmdbTvshowRecommandations from './tmdb-tvshow-recommandations';
 import YoutubeVideos from './youtube-videos';
+import Rating from './rating';
 
 type TvshowDetailsProps = {
   tvshowId: number;
@@ -39,7 +40,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
     this.handleEventEpisodePositionChanged = this.handleEventEpisodePositionChanged.bind(this);
     this.state = {
       tvshow: {
-        foldername: '', isSaga: false, tmdbid: 0, title: '', originalTitle: '', countries: [], synopsys: '', genres: [], audience: 0, backdropPath: '', posterPath: '', seasons: [], episodes: [], userStatus: [], createdMin: 0, createdMax: 0, airDateMin: '', airDateMax: '', searchableContent: '',
+        foldername: '', isSaga: false, tmdbid: 0, title: '', originalTitle: '', countries: [], synopsys: '', genres: [], audience: 0, backdropPath: '', posterPath: '', seasons: [], episodes: [], userStatus: [], createdMin: 0, createdMax: 0, airDateMin: '', airDateMax: '', searchableContent: '', rating: 0, ratingTs: 0,
       },
       tabSeason: -1,
       tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast',
@@ -361,6 +362,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
                   <img src={`/images/classification/${tvshow.audience}.svg`} alt={`-${tvshow.audience}`} width="18px" />
                 </div>
               </div>
+              {tvshow.rating ? <Rating value={tvshow.rating} type="tv" tmdbid={tvshow.tmdbid} /> : undefined}
               <div className="actions">
                 <a href="#" className="link-light me-3" onClick={this.handlePlayTvshow.bind(this, undefined)}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">

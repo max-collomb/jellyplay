@@ -28,6 +28,8 @@ export async function main() {
 
   await catalog.load();
 
+  await catalog.updateAll();
+
   if (global.config.seedboxHost && global.config.seedboxPort) {
     const seedbox: Seedbox = new Seedbox({
       ruTorrentURL: global.config.ruTorrentURL,

@@ -5,6 +5,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import { TvResult, TvResultsResponse } from 'moviedb-promise/dist/request-types';
 
 import { ctx } from './common';
+import Rating from './rating';
 
 type TmdbTvshowRecommandationsProps = {
   tvshowId: number;
@@ -88,10 +89,15 @@ export default class TmdbTvshowRecommandations extends React.Component<TmdbTvsho
           movies.map((movie) => (
             <div key={movie.id} className="media-card movie" onClick={this.handleClick.bind(this, movie.id)}>
               <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
-              <span className="title">{movie.name}</span>
-              <span className="infos d-flex justify-content-between">
-                <span className="year">{movie.first_air_date?.substring(0, 4)}</span>
-              </span>
+              <div>
+                {movie.vote_average ? <Rating value={movie.vote_average} /> : undefined}
+                <div>
+                  <span className="title">{movie.name}</span>
+                  <span className="infos d-flex justify-content-between">
+                    <span className="year">{movie.first_air_date?.substring(0, 4)}</span>
+                  </span>
+                </div>
+              </div>
             </div>
           ))
         }

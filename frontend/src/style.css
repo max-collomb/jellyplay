@@ -18,6 +18,8 @@
 
 .simplified-ui .simplified-ui-hidden { display: none!important; }
 
+.CircularProgressbar .CircularProgressbar-text { dominant-baseline: central; font-weight: bold; }
+
 html.dark a { color: #a0cfff; }
 html.dark a:active,
 html.dark a:hover { color: #fff; }
@@ -177,6 +179,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .poster em:hover { background-color: rgba(0, 131, 176, 0.2); color: rgb(50, 203, 255); }
 .poster em.active { color: rgb(209, 71, 71); }
 /*.poster em svg { width: 20px; }*/
+.media-card .rating { width: 2rem; aspect-ratio: 1; float: right; margin-top: 0.5rem; }
 .media-card:hover .poster i { opacity: 1; }
 
 .media-poster:hover .poster b,
@@ -272,6 +275,7 @@ div.media-card .progress-bar {
 
 .title-bar h2 { font-weight: bold; }
 .title-bar h6 { font-weight: bold; opacity: 0.6; }
+.title-bar .rating { width: 4rem; aspect-ratio: 1; margin-right: 2rem; }
 
 .media-details .actions .active,
 .media-details .actions .active:focus,
@@ -349,6 +353,7 @@ div.media-card .progress-bar {
 .wish-link .year { display: inline-block; font-size: 80%; font-weight: normal; margin-left: 1rem; }
 .wish-link .added { font-size: 80%; opacity: 0.5; font-weight: normal; }
 
-.download-card { border-top: 1px solid rgba(255,255,255,0.1); }
+html.dark .download-card { border-top: 1px solid rgba(255,255,255,0.1); border-bottom: none; }
+html.dark .download-card.grouped { border-top: 1px solid rgba(255, 255, 255, 0.033); padding-left: 3rem; }
 .wishlist-card { margin: 0.5rem; min-width: 450px; max-width: 600px; width: calc(25vw - 1.5rem); max-height: 300px; overflow-y: auto; }
 

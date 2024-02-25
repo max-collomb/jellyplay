@@ -501,12 +501,16 @@ export class ApiClient {
   }
 
   async getSeedboxDownloads(): Promise<SeedboxTorrent[]> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       fetch('/catalog/downloads/seedbox_list')
         .then(async (response) => {
           const json = await response.json();
-          json.list.reverse();
-          resolve(json.list);
+          if (json.list) {
+            json.list.reverse();
+            resolve(json.list);
+          } else {
+            reject();
+          }
           // eventBus.emit('seedbox-downloads-fetched', { torrents: json.list });
         });
     });

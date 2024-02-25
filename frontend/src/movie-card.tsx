@@ -2,6 +2,7 @@ import React from 'react';
 
 import { DbMovie, UserMovieStatus } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
+import Rating from './rating';
 
 import {
   ctx, getMovieLanguage, getMovieDuration, getUserMovieStatus, getMovieProgress, playMovie,
@@ -126,12 +127,17 @@ export default class MovieCard extends React.Component<MovieCardProps, MovieCard
           </i>
           {getMovieProgress(movie)}
         </span>
-        <span className="title">{movie.title || movie.filename}</span>
-        <span className="infos d-flex justify-content-center">
-          <span className={`year${movie.year < 0 ? ' invisible' : ''}`}>{movie.year}</span>
-          <span className={`lang${lang ? '' : ' invisible'}`} title={lang}>{lang}</span>
-          <span className="duration">{getMovieDuration(movie)}</span>
-        </span>
+        <div>
+          {movie.rating ? <Rating value={movie.rating} /> : undefined}
+          <div>
+            <span className="title">{movie.title || movie.filename}</span>
+            <span className="infos d-flex justify-content-center">
+              <span className={`year${movie.year < 0 ? ' invisible' : ''}`}>{movie.year}</span>
+              <span className={`lang${lang ? '' : ' invisible'}`} title={lang}>{lang}</span>
+              <span className="duration">{getMovieDuration(movie)}</span>
+            </span>
+          </div>
+        </div>
       </div>
     );
   }

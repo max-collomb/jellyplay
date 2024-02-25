@@ -11,6 +11,7 @@ import { ctx } from './common';
 import TmdbTvshowRecommandations from './tmdb-tvshow-recommandations';
 import TmdbCasting from './tmdb-casting';
 import YoutubeVideos from './youtube-videos';
+import Rating from './rating';
 
 type TmdbTvshowDetailsProps = {
   tvshowId: number;
@@ -198,6 +199,7 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
                 <img src={`/images/classification/${this.getAudience(tvshow)}.svg`} alt="audience" width="18px" />
               </div>
             </div>
+            {tvshow.vote_average ? <Rating value={tvshow.vote_average} type="tv" tmdbid={tvshow.id} /> : undefined}
             <div className="actions">
               <a
                 href="#"

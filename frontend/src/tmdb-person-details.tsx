@@ -7,6 +7,7 @@ import Tab from 'react-bootstrap/Tab';
 import { PersonWithCredits } from './tmdb-client';
 
 import { ctx } from './common';
+import Rating from './rating';
 
 type TmdbPersonDetailsProps = {
   personId: number;
@@ -101,10 +102,15 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
         {movies.map((movie: any) => (
           <div key={movie.id} className="media-card movie" onClick={this.handleMovieClick.bind(this, movie.id)}>
             <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
-            <span className="title">{movie.title}</span>
-            <span className="infos d-flex justify-content-between">
-              <span className="year">{movie.release_date?.substring(0, 4)}</span>
-            </span>
+            <div>
+              {movie.vote_average ? <Rating value={movie.vote_average} /> : undefined}
+              <div>
+                <span className="title">{movie.title}</span>
+                <span className="infos d-flex justify-content-between">
+                  <span className="year">{movie.release_date?.substring(0, 4)}</span>
+                </span>
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -117,10 +123,15 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
         {tvshows.map((tvshow: any) => (
           <div key={tvshow.id} className="media-card movie" onClick={this.handleTvshowClick.bind(this, tvshow.id)}>
             <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${tvshow.poster_path})` }} />
-            <span className="title">{tvshow.name}</span>
-            <span className="infos d-flex justify-content-between">
-              <span className="year">{tvshow.first_air_date?.substring(0, 4)}</span>
-            </span>
+            <div>
+              {tvshow.vote_average ? <Rating value={tvshow.vote_average} /> : undefined}
+              <div>
+                <span className="title">{tvshow.name}</span>
+                <span className="infos d-flex justify-content-between">
+                  <span className="year">{tvshow.first_air_date?.substring(0, 4)}</span>
+                </span>
+              </div>
+            </div>
           </div>
         ))}
       </div>

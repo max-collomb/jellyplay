@@ -12,6 +12,7 @@ import TmdbMovieRecommandations from './tmdb-movie-recommandations';
 import TmdbCasting from './tmdb-casting';
 import YoutubeVideos from './youtube-videos';
 import YggSearch from './ygg-search';
+import Rating from './rating';
 
 type TmdbMovieDetailsProps = {
   movieId: number;
@@ -237,6 +238,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
                 <img src={`/images/classification/${this.getAudience(movie)}.svg`} alt="audience" width="18px" />
               </div>
             </div>
+            {movie.vote_average ? <Rating value={movie.vote_average} type="movie" tmdbid={movie.id} /> : undefined}
             <div className="actions">
               <a
                 href="#"

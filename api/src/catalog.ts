@@ -260,6 +260,46 @@ export class Catalog {
     }
   }
 
+  public async updateAll(): Promise<void> {
+    for (let movie of (this.tables.movies?.find() || [])) {
+      this.log(`updating movie ${movie.filename}`);
+      movie.directors = [];
+      movie.writers = [];
+      movie.cast = [];
+      movie.genres = [];
+      movie.countries = [];
+      
+      this.scanLogs = "";
+      const credits: DbCredit[] = await this.tmdbClient.getMovieData(movie);
+      await mediaInfo(movie, path.join(this.moviesPath, movie.filename), this.log.bind(this));
+      await this.insertCredits(credits);
+      this.lastUpdate = Date.now();
+    }
+
+    for (let tvshow of (this.tables.tvshows?.find() || [])) {
+      this.log(`updating tvshow ${tvshow.foldername}`);
+      tvshow.seasons = [];
+      tvshow.genres = [];
+      tvshow.countries = [];
+
+      this.scanLogs = "";
+      await this.tmdbClient.getTvshowData(tvshow);
+      for (let episode of tvshow.episodes) {
+        if (tvshow.isSaga) {
+          await this.tmdbClient.addCollectionEpisode(tvshow, episode);
+        } else {
+          await this.tmdbClient.addTvshowEpisode(tvshow, episode);
+        }
+        await mediaInfo(episode, path.join(this.tvshowsPath, tvshow.foldername, episode.filename), this.log.bind(this));
+        if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
+          const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
+          await this.insertCredits(credits);
+        }
+      }
+      this.lastUpdate = Date.now();
+    }
+  }
+
   private log(message: string): void {
     console.log(message);
     this.scanLogs += message + "\n";
@@ -369,6 +409,8 @@ export class Catalog {
             subtitles: [],
             userStatus: [],
             searchableContent: "",
+            rating: 0,
+            ratingTs: 0,
           };
           const credits: DbCredit[] = await this.tmdbClient.autoIdentifyMovie(newMovie);
           await mediaInfo(newMovie, path.join(this.moviesPath, newMovie.filename), this.log.bind(this));
@@ -432,6 +474,8 @@ export class Catalog {
             createdMax: 0,
             airDateMin: "",
             airDateMax: "",
+            rating: 0,
+            ratingTs: 0,
           };
           await this.tmdbClient.autoIdentifyTvshow(tvshow);
           this.tables.tvshows?.insert(tvshow);
@@ -1167,6 +1211,8 @@ export class Catalog {
           subtitles: [],
           userStatus: [],
           searchableContent: "",
+          rating: 0,
+          ratingTs: 0,
         };
         const credits: DbCredit[] = await this.tmdbClient.getMovieData(newMovie);
         await mediaInfo(newMovie, filepath, this.log.bind(this));
@@ -1214,6 +1260,8 @@ export class Catalog {
       createdMax: 0,
       airDateMin: "",
       airDateMax: "",
+      rating: 0,
+      ratingTs: 0,
     };
     try {
       if (!fs.existsSync(folderpath)) {

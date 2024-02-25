@@ -8,6 +8,7 @@ import {
 import { DbMovie, DbTvshow, DbCredit } from '../../api/src/types';
 import { ctx } from './common';
 import { tmdbClient } from './tmdb-client';
+import Rating from './rating';
 
 type SearchResultsProps = {
   query: string;
@@ -123,11 +124,11 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
 
     if (query) {
       const movieIndexes = fuzzyIndex.filter(movieHaystack, query);
-      movieResults = movieIndexes.map((idx) => movies[idx]);
+      movieResults = movieIndexes?.map((idx) => movies[idx]) || [];
       const tvshowIndexes = fuzzyIndex.filter(tvshowHaystack, query);
-      tvshowResults = tvshowIndexes.map((idx) => tvshows[idx]);
+      tvshowResults = tvshowIndexes?.map((idx) => tvshows[idx]) || [];
       const creditIndexes = fuzzyIndex.filter(creditHaystack, query);
-      creditResults = creditIndexes.map((idx) => credits[idx]);
+      creditResults = creditIndexes?.map((idx) => credits[idx]) || [];
       if (tmdbResults) {
         tmdbResults.forEach((result) => {
           const type: string = (result as any).media_type;
@@ -157,10 +158,15 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
             movieResults.map((movie) => (
               <div key={movie.tmdbid} className="media-card movie" onClick={this.handleCardClick.bind(this, 'movie', movie.tmdbid)}>
                 <span className="poster" style={{ backgroundImage: `url(/images/posters_w342${movie.posterPath})` }} />
-                <span className="title">{movie.title}</span>
-                <span className="infos d-flex justify-content-between">
-                  <span className="year">{movie.year}</span>
-                </span>
+                <div>
+                  {movie.rating ? <Rating value={movie.rating} /> : undefined}
+                  <div>
+                    <span className="title">{movie.title}</span>
+                    <span className="infos d-flex justify-content-between">
+                      <span className="year">{movie.year}</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             ))
           }
@@ -168,10 +174,15 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
             tmdbMovieResults.map((movie) => (
               <div key={movie.id} className="media-card movie muted" onClick={this.handleCardClick.bind(this, 'movie', movie.id || 0)}>
                 <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
-                <span className="title">{movie.title}</span>
-                <span className="infos d-flex justify-content-between">
-                  <span className="year">{movie.release_date?.substring(0, 4)}</span>
-                </span>
+                <div>
+                  {movie.vote_average ? <Rating value={movie.vote_average} /> : undefined}
+                  <div>
+                    <span className="title">{movie.title}</span>
+                    <span className="infos d-flex justify-content-between">
+                      <span className="year">{movie.release_date?.substring(0, 4)}</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             ))
           }
@@ -186,7 +197,10 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
                 <span className="infos d-flex justify-content-between">
                   <span className="year">
                     {tvshow.seasons.length}
+                    {tvshow.seasons.length > 1 ? ' saisons' : ' saison'}
+                    &emsp;
                     {tvshow.episodes.length}
+                    {tvshow.episodes.length > 1 ? ' épisodes' : ' épisode'}
                   </span>
                 </span>
               </div>
@@ -196,10 +210,15 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
             tmdbTvshowResults.map((tvshow) => (
               <div key={tvshow.id} className="media-card tvshow muted" onClick={this.handleCardClick.bind(this, 'tvshow', tvshow.id || 0)}>
                 <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${tvshow.poster_path})` }} />
-                <span className="title">{tvshow.name}</span>
-                <span className="infos d-flex justify-content-between">
-                  <span className="year">{tvshow.first_air_date?.substring(0, 4)}</span>
-                </span>
+                <div>
+                  {tvshow.vote_average ? <Rating value={tvshow.vote_average} /> : undefined}
+                  <div>
+                    <span className="title">{tvshow.name}</span>
+                    <span className="infos d-flex justify-content-between">
+                      <span className="year">{tvshow.first_air_date?.substring(0, 4)}</span>
+                    </span>
+                  </div>
+                </div>
               </div>
             ))
           }

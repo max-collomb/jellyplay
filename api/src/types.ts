@@ -99,6 +99,8 @@ export type DbMovie = {
   posterPath: string;
   userStatus: UserMovieStatus[];
   searchableContent: string; // title + originalTitle + year + genre + countries => toLowerCase + removeAccent
+  rating: number;
+  ratingTs: number;
 };
 
 export type FileInfo = {
@@ -171,6 +173,8 @@ export type DbTvshow = {
   airDateMin: string;
   airDateMax: string;
   searchableContent: string; // title + originalTitle + genre + countries => toLowerCase + removeAccent
+  rating: number;
+  ratingTs: number;
 };
 
 export type HomeLists = {

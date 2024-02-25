@@ -15,7 +15,7 @@ import {
 import { ctx, cleanFileName } from './common';
 
 type ImportDownloadFormProps = {
-  download: DbDownload;
+  downloads: DbDownload[];
   onClose: () => void;
 };
 type ImportDownloadFormState = {
@@ -38,7 +38,7 @@ type ImportDownloadFormState = {
 export default class ImportDownloadForm extends React.Component<ImportDownloadFormProps, ImportDownloadFormState> {
   constructor(props: ImportDownloadFormProps) {
     super(props);
-    const { download } = this.props;
+    const { downloads } = this.props;
     this.state = {
       title: '',
       year: '',
@@ -47,12 +47,12 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
       mediaType: 'movie',
       showRawMediaInfo: false,
     };
-    ctx.apiClient.parseFilename(download.path)
+    ctx.apiClient.parseFilename(downloads[0].path)
       .then((data) => {
         const state: ImportDownloadFormState = { ...this.state };
         state.fileInfo = data.fileInfo;
         state.existingTvShows = data.existingTvshows;
-        if (/S\d+E\d+/i.test(download.path)) {
+        if (/S\d+E\d+/i.test(downloads[0].path) || /\d{1,2}x\d{2}(?!\d)/i.test(downloads[0].path)) {
           state.mediaType = 'tvshow';
           state.title = data.asTvshow?.title || data.title;
           state.year = '';
@@ -103,7 +103,7 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
     if (evt) {
       evt.preventDefault();
     }
-    const { download, onClose } = this.props;
+    const { downloads, onClose } = this.props;
     const {
       importedFilename, selectedMovieCandidate, selectedTvshowCandidate, mediaType,
     } = this.state;
@@ -112,9 +112,12 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
         let result: DbMovie | DbTvshow | undefined;
         this.setState({ importing: true });
         if (mediaType === 'movie' && selectedMovieCandidate?.id) {
-          result = await ctx.apiClient.importMovieDownload(download.path, selectedMovieCandidate.id, parseFloat(selectedMovieCandidate.release_date?.substring(0, 4) || ''), importedFilename);
+          result = await ctx.apiClient.importMovieDownload(downloads[0].path, selectedMovieCandidate.id, parseFloat(selectedMovieCandidate.release_date?.substring(0, 4) || ''), importedFilename);
         } else if (mediaType === 'tvshow' && selectedTvshowCandidate?.id) {
-          result = await ctx.apiClient.importTvshowDownload(download.path, selectedTvshowCandidate.id, importedFilename);
+          for (const download of downloads) {
+            // eslint-disable-next-line no-await-in-loop
+            result = await ctx.apiClient.importTvshowDownload(download.path, selectedTvshowCandidate.id, importedFilename);
+          }
         }
         this.setState({ importing: false });
         if (result) {
@@ -165,8 +168,8 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
 
   generateFilename(title: string, year: string, originalLang: string): string {
     const { fileInfo } = this.state;
-    const { download } = this.props;
-    const path = download.path.toLowerCase();
+    const { downloads } = this.props;
+    const path = downloads[0].path.toLowerCase();
     const duration = Math.round((fileInfo?.duration || 0) / 60);
     let definition = ' ';
     const width = fileInfo?.video.width || 0;
@@ -225,7 +228,7 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
     const {
       movieCandidates, tvshowCandidates, title, importing, year, mediaType, selectedMovieCandidate, selectedTvshowCandidate, importedFilename, fileInfo, showRawMediaInfo,
     } = this.state;
-    const { download } = this.props;
+    const { downloads } = this.props;
     if (importing) {
       return (
         <div className="d-flex justify-content-center mt-5">
@@ -286,7 +289,7 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
 
     return (
       <>
-        <h4 className="mx-3 my-5">{ download.path.replace(ctx.config.seedboxPath, '') }</h4>
+        <h4 className="mx-3 my-5">{ downloads[0].path.replace(ctx.config.seedboxPath, '') }</h4>
         <Form className="m-3">
           <Row className="justify-content-md-center mb-3">
             <Col>
@@ -330,7 +333,7 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
                   <InputGroup>
                     <InputGroup.Text className="flex-shrink-1 text-truncate" style={{ minWidth: '0', maxWidth: '33%' }} title={`${ctx.config.tvshowsRemotePath}\\`}>{`${ctx.config.tvshowsRemotePath}\\`}</InputGroup.Text>
                     <Form.Control value={importedFilename} onChange={this.handleFilenameChange.bind(this)} onKeyDown={(evt) => { if (evt.code === 'Enter') this.handleImportClick(); }} className="flex-grow-1" />
-                    <InputGroup.Text className="flex-shrink-1 text-truncate" style={{ minWidth: '0', maxWidth: '33%' }} title={`\\${download.path.split('/').pop()}`}>{`\\${download.path.split('/').pop()}`}</InputGroup.Text>
+                    <InputGroup.Text className="flex-shrink-1 text-truncate" style={{ minWidth: '0', maxWidth: '33%' }} title={`\\${downloads[0].path.split('/').pop()}`}>{`\\${downloads[0].path.split('/').pop()}`}</InputGroup.Text>
                     <Button variant={showRawMediaInfo ? 'secondary' : 'outline-secondary'} onClick={this.handleShowRawMediaInfoClick.bind(this)}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-info-lg" viewBox="0 0 16 16"><path d="m9.708 6.075-3.024.379-.108.502.595.108c.387.093.464.232.38.619l-.975 4.577c-.255 1.183.14 1.74 1.067 1.74.72 0 1.554-.332 1.933-.789l.116-.549c-.263.232-.65.325-.905.325-.363 0-.494-.255-.402-.704l1.323-6.208Zm.091-2.755a1.32 1.32 0 1 1-2.64 0 1.32 1.32 0 0 1 2.64 0Z" /></svg>
                     </Button>

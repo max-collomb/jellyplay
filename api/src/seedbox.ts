@@ -36,7 +36,7 @@ export class Seedbox {
   let result: DbDownload[] = [];
   for (var f in list) {
     let fileInfo = list[f];
-    if (fileInfo.type == 1) {// file
+    if (fileInfo.type == 1) { // file
       if (fileInfo.size > this.MIN_FILE_SIZE)
         result.push({ path: path + '/' + fileInfo.name, started: -1, finished: -1, progress: 0, size: fileInfo.size, imported: false, ignored: false });
     } else if (fileInfo.type == 2) { // folder
@@ -60,29 +60,33 @@ export class Seedbox {
         await ftpClient.access({ host, user, password, port, secure: false });
         await ftpClient.cd(this.options.path);
         fileList = await this.listRecursive(ftpClient, this.options.path);
+        let newFileList: DbDownload[] = [];
         for (let download of fileList) {
           if (downloads.find({ path: download.path }).length === 0) {
-            download.started = Date.now();
+            newFileList.push(download);
             downloads.insert(download);
-            console.log(now() + " downloading " + download.path);
-            ftpClient.trackProgress((infos) => {
-              download.progress = infos.bytes / download.size * 100;
-              downloads.update(download);
-              if (process.stdout.clearLine) {
-                process.stdout.clearLine(0);
-                process.stdout.cursorTo(0);
-                process.stdout.write(download.progress.toFixed(2) + '%')
-              }
-            });
-            try {
-              await ftpClient.downloadTo(path.join(this.options.localPath, path.basename(download.path)), download.path);
-              console.log(now() + " download finished");
-              download.finished = Date.now();
-              download.progress = 100;
-              downloads.update(download);
-            } catch (err) {
-              console.log(err);
+          }
+        }
+        for (let download of newFileList) {
+          download.started = Date.now();
+          console.log(now() + " downloading " + download.path);
+          ftpClient.trackProgress((infos) => {
+            download.progress = infos.bytes / download.size * 100;
+            downloads.update(download);
+            if (process.stdout.clearLine) {
+              process.stdout.clearLine(0);
+              process.stdout.cursorTo(0);
+              process.stdout.write(download.progress.toFixed(2) + '%')
             }
+          });
+          try {
+            await ftpClient.downloadTo(path.join(this.options.localPath, path.basename(download.path)), download.path);
+            console.log(now() + " download finished");
+            download.finished = Date.now();
+            download.progress = 100;
+            downloads.update(download);
+          } catch (err) {
+            console.log(err);
           }
         }
         ftpClient.close();

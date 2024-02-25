@@ -147,11 +147,12 @@ V1.1
 [x] système de téléchargement auto des épisodes de séries avec rss ygg + expression régulière
 [x] bandes annonces : ouvrir navigateur externe (+ supprimer yt-dlp.exe)
 [x] serie : pas intéressé => manque le refresh
-[ ] import automatique des films et des nouveaux épisodes de séries (si série non connue => laisser dans nouveautés)
-[ ] Disposer d'un rating sur les films
+[x] importer plusieurs épisodes d'une même série par lot
+[x] Disposer d'un rating sur les films et les séries
 [ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
 [ ] recherche série non possédée : gérer séries et séries animé selon le genre
 
+[ ] onglet téléchargement : précharger une suggestion d'identification pour importer en un clic
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo
 [ ] [frontend] navigation avec les flèches du clavier + entrée + back

@@ -16,6 +16,7 @@ import RenamingForm from './renaming-form';
 import Casting from './casting';
 import TmdbMovieRecommandations from './tmdb-movie-recommandations';
 import YoutubeVideos from './youtube-videos';
+import Rating from './rating';
 
 type MovieDetailsProps = {
   movieId: number;
@@ -37,7 +38,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     this.handleEventMoviePositionChanged = this.handleEventMoviePositionChanged.bind(this);
     this.state = {
       movie: {
-        filename: '', tmdbid: 0, title: '', originalTitle: '', year: 0, duration: 0, directors: [], writers: [], cast: [], genres: [], countries: [], audience: 0, created: 0, filesize: 0, video: { width: 0, height: 0, codec: '' }, audio: [], subtitles: [], synopsys: '', backdropPath: '', posterPath: '', userStatus: [], searchableContent: '',
+        filename: '', tmdbid: 0, title: '', originalTitle: '', year: 0, duration: 0, directors: [], writers: [], cast: [], genres: [], countries: [], audience: 0, created: 0, filesize: 0, video: { width: 0, height: 0, codec: '' }, audio: [], subtitles: [], synopsys: '', backdropPath: '', posterPath: '', userStatus: [], searchableContent: '', rating: 0, ratingTs: 0,
       },
       credits: [],
       tabKey: ctx.router.currentRoute?.state?.tabKey || 'cast',
@@ -256,6 +257,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
                 <img src={`/images/classification/${movie.audience}.svg`} alt={`-${movie.audience}`} width="18px" />
               </div>
             </div>
+            {movie.rating ? <Rating value={movie.rating} type="movie" tmdbid={movie.tmdbid} /> : undefined}
             <div className="actions">
               <a href="#" className="link-light me-3" onClick={this.handleClick.bind(this)}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">

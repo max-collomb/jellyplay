@@ -8,6 +8,7 @@ import { SeenStatus } from '../../api/src/enums';
 import {
   ctx, getEpisodeCount, getEpisodeByFilename, getEpisodeProgress, getEpisodeUserStatus, getSeasonCount, getTvshowUserStatus, playTvshow, selectCurrentEpisode,
 } from './common';
+import Rating from './rating';
 
 type TvShowCardProps = {
   tvshow: DbTvshow
@@ -174,8 +175,13 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
           </i>
           { progress }
         </span>
-        <span className="title">{tvshow.title || tvshow.foldername}</span>
-        <span className="infos d-flex justify-content-center">{infos}</span>
+        <div>
+          {tvshow.rating ? <Rating value={tvshow.rating} /> : undefined}
+          <div>
+            <span className="title">{tvshow.title || tvshow.foldername}</span>
+            <span className="infos d-flex justify-content-center">{infos}</span>
+          </div>
+        </div>
       </div>
     );
   }

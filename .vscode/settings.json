@@ -3,5 +3,6 @@
         "source.fixAll.eslint": "explicit"
     },
     "eslint.validate": ["typescript", "typescriptreact"],
-    "eslint.trace.server": "off"
+    "eslint.trace.server": "off",
+    "css.lint.validProperties": ["dominant-baseline"]
 }

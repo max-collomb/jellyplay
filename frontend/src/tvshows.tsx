@@ -78,7 +78,7 @@ export default class TvShows extends React.Component<TvShowsProps, TvShowsState>
             <div className="d-flex flex-wrap -justify-content-evenly mt-2">
               {
                 tvshowsType.filter((t) => t.audience <= (ctx.user?.audience || 999))
-                  .map((tvshow) => <TvshowCard key={tvshow.tmdbid} tvshow={tvshow} showNext={false} />)
+                  .map((tvshow) => <TvshowCard key={tvshow.tmdbid} tvshow={tvshow} showNext={false} onStatusUpdated={() => {}} />)
               }
             </div>
           </React.Fragment>

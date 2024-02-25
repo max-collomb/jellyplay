@@ -15,6 +15,7 @@ import {
 import { ctx } from './common';
 import { Trending } from './tmdb-client';
 import { YggItem } from './ygg-client';
+import Rating from './rating';
 
 const torrentDownloaded: string[] = [];
 
@@ -213,10 +214,15 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
               trending.movies.map((movie: MovieResult) => (
                 <div key={movie.id} className="media-card movie" onClick={(evt: React.MouseEvent) => { evt.preventDefault(); ctx.router.navigateTo(`#/tmdb/movie/${movie.id}/state/${JSON.stringify({ tabKey: 'cast' })}`); }}>
                   <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
-                  <span className="title">{movie.title}</span>
-                  <span className="infos d-flex justify-content-between">
-                    <span className="year">{movie.release_date?.substring(0, 4)}</span>
-                  </span>
+                  <div>
+                    {movie.vote_average ? <Rating value={movie.vote_average} /> : undefined}
+                    <div>
+                      <span className="title">{movie.title}</span>
+                      <span className="infos d-flex justify-content-between">
+                        <span className="year">{movie.release_date?.substring(0, 4)}</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               ))
             }
@@ -233,10 +239,15 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
               trending.tvshows.map((movie: TvResult) => (
                 <div key={movie.id} className="media-card movie" onClick={(evt: React.MouseEvent) => { evt.preventDefault(); ctx.router.navigateTo(`#/tmdb/tvshow/${movie.id}/state/${JSON.stringify({ tabKey: 'cast' })}`); }}>
                   <span className="poster" style={{ backgroundImage: `url(${ctx.tmdbClient?.baseUrl}w342${movie.poster_path})` }} />
-                  <span className="title">{movie.name}</span>
-                  <span className="infos d-flex justify-content-between">
-                    <span className="year">{movie.first_air_date?.substring(0, 4)}</span>
-                  </span>
+                  <div>
+                    {movie.vote_average ? <Rating value={movie.vote_average} /> : undefined}
+                    <div>
+                      <span className="title">{movie.name}</span>
+                      <span className="infos d-flex justify-content-between">
+                        <span className="year">{movie.first_air_date?.substring(0, 4)}</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               ))
             }
