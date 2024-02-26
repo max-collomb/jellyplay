@@ -27,8 +27,7 @@ export async function main() {
   await startHttp(rootPath, catalog);
 
   await catalog.load();
-
-  await catalog.updateAll();
+  // await catalog.updateAll();
 
   if (global.config.seedboxHost && global.config.seedboxPort) {
     const seedbox: Seedbox = new Seedbox({

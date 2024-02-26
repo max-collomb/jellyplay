@@ -407,7 +407,10 @@ export class TmdbClient {
     tvshow.title = tvshowInfo.name || "";
     tvshow.originalTitle = "";
     tvshow.synopsys = tvshowInfo.overview || "";
-    tvshow.audience = 999;
+    tvshow.audience = 12;
+    tvshow.rating = 0;
+    tvshow.ratingTs = 0;
+    
     if (! tvshowInfo.backdrop_path && tvshowInfo.parts?.length && tvshowInfo.parts[0].backdrop_path)
       tvshowInfo.backdrop_path = tvshowInfo.parts[0].backdrop_path;
     if (tvshowInfo.backdrop_path) {
@@ -416,7 +419,7 @@ export class TmdbClient {
         `${this.baseUrl}w1280${tvshowInfo.backdrop_path}`,
         path.join(this.imagePath, 'backdrops_w1280', tvshowInfo.backdrop_path)
       );
-      this.log(`[+] downloading tvshow backdrop w1780${tvshowInfo.backdrop_path}`);
+      this.log(`[+] downloading tvshow backdrop w780${tvshowInfo.backdrop_path}`);
       await downloadImage(
         `${this.baseUrl}w780${tvshowInfo.backdrop_path}`,
         path.join(this.imagePath, 'backdrops_w780', tvshowInfo.backdrop_path)
@@ -428,6 +431,11 @@ export class TmdbClient {
       await downloadImage(
         `${this.baseUrl}w780${tvshowInfo.poster_path}`,
         path.join(this.imagePath, 'posters_w780', tvshowInfo.poster_path)
+      );
+      this.log(`[+] downloading tvshow poster w342${tvshowInfo.poster_path}`);
+      await downloadImage(
+        `${this.baseUrl}w342${tvshowInfo.poster_path}`,
+        path.join(this.imagePath, 'posters_w342', tvshowInfo.poster_path)
       );
       tvshow.posterPath = tvshowInfo.poster_path;
     }

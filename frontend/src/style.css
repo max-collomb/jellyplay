@@ -179,7 +179,6 @@ input[type="search"]::-webkit-search-cancel-button {
 .poster em:hover { background-color: rgba(0, 131, 176, 0.2); color: rgb(50, 203, 255); }
 .poster em.active { color: rgb(209, 71, 71); }
 /*.poster em svg { width: 20px; }*/
-.media-card .rating { width: 2rem; aspect-ratio: 1; float: right; margin-top: 0.5rem; }
 .media-card:hover .poster i { opacity: 1; }
 
 .media-poster:hover .poster b,
@@ -206,6 +205,13 @@ input[type="search"]::-webkit-search-cancel-button {
   color: #fff;
   padding: 0.2rem 0;
   opacity: 0.5;
+}
+
+.media-card .rating { width: 2rem; aspect-ratio: 1; float: right; margin-top: 0.5rem; opacity: 0.4; }
+
+.media-card .title,
+.media-card .rating,
+.media-card .infos {
   transition: opacity linear 0.15s;
 }
 
@@ -217,10 +223,10 @@ input[type="search"]::-webkit-search-cancel-button {
   color: #fff9;
   font-size: 90%;
   opacity: 0.4;
-  transition: opacity linear 0.15s;
 }
 
 .media-card:hover .title,
+.media-card:hover .rating,
 .media-card:hover .infos { opacity: 1; }
 
 .media-card .year { display: inline-block; margin-right: 0.5rem; }

@@ -261,45 +261,49 @@ export class Catalog {
   }
 
   public async updateAll(): Promise<void> {
-    // for (let movie of (this.tables.movies?.find() || [])) {
-    //   this.log(`updating movie ${movie.filename}`);
-    //   movie.directors = [];
-    //   movie.writers = [];
-    //   movie.cast = [];
-    //   movie.genres = [];
-    //   movie.countries = [];
+    for (let movie of (this.tables.movies?.find() || [])) {
+      this.log(`updating movie ${movie.filename}`);
+      movie.directors = [];
+      movie.writers = [];
+      movie.cast = [];
+      movie.genres = [];
+      movie.countries = [];
       
-    //   this.scanLogs = "";
-    //   const credits: DbCredit[] = await this.tmdbClient.getMovieData(movie);
-    //   await mediaInfo(movie, path.join(this.moviesPath, movie.filename), this.log.bind(this));
-    //   await this.insertCredits(credits);
-    //   this.lastUpdate = Date.now();
-    // }
+      this.scanLogs = "";
+      const credits: DbCredit[] = await this.tmdbClient.getMovieData(movie);
+      await mediaInfo(movie, path.join(this.moviesPath, movie.filename), this.log.bind(this));
+      await this.insertCredits(credits);
+      this.lastUpdate = Date.now();
+    }
 
-    // for (let tvshow of (this.tables.tvshows?.find() || [])) {
-    //   if (!tvshow.rating) {
-    //     this.log(`updating tvshow ${tvshow.foldername}`);
-    //     tvshow.seasons = [];
-    //     tvshow.genres = [];
-    //     tvshow.countries = [];
+    for (let tvshow of (this.tables.tvshows?.find() || [])) {
+      if (!tvshow.rating && tvshow.isSaga) {
+        this.log(`updating tvshow ${tvshow.foldername}`);
+        tvshow.seasons = [];
+        tvshow.genres = [];
+        tvshow.countries = [];
 
-    //     this.scanLogs = "";
-    //     await this.tmdbClient.getTvshowData(tvshow);
-    //     // for (let episode of tvshow.episodes) {
-    //     //   if (tvshow.isSaga) {
-    //     //     await this.tmdbClient.addCollectionEpisode(tvshow, episode);
-    //     //   } else {
-    //     //     await this.tmdbClient.addTvshowEpisode(tvshow, episode);
-    //     //   }
-    //     //   await mediaInfo(episode, path.join(this.tvshowsPath, tvshow.foldername, episode.filename), this.log.bind(this));
-    //     //   if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
-    //     //     const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
-    //     //     await this.insertCredits(credits);
-    //     //   }
-    //     // }
-    //     this.lastUpdate = Date.now();
-    //   }
-    // }
+        this.scanLogs = "";
+        if (tvshow.isSaga) {
+          await this.tmdbClient.getCollectionData(tvshow);
+        } else {
+          await this.tmdbClient.getTvshowData(tvshow);
+        }
+        for (let episode of tvshow.episodes) {
+          if (tvshow.isSaga) {
+            await this.tmdbClient.addCollectionEpisode(tvshow, episode);
+          } else {
+            await this.tmdbClient.addTvshowEpisode(tvshow, episode);
+          }
+          await mediaInfo(episode, path.join(this.tvshowsPath, tvshow.foldername, episode.filename), this.log.bind(this));
+          if (episode.seasonNumber > 0 && tvshow.seasons.filter(s => s.seasonNumber == episode.seasonNumber).length === 0) {
+            const credits: DbCredit[] = await this.tmdbClient.addTvshowSeason(tvshow, episode.seasonNumber);
+            await this.insertCredits(credits);
+          }
+        }
+        this.lastUpdate = Date.now();
+      }
+    }
   }
 
   private log(message: string): void {
