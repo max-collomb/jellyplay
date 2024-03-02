@@ -235,7 +235,7 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
                       <div className="text-truncate" title={torrent.name}>{torrent.name}</div>
                       <div className="d-flex mt-3">
                         <span className="align-self-center">{renderFileSize(torrent.size)}</span>
-                        <span className="opacity-50 mx-3 align-self-center" title={(new Date(torrent.finished)).toLocaleString()}>{renderRelativeTimeString(torrent.finished * 1000)}</span>
+                        <span className="opacity-50 mx-3 align-self-center" title={(new Date(torrent.finished * 1000)).toLocaleString()}>{renderRelativeTimeString(torrent.finished * 1000)}</span>
                         {
                           torrent.downloaded < torrent.size
                             ? (
