@@ -1,5 +1,5 @@
 import {
-  Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilenameResponse, ScanStatus,
+  AutoId, Config, DbUser, DbMovie, DbCredit, DbTvshow, Episode, HomeLists, ParsedFilenameResponse, ScanStatus,
   UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, DbWish, DbDownload, SeedboxTorrent, SeedboxFilter, Quotas,
 } from '../../api/src/types';
 import { SeenStatus, MediaType } from '../../api/src/enums';
@@ -568,13 +568,27 @@ export class ApiClient {
     });
   }
 
-  async importMovieDownload(path: string, tmdbId: number, year: number, filename: string): Promise<DbMovie> {
+  async setAutoId(path: string, autoId: AutoId): Promise<DbDownload> {
+    return new Promise((resolve) => {
+      fetch('/catalog/downloads/set_auto_id', {
+        method: 'POST',
+        headers: new Headers({ 'content-type': 'application/json' }),
+        body: JSON.stringify({ path, autoId }),
+      }).then(async (response) => {
+        const json = await response.json();
+        resolve(json.download);
+        eventBus.emit('downloads-changed');
+      });
+    });
+  }
+
+  async importMovieDownload(path: string, tmdbId: number, year: number, filename: string, audience?: number): Promise<DbMovie> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/download/import_movie', {
         method: 'POST',
         headers: new Headers({ 'content-type': 'application/json' }),
         body: JSON.stringify({
-          path, tmdbId, year, filename,
+          path, tmdbId, year, filename, audience,
         }),
       }).then(async (response) => {
         const json = await response.json();
@@ -583,13 +597,13 @@ export class ApiClient {
     });
   }
 
-  async importTvshowDownload(path: string, tmdbId: number, foldername: string): Promise<DbMovie> {
+  async importTvshowDownload(path: string, tmdbId: number, foldername: string, audience?: number): Promise<DbMovie> {
     return new Promise((resolve, reject) => {
       fetch('/catalog/download/import_tvshow', {
         method: 'POST',
         headers: new Headers({ 'content-type': 'application/json' }),
         body: JSON.stringify({
-          path, tmdbId, foldername,
+          path, tmdbId, foldername, audience,
         }),
       }).then(async (response) => {
         const json = await response.json();

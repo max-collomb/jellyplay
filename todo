@@ -149,11 +149,18 @@ V1.1
 [x] serie : pas intéressé => manque le refresh
 [x] importer plusieurs épisodes d'une même série par lot
 [x] Disposer d'un rating sur les films et les séries
+[x] onglet téléchargement : précharger une suggestion d'identification pour importer en un clic
+[x] onglet téléchargement : pouvoir lire un fichier vidéo sans l'importer
+[x] onglet téléchargement : précharger la classification (audience) et imposer la saisie si inconnue avant l'import
 [ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
 [ ] recherche série non possédée : gérer séries et séries animé selon le genre
 
-[ ] onglet téléchargement : précharger une suggestion d'identification pour importer en un clic
 [ ] intégrer les spéctacles / concerts
-[ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo
+[ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo ?
 [ ] [frontend] navigation avec les flèches du clavier + entrée + back
+[ ] [frontend] améliorer l'affichage sur mobile
 [ ] suppression collaborative (admin demande l'autorisation de supprimer ? validation par tous les membres ?)
+[ ] suppression d'une série (ou d'une saison)
+
+
+// document.location.href = "http://127.0.0.1:3000/frontend/index.html"

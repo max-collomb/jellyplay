@@ -1,7 +1,8 @@
 import React from 'react';
+import { MovieResult, TvResult } from 'moviedb-promise/dist/request-types';
 
 import {
-  AudioInfo, Config, DbMovie, DbTvshow, DbUser, Episode, UserMovieStatus, UserEpisodeStatus, UserTvshowStatus, VideoInfo,
+  AudioInfo, Config, DbDownload, DbMovie, DbTvshow, DbUser, Episode, FileInfo, UserMovieStatus, UserEpisodeStatus, UserTvshowStatus, VideoInfo, ParsedFilenameResponse,
 } from '../../api/src/types';
 import { SeenStatus } from '../../api/src/enums';
 
@@ -132,19 +133,24 @@ export function getMovieProgress(movie: DbMovie): JSX.Element {
   return position > 0 ? <div className="progress-bar"><div style={{ width: `${Math.round(100 * (position / movie.duration))}%` }} /></div> : <></>;
 }
 
-export function playMovie(movie: DbMovie): void {
-  const path = encodeURIComponent(`${ctx.config.moviesRemotePath}/${movie.filename}`);
+export function playVideoFile(path: string, pos?: number): void {
   if (window._mpvSchemeSupported && ctx.user) {
-    window._setPosition = ctx.apiClient.setMoviePosition.bind(ctx.apiClient, movie.filename, ctx.user.name);
-    console.log(`mpv://${path}?pos=${getMoviePosition(movie)}`); // eslint-disable-line no-console
-    document.location.href = `mpv://${path}?pos=${getMoviePosition(movie)}`;
+    console.log(`mpv://${encodeURIComponent(path)}?pos=${pos === undefined ? '' : pos}`); // eslint-disable-line no-console
+    document.location.href = `mpv://${encodeURIComponent(path)}?pos=${pos === undefined ? '' : pos}`;
   } else {
-    navigator.clipboard.writeText(path).then(() => {
+    navigator.clipboard.writeText(encodeURIComponent(path)).then(() => {
       alert('Le chemin a été copié dans le presse-papier'); // eslint-disable-line no-alert
     }, () => {
       alert('La copie du chemin dans le presse-papier a échoué'); // eslint-disable-line no-alert
     });
   }
+}
+
+export function playMovie(movie: DbMovie): void {
+  if (window._mpvSchemeSupported && ctx.user) {
+    window._setPosition = ctx.apiClient.setMoviePosition.bind(ctx.apiClient, movie.filename, ctx.user.name);
+  }
+  playVideoFile(`${ctx.config.moviesRemotePath}/${movie.filename}`, getMoviePosition(movie));
 }
 
 export function playUrl(url: string): void {
@@ -331,4 +337,121 @@ export function renderRelativeTimeString(date: Date | number, lang = navigator.l
   // Intl.RelativeTimeFormat do its magic
   const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
   return rtf.format(Math.floor(deltaSeconds / divisor), units[unitIndex]);
+}
+
+export type ParsedFilename = {
+  fileInfo?: FileInfo;
+  existingTvshows: { [key: string]: string };
+  mediaType: string;
+  title: string;
+  year: string;
+};
+
+const cachedParsedFilenames: { [key: string]: ParsedFilenameResponse } = {};
+
+export async function parseFilename(path: string): Promise<ParsedFilename> {
+  if (!cachedParsedFilenames[path]) {
+    cachedParsedFilenames[path] = await ctx.apiClient.parseFilename(path);
+  }
+  const data = cachedParsedFilenames[path];
+  const isTvshow = /S\d+E\d+/i.test(path) || /\d{1,2}x\d{2}(?!\d)/i.test(path);
+  return {
+    fileInfo: data.fileInfo,
+    existingTvshows: data.existingTvshows,
+    mediaType: isTvshow ? 'tvshow' : 'movie',
+    title: isTvshow ? (data.asTvshow?.title || data.title) : (data.asMovie?.title || data.title),
+    year: isTvshow ? '' : (data.asMovie?.year || data.year || ''),
+  };
+}
+
+export function generateFilename(title: string, year: string, originalLang: string, fileInfo: FileInfo | undefined, path0: string): string {
+  const path = path0.toLowerCase();
+  const duration = Math.round((fileInfo?.duration || 0) / 60);
+  let definition = ' ';
+  const width = fileInfo?.video.width || 0;
+  const height = fileInfo?.video.height || 0;
+  if (width > 3800 || height > 2000) {
+    definition = ' 2160p ';
+  } else if (width > 1900 || height > 1000) {
+    definition = ' 1080p ';
+  } else if (width > 1200 || height > 700) {
+    definition = ' 720p ';
+  }
+  let hasFR = false;
+  let hasEN = false;
+  fileInfo?.audio.forEach((a) => {
+    if (a.lang.toLowerCase().startsWith('fr')) {
+      hasFR = true;
+    } else if (a.lang.toLowerCase().startsWith('en') || a.lang.toLowerCase().includes('anglais')) {
+      hasEN = true;
+    }
+  });
+  let hasFRsubs = false;
+  fileInfo?.subtitles.forEach((s) => {
+    if (s.toLowerCase().startsWith('fr')) {
+      hasFRsubs = true;
+    }
+  });
+  let vf = 'vf';
+  if (originalLang === 'fr') {
+    vf = 'vof';
+  } else if (path.includes('vfq')) {
+    vf = 'vfq';
+  } else if (path.includes('vff') || path.includes('truefrench')) {
+    vf = 'vff';
+  }
+  let language = '';
+  if (hasFR && hasEN && hasFRsubs) {
+    language = `${vf}+vost`;
+  } else if (hasFR && !hasEN) {
+    language = vf;
+  } else if (hasEN && hasFRsubs) {
+    language = 'vost';
+  }
+  return cleanFileName(`${title} (${year}) [${duration}'${definition}${language}]${path.substring(path.lastIndexOf('.'))}`);
+}
+
+export function generateFoldername(title: string, existingTvshows: { [key: string]: string } | undefined, id?: number, includeId: boolean = false): string {
+  if (id && existingTvshows && existingTvshows[`id${id}`]) {
+    return existingTvshows[`id${id}`];
+  }
+  return cleanFileName(title + (includeId && id ? ` [id${id}]` : ''));
+}
+
+export type SearchResult = {
+  movieCandidates?: MovieResult[];
+  selectedMovieCandidate?: MovieResult;
+  tvshowCandidates?: TvResult[];
+  tvshowExists?: boolean;
+  selectedTvshowCandidate?: TvResult;
+  importedFilename: string;
+
+};
+
+const cachedTvResults: { [key: string]: TvResult[] } = {};
+const cachedMovieResults: { [key: string]: MovieResult[] } = {};
+
+export async function searchCandidates(title: string, year: string, mediaType: string, downloads: DbDownload[], fileInfo?: FileInfo, existingTvshows?: { [key: string]: string }): Promise<SearchResult> {
+  const result: SearchResult = { importedFilename: '' };
+  if (mediaType === 'movie') {
+    if (!cachedMovieResults[`${title}_${year}`]) {
+      cachedMovieResults[`${title}_${year}`] = await ctx.tmdbClient.getMovieCandidates(title, year);
+    }
+    result.movieCandidates = cachedMovieResults[`${title}_${year}`];
+    if (result.movieCandidates && result.movieCandidates.length > 0) {
+      result.selectedMovieCandidate = result.movieCandidates[0];
+      result.importedFilename = generateFilename(result.selectedMovieCandidate.title || '', result.selectedMovieCandidate.release_date?.substring(0, 4) || '', result.selectedMovieCandidate.original_language || '', fileInfo, downloads[0].path);
+    }
+  } else if (mediaType === 'tvshow') {
+    if (!cachedTvResults[title]) {
+      cachedTvResults[title] = await ctx.tmdbClient.getTvCandidates(title);
+    }
+    result.tvshowCandidates = cachedTvResults[title];
+    if (result.tvshowCandidates && result.tvshowCandidates.length > 0) {
+      result.selectedTvshowCandidate = result.tvshowCandidates[0];
+      result.tvshowExists = !!(existingTvshows && existingTvshows[`id${result.selectedTvshowCandidate.id}`]);
+      result.importedFilename = generateFoldername(result.selectedTvshowCandidate.name || '', existingTvshows, result.selectedTvshowCandidate.id);
+    }
+  }
+  return result;
 }

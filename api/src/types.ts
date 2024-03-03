@@ -198,6 +198,18 @@ export type ParsedFilenameResponse = {
   existingTvshows: { [key: string]: string };
 };
 
+export type AutoId = {
+  username: string;
+  mediaType: string;
+  tvshowExists: boolean;
+  tmdbId: number; // -1 => search to be done, 0 => not found
+  filename: string;
+  posterPath?: string;
+  title?: string;
+  audience: number;
+  year: number;
+};
+
 export type DbDownload = {
   path: string;
   size: number;
@@ -206,6 +218,7 @@ export type DbDownload = {
   finished: number;
   imported: boolean;
   ignored: boolean;
+  autoId?: AutoId;
 }
 
 export type SeedboxTorrent = {

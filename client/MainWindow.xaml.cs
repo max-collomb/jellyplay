@@ -25,7 +25,7 @@ namespace client
       //     if (addr.Address.ToString().StartsWith("10.244"))
       //       nasIp = "10.244.0.99";
 #if DEBUG
-      // webView.Source = new Uri("http://127.0.0.1:3000/frontend/");
+      // webView.Source = new Uri("http://127.0.0.1:3000/frontend/index.html");
 #else
       // webView.Source = new Uri($"http://{nasIp}:3000/frontend/");
 #endif
@@ -49,13 +49,14 @@ namespace client
         string path = HttpUtility.UrlDecode(match.Groups[1].Value);
         // if (path.Contains("192.168.0.99"))
         //   path = path.Replace("192.168.0.99", "nas.colors.ovh");
-        int position = int.Parse(match.Groups[2].Value);
+        int position = (match.Groups[2].Value.Length > 0) ? int.Parse(match.Groups[2].Value) : -1;
         Debug.WriteLine("path = " + path);
         Debug.WriteLine("position = " + position);
         // Prepare the process to run
         ProcessStartInfo start = new ProcessStartInfo();
         // Enter in the command line arguments, everything you would enter after the executable name itself
-        start.Arguments = $"\"{path}\" --start={position} --input-ipc-server=\\\\.\\pipe\\mpvsocket";
+        string startPosArg = position > -1 ? $"--start={position} " : "";
+        start.Arguments = $"\"{path}\" {startPosArg}--input-ipc-server=\\\\.\\pipe\\mpvsocket";
         string exeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
         string? workPath = System.IO.Path.GetDirectoryName(exeFilePath);
         start.FileName = System.IO.Path.Combine(workPath??"", "mpv", "mpv.exe");

@@ -7,7 +7,7 @@ import { filenameParse } from '@ctrl/video-filename-parser';
 import Loki from 'lokijs';
 const { LokiFsAdapter } = Loki;
 
-import { DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, UserWish, ParsedFilenameResponse, ParsedShow, FileInfo } from './types';
+import { AutoId, DbUser, DbMovie, DbTvshow, DbCredit, DataTables, Episode, HomeLists, UserEpisodeStatus, UserMovieStatus, UserTvshowStatus, UserWish, ParsedFilenameResponse, ParsedShow, FileInfo } from './types';
 import { SeenStatus, MediaType } from './enums';
 import { TmdbClient, mediaInfo, extractMovieTitle } from './tmdb';
 import { Seedbox } from './seedbox';
@@ -74,17 +74,24 @@ type DownloadMessage = {
   path: string;
 };
 
+type AutoIdMessage = {
+  path: string;
+  autoId: AutoId;
+};
+
 type ImportMovieDownloadMessage = {
   path: string;
   tmdbId: number;
   year: number;
   filename: string;
+  audience?: number;
 };
 
 type ImportTvshowDownloadMessage = {
   path: string;
   tmdbId: number;
   foldername: string;
+  audience?: number;
 };
 
 const videoExts = ['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'];
@@ -246,6 +253,10 @@ export class Catalog {
       );
     } else {
       for (const download of this.tables.downloads.find()) {
+        // if (download.autoId) {
+        //   delete download.autoId;
+        //   this.tables.downloads.update(download);
+        // }
         if (download.started && (new Date(download.started) < new Date(Date.now() - 60 * 24 * 60 * 60 * 1000))) { // si plus vieux que 60 jours
           this.log(`[-] removing download ${download.path} (older than 60 days)`);
           this.tables.downloads.remove(download);
@@ -1172,6 +1183,21 @@ export class Catalog {
     reply.send({ list: this.tables.downloads?.find(), lastUpdate: this.lastUpdate });
   }
 
+  public async setAutoId(request: FastifyRequest, reply: FastifyReply) {
+    let body: AutoIdMessage = request.body as AutoIdMessage;
+    const download = this.tables.downloads?.findOne({ path: body.path });
+    if (!download) {
+      reply.status(404);
+      reply.send({ error: "download not found" });
+      return;
+    }
+    if (!download.autoId || download.autoId.username === body.autoId.username) {
+      download.autoId = body.autoId;
+      this.tables.downloads?.update(download);
+    }
+    return reply.send({ download });
+  }
+
   public async importMovieDownload(request: FastifyRequest, reply: FastifyReply) {
     let body: ImportMovieDownloadMessage = request.body as ImportMovieDownloadMessage;
     const download = this.tables.downloads?.findOne({ path: body.path });
@@ -1206,7 +1232,7 @@ export class Catalog {
           cast: [],
           genres: [],
           countries: [],
-          audience: 999,
+          audience: body.audience === undefined ? 999 : body.audience,
           synopsys: "",
           backdropPath: "",
           posterPath: "",
@@ -1253,7 +1279,7 @@ export class Catalog {
       originalTitle: "",
       genres: [],
       countries: [],
-      audience: 999,
+      audience: body.audience === undefined ? 999 : body.audience,
       synopsys: "",
       backdropPath: "",
       posterPath: "",
@@ -1279,8 +1305,7 @@ export class Catalog {
           console.error(e);
           console.log((e instanceof Error) ? `[error] ${e.message}` : '[error] Unknown Error');
         }
-      }
-      else if (fs.existsSync(path.join(folderpath, path.basename(body.path)))) {
+      } else if (fs.existsSync(path.join(folderpath, path.basename(body.path)))) {
         reply.status(500);
         return reply.send({ error: "File already exists" });
       }

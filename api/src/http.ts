@@ -71,6 +71,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.post('/catalog/wish/remove', catalog.removeWish.bind(catalog));
     server.post('/catalog/download/ignore', catalog.ignoreDownload.bind(catalog));
     server.post('/catalog/download/delete', catalog.deleteDownload.bind(catalog));
+    server.post('/catalog/downloads/set_auto_id', catalog.setAutoId.bind(catalog));
     server.post('/catalog/download/import_movie', catalog.importMovieDownload.bind(catalog));
     server.post('/catalog/download/import_tvshow', catalog.importTvshowDownload.bind(catalog));
     server.post('/catalog/downloads/seedbox_remove', catalog.removeTorrent.bind(catalog));

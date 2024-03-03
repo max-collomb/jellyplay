@@ -12,7 +12,9 @@ import {
   DbDownload, FileInfo, DbMovie, DbTvshow,
 } from '../../api/src/types';
 
-import { ctx, cleanFileName } from './common';
+import {
+  ctx, parseFilename, generateFilename, generateFoldername, searchCandidates,
+} from './common';
 
 type ImportDownloadFormProps = {
   downloads: DbDownload[];
@@ -32,7 +34,7 @@ type ImportDownloadFormState = {
   selectedTvshowCandidate?: TvResult;
   importing: boolean;
   showRawMediaInfo: boolean;
-  existingTvShows?: { [key: string]: string };
+  existingTvshows?: { [key: string]: string };
 };
 
 export default class ImportDownloadForm extends React.Component<ImportDownloadFormProps, ImportDownloadFormState> {
@@ -47,22 +49,7 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
       mediaType: 'movie',
       showRawMediaInfo: false,
     };
-    ctx.apiClient.parseFilename(downloads[0].path)
-      .then((data) => {
-        const state: ImportDownloadFormState = { ...this.state };
-        state.fileInfo = data.fileInfo;
-        state.existingTvShows = data.existingTvshows;
-        if (/S\d+E\d+/i.test(downloads[0].path) || /\d{1,2}x\d{2}(?!\d)/i.test(downloads[0].path)) {
-          state.mediaType = 'tvshow';
-          state.title = data.asTvshow?.title || data.title;
-          state.year = '';
-        } else {
-          state.mediaType = 'movie';
-          state.title = data.asMovie?.title || data.title;
-          state.year = data.asMovie?.year || data.year || '';
-        }
-        this.setState(state, this.handleSearchClick.bind(this));
-      });
+    this.autoParseFilename(downloads[0].path);
   }
 
   handleTitleChange(evt: React.ChangeEvent<HTMLInputElement>): void {
@@ -83,18 +70,20 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
   }
 
   async handleMovieCandidateClick(candidate: MovieResult, evt: React.MouseEvent<HTMLElement>): Promise<void> {
+    const { downloads } = this.props;
+    const { fileInfo } = this.state;
     this.setState({
       selectedMovieCandidate: candidate,
-      importedFilename: this.generateFilename(candidate.title || '', candidate.release_date?.substring(0, 4) || '', candidate.original_language || ''),
+      importedFilename: generateFilename(candidate.title || '', candidate.release_date?.substring(0, 4) || '', candidate.original_language || '', fileInfo, downloads[0].path),
     });
     evt.preventDefault();
   }
 
   async handleTvshowCandidateClick(candidate: TvResult, evt: React.MouseEvent<HTMLElement>): Promise<void> {
-    const { tvshowCandidates } = this.state;
+    const { tvshowCandidates, existingTvshows } = this.state;
     this.setState({
       selectedTvshowCandidate: candidate,
-      importedFilename: this.generateFoldername(candidate.name || '', candidate.id, !tvshowCandidates || candidate.id !== tvshowCandidates[0].id),
+      importedFilename: generateFoldername(candidate.name || '', existingTvshows, candidate.id, !tvshowCandidates || candidate.id !== tvshowCandidates[0].id),
     });
     evt.preventDefault();
   }
@@ -134,24 +123,12 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
     if (evt) {
       evt.preventDefault();
     }
-    const { title, year, mediaType } = this.state;
-    if (mediaType === 'movie') {
-      const movieCandidates: MovieResult[] | undefined = await ctx.tmdbClient.getMovieCandidates(title, year);
-      const state: ImportDownloadFormState = { ...this.state, movieCandidates };
-      if (movieCandidates && movieCandidates.length > 0) {
-        state.selectedMovieCandidate = movieCandidates[0];
-        state.importedFilename = this.generateFilename(movieCandidates[0].title || '', movieCandidates[0].release_date?.substring(0, 4) || '', movieCandidates[0].original_language || '');
-      }
-      this.setState(state);
-    } else if (mediaType === 'tvshow') {
-      const tvshowCandidates: TvResult[] | undefined = await ctx.tmdbClient.getTvCandidates(title);
-      const state: ImportDownloadFormState = { ...this.state, tvshowCandidates };
-      if (tvshowCandidates && tvshowCandidates.length > 0) {
-        state.selectedTvshowCandidate = tvshowCandidates[0];
-        state.importedFilename = this.generateFoldername(tvshowCandidates[0].name || '', tvshowCandidates[0].id);
-      }
-      this.setState(state);
-    }
+
+    const { downloads } = this.props;
+    const {
+      title, year, mediaType, fileInfo, existingTvshows,
+    } = this.state;
+    this.setState((await searchCandidates(title, year, mediaType, downloads, fileInfo, existingTvshows) as ImportDownloadFormState));
   }
 
   handleCancelClick(evt: React.MouseEvent<HTMLButtonElement>): void {
@@ -166,62 +143,9 @@ export default class ImportDownloadForm extends React.Component<ImportDownloadFo
     this.setState({ showRawMediaInfo: !showRawMediaInfo });
   }
 
-  generateFilename(title: string, year: string, originalLang: string): string {
-    const { fileInfo } = this.state;
-    const { downloads } = this.props;
-    const path = downloads[0].path.toLowerCase();
-    const duration = Math.round((fileInfo?.duration || 0) / 60);
-    let definition = ' ';
-    const width = fileInfo?.video.width || 0;
-    const height = fileInfo?.video.height || 0;
-    if (width > 3800 || height > 2000) {
-      definition = ' 2160p ';
-    } else if (width > 1900 || height > 1000) {
-      definition = ' 1080p ';
-    } else if (width > 1200 || height > 700) {
-      definition = ' 720p ';
-    }
-    let hasFR = false;
-    let hasEN = false;
-    fileInfo?.audio.forEach((a) => {
-      if (a.lang.toLowerCase().startsWith('fr')) {
-        hasFR = true;
-      } else if (a.lang.toLowerCase().startsWith('en') || a.lang.toLowerCase().includes('anglais')) {
-        hasEN = true;
-      }
-    });
-    let hasFRsubs = false;
-    fileInfo?.subtitles.forEach((s) => {
-      if (s.toLowerCase().startsWith('fr')) {
-        hasFRsubs = true;
-      }
-    });
-    let vf = 'vf';
-    if (originalLang === 'fr') {
-      vf = 'vof';
-    } else if (path.includes('vfq')) {
-      vf = 'vfq';
-    } else if (path.includes('vff') || path.includes('truefrench')) {
-      vf = 'vff';
-    }
-    let language = '';
-    if (hasFR && hasEN && hasFRsubs) {
-      language = `${vf}+vost`;
-    } else if (hasFR && !hasEN) {
-      language = vf;
-    } else if (hasEN && hasFRsubs) {
-      language = 'vost';
-    }
-    return cleanFileName(`${title} (${year}) [${duration}'${definition}${language}]${path.substring(path.lastIndexOf('.'))}`);
-  }
-
-  generateFoldername(title: string, id?: number, includeId: boolean = false): string {
-    const { existingTvShows } = this.state;
-
-    if (id && existingTvShows && existingTvShows[`id${id}`]) {
-      return existingTvShows[`id${id}`];
-    }
-    return cleanFileName(title + (includeId && id ? ` [id${id}]` : ''));
+  async autoParseFilename(path: string): Promise<void> {
+    const parsedFilename = await parseFilename(path);
+    this.setState(parsedFilename as ImportDownloadFormState, this.handleSearchClick.bind(this));
   }
 
   render(): JSX.Element {

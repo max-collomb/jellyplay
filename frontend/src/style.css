@@ -342,6 +342,7 @@ div.media-card .progress-bar {
 .audience-link img { vertical-align: text-bottom; }
 .audience-link { transition: all linear 0.15s; border-radius: 0.25rem; }
 .audience-link.disabled { cursor: not-allowed; }
+.audience-link.inactive img { opacity: 0.2; }
 .audience-link:hover { background: rgba(255,255,255,0.1); }
 
 .constrained-width + .tab-content { display: flex; flex-grow: 1; }
@@ -360,6 +361,9 @@ div.media-card .progress-bar {
 .wish-link .added { font-size: 80%; opacity: 0.5; font-weight: normal; }
 
 html.dark .download-card { border-top: 1px solid rgba(255,255,255,0.1); border-bottom: none; }
-html.dark .download-card.grouped { border-top: 1px solid rgba(255, 255, 255, 0.033); padding-left: 3rem; }
+html.dark .download-card.grouped { border-top: 1px solid rgba(255, 255, 255, 0.033); padding-left: calc(3rem + 73px); }
 .wishlist-card { margin: 0.5rem; min-width: 450px; max-width: 600px; width: calc(25vw - 1.5rem); max-height: 300px; overflow-y: auto; }
+.download-card .media-card,
+.download-card .media-card .poster { width: 73px; min-width: 73px; margin: 0; }
+.download-card .media-card + .card-body { width: calc(100% - 73px); }
 
