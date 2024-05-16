@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "npx tsc",
-    "start": "npx tsc && node --experimental-specifier-resolution=node dist/index.js",
+    "start": "npx tsc && node --import=extensionless/register dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -33,6 +33,7 @@
     "basic-ftp": "^5.0.3",
     "check-disk-space": "^3.4.0",
     "cheerio": "^1.0.0-rc.12",
+    "extensionless": "^1.9.7",
     "fastify": "^3.29.0",
     "fastify-favicon": "^3.1.0",
     "mediainfo.js": "^0.1.9",
