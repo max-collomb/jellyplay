@@ -359,5 +359,7 @@ MigrationBackup/
 /api/db/images/stills_w300/*.jpg
 /api/db/*_movies
 /api/dist/*
+/api/cookie.txt
 .parcel-cache
 /frontend/dist/*
+/feed-proxy/*.php.cookies

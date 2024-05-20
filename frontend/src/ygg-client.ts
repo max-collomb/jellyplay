@@ -17,6 +17,8 @@ export class YggClient {
 
   passkey: string = '';
 
+  proxyUrl: string = '';
+
   isCloudFlareActive = false;
 
   categories: { [key: string]: string } = {
@@ -27,9 +29,10 @@ export class YggClient {
     movies: 'Film', tvshows: 'Série', emissions: 'Emission', animation: 'Animation',
   };
 
-  init(url: string, passkey: string) {
+  init(url: string, passkey: string, proxyUrl: string) {
     this.baseUrl = url;
     this.passkey = passkey;
+    this.proxyUrl = proxyUrl;
   }
 
   private async getTop(category: string, defaultData: any): Promise<YggItem[]> {
@@ -46,7 +49,8 @@ export class YggClient {
       const name = match ? match[2] : '';
       match = (/.*\/torrent\/.*\/.*\/([0-9]+).*/gi).exec(detailLink);
       const id = match ? match[1] : '';
-      const downloadLink = `${this.baseUrl}/rss/download?id=${id}&passkey=${this.passkey}`;
+      // const downloadLink = `${this.baseUrl}/rss/download?id=${id}&passkey=${this.passkey}`;
+      const downloadLink = `${this.proxyUrl}?action=get-torrent&id=${id}`;
       match = (/<div class="hidden">[0-9]+<\/div>(.*)/gi).exec(item[4]);
       const age = match ? match[1] : '';
       match = (/<div class="hidden">([0-9]+)<\/div>(.*)/gi).exec(item[5]);
@@ -105,7 +109,7 @@ export class YggClient {
     const results: YggResult[] = await response.json();
     results.forEach((result) => {
       /* eslint-disable no-param-reassign */
-      result.downloadUrl += this.passkey;
+      // result.downloadUrl += this.passkey;
       result.rank = this.getRank(result.name.toLowerCase(), result.seeds, result.size);
       /* eslint-enable no-param-reassign */
     });

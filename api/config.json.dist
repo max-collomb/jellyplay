@@ -13,6 +13,9 @@
   "seedboxPassword": "",
   "seedboxPath": "",
   "yggUrl": "",
+  "yggProxyUrl": "https://www.domain.tld/feed-proxy/index_token.php",
   "yggKey": "",
+  "yggUser": "",
+  "yggPwd": "",
   "flareSolverrUrl": ""
 }

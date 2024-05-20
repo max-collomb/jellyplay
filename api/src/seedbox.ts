@@ -104,6 +104,7 @@ export class Seedbox {
     url.pathname = url.pathname.replace(/\/$/, '') + '/php/addtorrent.php';
     const form = new URLSearchParams();
     form.append('url', torrentUrl);
+    // form.append('torrents_start_stopped', '1');
     const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
