@@ -188,6 +188,13 @@ export class YggProxy {
 
     
   }
+
+  async setYggUrl() {
+    const { stdout } = await execPromise(`curl "${global.config.yggProxyUrl}?action=get-ygg-url"`);
+    if (stdout !== global.config.yggUrl) {
+      await execPromise(`curl "${global.config.yggProxyUrl}?action=set-ygg-url&url=${encodeURIComponent(global.config.yggUrl)}"`);
+    }
+  }
 }
 
 export const yggProxy = new YggProxy();

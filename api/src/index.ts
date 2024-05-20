@@ -7,6 +7,7 @@ import { startHttp } from './http';
 import { Catalog } from './catalog';
 import { Config } from './types';
 import { Seedbox } from './seedbox';
+import { yggProxy } from './ygg-proxy';
 
 const rootPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -48,6 +49,7 @@ export async function main() {
         if (catalog.tables.downloads)
           seedbox.downloadNewFiles(catalog.tables.downloads);
       });
+    yggProxy.setYggUrl();
   }
 
   console.log("main end");
