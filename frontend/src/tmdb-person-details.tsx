@@ -209,7 +209,7 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
               { this.renderMovieList(notOwnedMovies) }
             </Tab>
             <Tab eventKey="movies2" title="Films (réal, auteur)" tabClassName={(ownedMovies2.length === 0 && notOwnedMovies2.length === 0) ? 'd-none' : ''}>
-              { ownedMovies.length ? (
+              { ownedMovies2.length ? (
                 <>
                   { this.renderMovieList(ownedMovies2) }
                   <hr />
@@ -227,7 +227,7 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
               { this.renderTvshowList(notOwnedTvshows) }
             </Tab>
             <Tab eventKey="tvshows2" title="Séries (réal, auteur)" tabClassName={(ownedTvshows2.length === 0 && notOwnedTvshows2.length === 0) ? 'd-none' : ''}>
-              { ownedTvshows.length ? (
+              { ownedTvshows2.length ? (
                 <>
                   { this.renderTvshowList(ownedTvshows2) }
                   <hr />
