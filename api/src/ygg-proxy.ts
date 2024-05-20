@@ -1,4 +1,5 @@
-import { statSync } from 'fs'; 
+import { statSync, existsSync } from 'fs'; 
+import * as path from 'path';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import * as cheerio from 'cheerio';
 // import { fetch } from 'undici';
@@ -112,10 +113,11 @@ export class YggProxy {
     // response = await fetch(href, { headers, redirect: 'manual' });
     // const txt = await response.text();
     // return isJson ? JSON.parse(txt) : txt;
-    if (Date.now() - statSync("cookie.txt").mtime.getTime() > 29 * 60 * 1000) {
-      await execPromise(`curl -F "id=${global.config.yggUser}" -F "pass=${global.config.yggPwd}" -c cookie.txt ${global.config.yggUrl}/auth/process_login`);
+    const cookiePath = path.join(global.config.tmpPath, "cookie.txt");
+    if (!existsSync(cookiePath) || (Date.now() - statSync(cookiePath).mtime.getTime() > 29 * 60 * 1000)) {
+      await execPromise(`curl -F "id=${global.config.yggUser}" -F "pass=${global.config.yggPwd}" -c "${cookiePath}" ${global.config.yggUrl}/auth/process_login`);
     }
-    const { stdout } = await execPromise(`curl -b cookie.txt "${href}"`);
+    const { stdout } = await execPromise(`curl -b "${cookiePath}" "${href}"`);
     return isJson ? JSON.parse(stdout) : stdout;
   }
 
