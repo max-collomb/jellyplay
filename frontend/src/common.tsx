@@ -40,7 +40,10 @@ export const ctx: Context = {
     seedboxPassword: '',
     seedboxPath: '',
     yggUrl: '',
+    yggProxyUrl: '',
     yggKey: '',
+    yggUser: '',
+    yggPwd: '',
     flareSolverrUrl: '',
   },
   user: undefined,
@@ -56,7 +59,7 @@ export function initContext(config: Config): Context {
   ctx.config = config;
   ctx.tmdbClient.init(config.tmdbApiKey, 'fr-FR');
   ctx.youtubeClient.init(config.youtubeApiKey);
-  ctx.yggClient.init(config.yggUrl, config.yggKey);
+  ctx.yggClient.init(config.yggUrl, config.yggKey, config.yggProxyUrl);
   return ctx;
 }
 
