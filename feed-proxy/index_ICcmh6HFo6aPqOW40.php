@@ -11,6 +11,7 @@ $current = (@$_SERVER['REQUEST_SCHEME'] ?? "http") . '://' . $_SERVER['HTTP_HOST
 switch ($action) {
   case 'rss':           rss();
   case 'get-torrent':   getTorrent();
+  case 'get-ygg-url':   getYggUrl();
   case 'set-ygg-url':   setYggUrl();
   default:              send('unknown action', 'text/plain', 400);
 }
@@ -94,6 +95,14 @@ function getTorrent() {
   }
   curl_close($ch);
   send($response, 'application/x-bittorrent', 200);
+}
+
+/**
+ * Sets the Ygg URL
+ * http://localhost:8000/index_ICcmh6HFo6aPqOW40.php?action=get-ygg-url
+ */
+function getYggUrl() {
+  send(file_get_contents(__DIR__ . '/ygg-url.txt'), 'text/plain', 200);
 }
 
 /**
