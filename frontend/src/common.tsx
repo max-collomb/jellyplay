@@ -10,7 +10,6 @@ import { apiClient, ApiClient } from './api-client';
 import { router, Router } from './router';
 import { tmdbClient, TmdbClient } from './tmdb-client';
 import { youtubeClient, YoutubeClient } from './youtube-client';
-import { YggClient, yggClient } from './ygg-client';
 import { eventBus, EventBus } from './event-bus';
 
 export type Context = {
@@ -21,7 +20,6 @@ export type Context = {
   apiClient: ApiClient;
   tmdbClient: TmdbClient;
   youtubeClient: YoutubeClient;
-  yggClient: YggClient;
 };
 
 export const ctx: Context = {
@@ -40,11 +38,8 @@ export const ctx: Context = {
     seedboxPassword: '',
     seedboxPath: '',
     yggUrl: '',
-    yggProxyUrl: '',
-    yggKey: '',
     yggUser: '',
     yggPwd: '',
-    flareSolverrUrl: '',
   },
   user: undefined,
   eventBus,
@@ -52,14 +47,12 @@ export const ctx: Context = {
   apiClient,
   tmdbClient,
   youtubeClient,
-  yggClient,
 };
 
 export function initContext(config: Config): Context {
   ctx.config = config;
   ctx.tmdbClient.init(config.tmdbApiKey, 'fr-FR');
   ctx.youtubeClient.init(config.youtubeApiKey);
-  ctx.yggClient.init(config.yggUrl, config.yggKey, config.yggProxyUrl);
   return ctx;
 }
 

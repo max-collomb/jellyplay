@@ -1,10 +1,8 @@
 import React from 'react';
 
-import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Card from 'react-bootstrap/Card';
-import Spinner from 'react-bootstrap/Spinner';
 
 import { MovieResult, TvResult } from 'moviedb-promise/dist/request-types';
 import { MediaType } from '../../api/src/enums';
@@ -14,10 +12,8 @@ import {
 
 import { ctx } from './common';
 import { Trending } from './tmdb-client';
-import { YggItem } from './ygg-client';
 import Rating from './rating';
-
-const torrentDownloaded: string[] = [];
+import { YggFrame } from './ygg-frame';
 
 type TrendingProps = {
   users: DbUser[];
@@ -26,14 +22,10 @@ type TrendingState = {
   wishes?: DbWish[];
   trending?: Trending;
   trendingTimeWindow: 'day' | 'week';
-  tops?: YggItem[];
   topsTimeWindow: 'day' | 'week' | 'month';
-  yggItemDetails?: YggItem;
 };
 
 export default class Trendings extends React.Component<TrendingProps, TrendingState> {
-  timer: NodeJS.Timer | undefined = undefined;
-
   constructor(props: TrendingProps) {
     super(props);
     this.state = {
@@ -41,7 +33,6 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
       topsTimeWindow: localStorage.getItem('topsTimeWindow') === 'month' ? 'month' : (localStorage.getItem('topsTimeWindow') === 'week' ? 'week' : 'day'),
     };
     this.refreshWishes();
-    this.refreshTops();
     // ctx.eventBus.replace('will-navigate', ctx.router.saveScrollPosition.bind(ctx.router));
   }
 
@@ -49,21 +40,13 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
     this.refreshTrending();
   }
 
-  componentDidUpdate(_prevProps: TrendingProps, prevState: TrendingState) {
-    const { yggItemDetails } = this.state;
+  componentDidUpdate() {
     // if (prevState.movies.length === 0 && movies.length > 0) {
     //   ctx.router.restoreScrollPosition();
     // }
     if (ctx.apiClient.needRefresh('wishes')) {
       this.refreshWishes();
     }
-    if (!prevState.yggItemDetails?.id && yggItemDetails?.id) {
-      document.getElementById('ygg-iframe')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }
-
-  componentWillUnmount(): void {
-    clearInterval(this.timer);
   }
 
   handleWishClick(url: string, evt: React.MouseEvent<HTMLButtonElement>): void {
@@ -80,30 +63,6 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
     }
   }
 
-  handleYggDetailsClick(yggItem: YggItem, evt: React.MouseEvent<HTMLAnchorElement>): void {
-    evt.preventDefault();
-    if (ctx.yggClient.isCloudFlareActive) {
-      document.location.href = `browser://${encodeURIComponent(yggItem.detailLink)}`;
-      return;
-    }
-    const { yggItemDetails } = this.state;
-    this.setState({ yggItemDetails: yggItemDetails?.id === yggItem.id ? undefined : yggItem });
-  }
-
-  async handleYggDownloadClick(yggItem: YggItem, evt: React.MouseEvent<HTMLAnchorElement>): Promise<void> {
-    evt.preventDefault();
-    if (ctx.yggClient.isCloudFlareActive) {
-      alert('Le téléchargement ne fonctionne pas pour le moment.\nUtliser la liste d\'envies'); // eslint-disable-line no-alert
-      return;
-    }
-    if (await ctx.yggClient.download(yggItem.downloadLink)) {
-      torrentDownloaded.push(yggItem.id);
-      this.forceUpdate();
-    } else {
-      alert('Une erreur est survenue'); // eslint-disable-line no-alert
-    }
-  }
-
   handleTrendingTimeWindowClick(timeWidow: 'day' | 'week'): void {
     localStorage.setItem('trendingTimeWindow', timeWidow);
     this.setState({ trendingTimeWindow: timeWidow, trending: undefined }, this.refreshTrending.bind(this));
@@ -111,16 +70,11 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
 
   handleTopsTimeWindowClick(timeWidow: 'day' | 'week' | 'month'): void {
     localStorage.setItem('topsTimeWindow', timeWidow);
-    this.setState({ topsTimeWindow: timeWidow, tops: undefined }, this.refreshTops.bind(this));
+    this.setState({ topsTimeWindow: timeWidow });
   }
 
   refreshWishes(): void {
     ctx.apiClient.getWishes().then((wishes) => { this.setState({ wishes }); });
-  }
-
-  refreshTops(): void {
-    const { topsTimeWindow } = this.state;
-    ctx.yggClient.getTops(topsTimeWindow).then((tops) => { this.setState({ tops }); });
   }
 
   async refreshTrending() {
@@ -130,7 +84,7 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
 
   render(): JSX.Element {
     const {
-      wishes, trending, trendingTimeWindow, tops, topsTimeWindow, yggItemDetails,
+      wishes, trending, trendingTimeWindow, topsTimeWindow,
     } = this.state;
     const { users } = this.props;
 
@@ -256,73 +210,23 @@ export default class Trendings extends React.Component<TrendingProps, TrendingSt
       );
     }
 
-    const topsTitle = (
-      <h4 className="section-title">
-        Top torrents
-        <ButtonGroup className="ms-5">
-          <Button variant={topsTimeWindow === 'day' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'day')}>Aujourd&#39;hui</Button>
-          <Button variant={topsTimeWindow === 'week' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'week')}>Cette semaine</Button>
-          <Button variant={topsTimeWindow === 'month' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'month')}>Ce mois-ci</Button>
-        </ButtonGroup>
-      </h4>
-    );
-
-    let topsJsx = (
+    const topsJsx = (
       <>
-        {topsTitle}
-        <div className="text-center m-5"><Spinner animation="border" variant="light" /></div>
+        <h4 className="section-title">
+          Top torrents
+          <ButtonGroup className="ms-5">
+            <Button variant={topsTimeWindow === 'day' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'day')}>Aujourd&#39;hui</Button>
+            <Button variant={topsTimeWindow === 'week' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'week')}>Cette semaine</Button>
+            <Button variant={topsTimeWindow === 'month' ? 'secondary' : 'outline-secondary'} onClick={this.handleTopsTimeWindowClick.bind(this, 'month')}>Ce mois-ci</Button>
+          </ButtonGroup>
+        </h4>
+        <YggFrame
+          url={`/top/${topsTimeWindow}`}
+          style={{ width: '100%', height: '80vh', minHeight: '720px' }}
+        />
       </>
     );
-    if (tops) {
-      topsJsx = (
-        <>
-          {topsTitle}
-          <table className="table table-bordered table-striped" style={{ tableLayout: 'fixed' }}>
-            <thead>
-              <tr>
-                <th>Nom</th>
-                <th style={{ width: '100px' }}>Age</th>
-                <th style={{ width: '100px' }}>Taille</th>
-                <th style={{ width: '75px' }}>Seed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tops.map((top: YggItem) => (
-                <React.Fragment key={top.id}>
-                  <tr>
-                    <td>
-                      <div className="d-flex">
-                        <Badge bg={top.category === 'movies' ? 'primary' : (top.category === 'tvshows' ? 'secondary' : 'warning')} className="align-self-center me-3">{top.category === 'movies' ? 'Film' : (top.category === 'tvshows' ? 'Série' : 'Emission')}</Badge>
-                        <a href={top.detailLink} onClick={this.handleYggDetailsClick.bind(this, top)} className={top.size > (top.category === 'tvshows' ? 2 : 5) * 1073741824 /* 1073741824 = 1Go */ ? 'opacity-50 flex-grow-1 text-truncate align-self-center' : 'flex-grow-1 text-truncate align-self-center'}>{top.name}</a>
-                        { torrentDownloaded.includes(top.id) ? <Button variant="dark" className="mx-3" disabled title="Téléchargement en cours sur la seedbox">Téléchargement...</Button> : <a href="#" className="btn btn-success mx-3" onClick={this.handleYggDownloadClick.bind(this, top)}>Télécharger</a> }
-                        <a href={`browser://${encodeURIComponent(top.detailLink)}`} className="align-self-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
-                            <path fillRule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
-                            <path fillRule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
-                          </svg>
-                        </a>
-                      </div>
-                    </td>
-                    <td className="text-truncate" style={{ verticalAlign: 'middle' }}>{top.age.replace(/ /g, '\u00A0')}</td>
-                    <td className="text-truncate" style={{ verticalAlign: 'middle' }}>{top.sizeStr}</td>
-                    <td className="text-truncate" style={{ verticalAlign: 'middle' }}>{top.completed}</td>
-                  </tr>
-                  {top.id === yggItemDetails?.id
-                    ? (
-                      <tr>
-                        <td colSpan={4}>
-                          <iframe id="ygg-iframe" src={`/ygg/details?url=${encodeURIComponent(top.detailLink)}`} style={{ width: '100%', height: '75vh', maxHeight: '1000px' }} title="details" />
-                        </td>
-                      </tr>
-                    )
-                    : null}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </>
-      );
-    }
+
     return (
       <>
         {wishesJsx}

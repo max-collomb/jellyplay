@@ -155,6 +155,7 @@ V1.1
 [ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
 [ ] recherche série non possédée : gérer séries et séries animé selon le genre
 
+[ ] lire les fichiers vidéo via http et non via samba (https://github.com/fastify/send)
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo ?
 [ ] [frontend] navigation avec les flèches du clavier + entrée + back

@@ -1,8 +1,9 @@
 import FTP from "basic-ftp";
 import path from "path";
+import { Blob } from 'buffer'; 
+import { fetch, FormData } from 'undici';
 import { DbDownload, SeedboxTorrent, SeedboxFilter, Quota } from "./types";
 
-declare var fetch: typeof import('undici').fetch;
 export type SeedboxOptions = {
   ruTorrentURL: string;
   host: string;
@@ -114,6 +115,25 @@ export class Seedbox {
     });
     if (!response.ok) {
       throw new Error("Error posting torrent");
+    }
+  }
+
+  async addTorrentFile(buffer: Buffer, filename: string, startPaused: boolean = false): Promise<void> {
+    const url = new URL(this.options.ruTorrentURL);
+    url.pathname = url.pathname.replace(/\/$/, '') + '/php/addtorrent.php';
+    const formData = new FormData(); // Create a FormData object for multipart/form-data
+    formData.append('torrent_file', new Blob([buffer]), filename); // Append the torrent file to the form
+    if (startPaused) {
+      formData.append('torrents_start_stopped', '1'); // Add option to start torrents in stopped state if needed
+    }
+    const response = await fetch(url.toString(), { // Send the request to ruTorrent
+      method: 'POST',
+      headers: { Authorization: `Basic ${Buffer.from(`${this.options.user}:${this.options.password}`).toString('base64')}` },
+      body: formData,
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error posting torrent: ${response.status} ${response.statusText} - ${errorText}`);
     }
   }
 

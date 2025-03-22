@@ -298,7 +298,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
               <YoutubeVideos search={movie?.title || ''} />
             </Tab>
             <Tab eventKey="search" title="Télécharger">
-              <YggSearch search={movie?.title || ''} isAnim={!!(movie?.genres?.find((genre) => genre.name === 'Animation'))} />
+              <YggSearch search={movie?.title || ''} category={(movie?.genres?.find((genre) => genre.name === 'Animation')) ? 'animation' : 'movies'} />
             </Tab>
           </Tabs>
         </div>

@@ -1,8 +1,0 @@
-<FilesMatch "\.cookies$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>
-<FilesMatch "\.pem$">
-    Order allow,deny
-    Deny from all
-</FilesMatch>

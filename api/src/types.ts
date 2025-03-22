@@ -17,11 +17,8 @@ export type Config = {
   seedboxPassword: string;
   seedboxPath: string;
   yggUrl: string;
-  yggProxyUrl: string;
-  yggKey: string;
   yggUser: string;
   yggPwd: string;
-  flareSolverrUrl: string;
 };
 
 export type DbUser = {

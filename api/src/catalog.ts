@@ -1114,13 +1114,28 @@ export class Catalog {
     reply.send({});
   }
 
-  public async addTorrentToSeedbox(request: FastifyRequest, reply: FastifyReply) {
-    const url = (request.query as any).url;
+  public async addTorrentFileToSeedbox(request: FastifyRequest, reply: FastifyReply) {
+    // Check if request has multipart content
+    if (!request.isMultipart()) {
+      return reply.code(400).send({ error: 'Request is not multipart' });
+    }
+
     try {
-      this.seedbox?.addTorrent(url);
-      reply.send({})
-    } catch (error) {
-      reply.status(500).send({ error });
+      const data = await request.file();
+      if (!data) {
+        return reply.code(400).send({ error: 'No file uploaded' });
+      }
+
+      const chunks: Buffer[] = []; // Convert the stream to a buffer to ensure it's properly sent
+      for await (const chunk of data.file) {
+        chunks.push(Buffer.from(chunk));
+      }
+
+      this.seedbox?.addTorrentFile(Buffer.concat(chunks), data.filename, false);
+      reply.send({});
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Error uploading file' });
     }
   }
   

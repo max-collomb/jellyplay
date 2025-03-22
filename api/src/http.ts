@@ -3,9 +3,9 @@ import path from 'path';
 import Fastify, { FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyFavicon from 'fastify-favicon';
+import fastifyMultipart from '@fastify/multipart';
 
 import { Catalog } from './catalog';
-import { yggProxy } from './ygg-proxy';
 
 export const server: FastifyInstance = Fastify({});
 
@@ -20,6 +20,12 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
       decorateReply: false
     });
 
+    server.register(fastifyStatic, {
+      root: path.join(rootPath, '..', 'frontend', 'static'),
+      prefix: '/static',
+      decorateReply: false
+    });
+
     // route /images => ressources statiques
     server.register(fastifyStatic, {
       root: path.join(rootPath, 'db', 'images'),
@@ -29,6 +35,12 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
 
     // /favicon.ico
     server.register(fastifyFavicon, { path: path.join(rootPath, 'dist'), name: 'favicon.ico' });
+    
+    // Register content type parser for raw bodies (fallback for binary files)
+    server.addContentTypeParser('*', { parseAs: 'buffer' }, (_req, body, done) => { done(null, body); });
+
+    // Register multipart content parser with options to accept torrent files
+    server.register(fastifyMultipart, { limits: { fileSize: 50 * 1024 * 1024 /* 50MB limit */ }, });
 
     server.get('/catalog/lastupdate', catalog.getLastUpdate.bind(catalog));
     server.get('/catalog/users', catalog.getUsers.bind(catalog));
@@ -47,12 +59,8 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.get('/catalog/downloads/seedbox_filters', catalog.getTorrentFilters.bind(catalog));
     server.get('/catalog/downloads/quotas', catalog.getQuotas.bind(catalog));
     
-    server.get('/ygg/top', yggProxy.top.bind(yggProxy));
-    server.get('/ygg/details', yggProxy.details.bind(yggProxy));
-    server.get('/ygg/search', yggProxy.search.bind(yggProxy));
-    server.get('/ygg/download', catalog.addTorrentToSeedbox.bind(catalog));
-    server.get('/ygg/cloudflare_active', yggProxy.isCloudFlareActive.bind(yggProxy));
-    
+    server.post('/ygg/download', catalog.addTorrentFileToSeedbox.bind(catalog));
+
     server.post('/catalog/movie/set_status', catalog.setMovieStatus.bind(catalog));
     server.post('/catalog/tvshow/set_status', catalog.setTvshowStatus.bind(catalog));
     server.post('/catalog/tvshow/set_episode_status', catalog.setEpisodeStatus.bind(catalog));

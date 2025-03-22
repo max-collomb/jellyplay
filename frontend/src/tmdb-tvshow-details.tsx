@@ -11,6 +11,7 @@ import { ctx } from './common';
 import TmdbTvshowRecommandations from './tmdb-tvshow-recommandations';
 import TmdbCasting from './tmdb-casting';
 import YoutubeVideos from './youtube-videos';
+import YggSearch from './ygg-search';
 import Rating from './rating';
 
 type TmdbTvshowDetailsProps = {
@@ -254,6 +255,9 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
             </Tab>
             <Tab eventKey="trailers" title="Videos">
               <YoutubeVideos search={tvshow?.name || ''} />
+            </Tab>
+            <Tab eventKey="search" title="Télécharger">
+              <YggSearch search={tvshow?.name || ''} category={(tvshow?.genres?.find((genre) => genre.name === 'Animation')) ? 'anime' : ((tvshow?.genres?.find((genre) => genre.name === 'Reality')) ? 'emissions' : 'tvshows')} />
             </Tab>
           </Tabs>
         </div>
