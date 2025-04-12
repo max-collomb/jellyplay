@@ -38,7 +38,7 @@ type DownloadsState = {
 };
 
 export default class Downloads extends React.Component<DownloadsProps, DownloadsState> {
-  timer: NodeJS.Timer | undefined = undefined;
+  timer: ReturnType<typeof setInterval> | undefined = undefined;
 
   constructor(props: DownloadsProps) {
     super(props);

@@ -328,7 +328,7 @@ export default class App extends React.Component<AppProps, AppState> {
                 </svg>
               </Button> */}
               <Button variant="dark" className="ms-1" style={{ lineHeight: '18px' }} onClick={this.handleOptionsToggle.bind(this, true)}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16"><path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" /></svg></Button>
-              {ctx.user ? <a href="#" style={{ textDecoration: 'none' }} onClick={this.handleUserSelected.bind(this, undefined)}><img src={`/images/users/${ctx.user.name}.svg`} alt={ctx.user.name} width="36" className="ms-3" /></a> : null}
+              {ctx.user ? <a href="jellyplay://logform" style={{ textDecoration: 'none' }} onClick={undefined/* this.handleUserSelected.bind(this, undefined) */}><img src={`/images/users/${ctx.user.name}.svg`} alt={ctx.user.name} width="36" className="ms-3" /></a> : null}
             </Form>
             {offcanvas}
           </Container>

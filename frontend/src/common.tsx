@@ -24,6 +24,7 @@ export type Context = {
 
 export const ctx: Context = {
   config: {
+    auth: '',
     moviesLocalPath: '',
     moviesRemotePath: '',
     tvshowsLocalPath: '',
@@ -131,8 +132,9 @@ export function getMovieProgress(movie: DbMovie): JSX.Element {
 
 export function playVideoFile(path: string, pos?: number): void {
   if (window._mpvSchemeSupported && ctx.user) {
-    console.log(`mpv://${encodeURIComponent(path)}?pos=${pos === undefined ? '' : pos}`); // eslint-disable-line no-console
-    document.location.href = `mpv://${encodeURIComponent(path)}?pos=${pos === undefined ? '' : pos}`;
+    const url = `mpv${document.location.protocol === 'https:' ? 's' : ''}://${document.location.host}/files/movie/${encodeURIComponent(path)}?pos=${pos === undefined ? '' : pos}`;
+    console.log(url); // eslint-disable-line no-console
+    document.location.href = url;
   } else {
     navigator.clipboard.writeText(encodeURIComponent(path)).then(() => {
       alert('Le chemin a été copié dans le presse-papier'); // eslint-disable-line no-alert
@@ -146,7 +148,7 @@ export function playMovie(movie: DbMovie): void {
   if (window._mpvSchemeSupported && ctx.user) {
     window._setPosition = ctx.apiClient.setMoviePosition.bind(ctx.apiClient, movie.filename, ctx.user.name);
   }
-  playVideoFile(`${ctx.config.moviesRemotePath}/${movie.filename}`, getMoviePosition(movie));
+  playVideoFile(movie.filename, getMoviePosition(movie));
 }
 
 export function playUrl(url: string): void {
@@ -289,11 +291,12 @@ export function renderAudioInfos(audios: AudioInfo[]): JSX.Element {
 export function playTvshow(tvshow: DbTvshow, episode: Episode | undefined): Episode | undefined {
   const ep = episode || selectCurrentEpisode(tvshow);
   if (ep) {
-    const path = `${ctx.config.tvshowsRemotePath}/${tvshow.foldername}/${ep.filename}`;
+    const path = `${tvshow.foldername}/${ep.filename}`;
     if (window._mpvSchemeSupported && ctx.user) {
       window._setPosition = ctx.apiClient.setEpisodePosition.bind(ctx.apiClient, tvshow.foldername, ep.filename, ctx.user?.name);
-      console.log(`mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(ep)}`); // eslint-disable-line no-console
-      document.location.href = `mpv://${encodeURIComponent(path)}?pos=${getEpisodePosition(ep)}`;
+      const url = `mpv${document.location.protocol === 'https:' ? 's' : ''}://${document.location.host}/files/tvshow/${encodeURIComponent(path)}?pos=${getEpisodePosition(ep)}`;
+      console.log(url); // eslint-disable-line no-console
+      document.location.href = url;
     } else {
       navigator.clipboard.writeText(path).then(() => {
         alert('Le chemin a été copié dans le presse-papier'); // eslint-disable-line no-alert

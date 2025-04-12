@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web;
@@ -18,17 +19,39 @@ namespace client
     private bool initialized = false;
     private CoreWebView2Frame? iFrame;
     private string uploadUrl = "";
+    private string basicLogin = "";
+    private string basicPassword = "";
 
     public MainWindow()
     {
       InitializeComponent();
       InitializeWebView2();
       ((App)Application.Current).WindowPlace.Register(this);
+      var credentials = SecureStorage.LoadCredentials();
+      if (credentials == null)
+      {
+        var loginWindow = new LoginWindow(string.Empty, string.Empty);
+        if (loginWindow.ShowDialog() == true)
+        {
+          SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
+          basicLogin = loginWindow.Login;
+          basicPassword = loginWindow.Password;
+        }
+        else
+        {
+          Application.Current.Shutdown();
+        }
+      }
+      else
+      {
+        basicLogin = credentials.Value.login;
+        basicPassword = credentials.Value.password;
+      }
     }
 
     async void InitializeWebView2()
     {
-      window.Title = "Jellyplay - http://nas.colors.ovh:3000/frontend/";
+      window.Title = "Jellyplay - loading...";
       webView.DefaultBackgroundColor = System.Drawing.Color.Black;
       webView.Visibility = Visibility.Collapsed;
       webView.NavigationStarting += NavigationStarting;
@@ -36,14 +59,28 @@ namespace client
 #if DEBUG
       webView.Source = new Uri("http://127.0.0.1:3000/frontend/");
 #else
-      webView.Source = new Uri("http://nas.colors.ovh:3000/frontend/");
+      var connectionManager = new ConnectionManager(
+        localAddress: "http://192.168.0.99:3000/frontend/",
+        publicAddress: "https://jellyplay.synology.me:37230/frontend/",
+      );
+      string serverAddress = await connectionManager.GetOptimalServerUrlAsync();
+      Debug.WriteLine($"Connecting to {serverUrl}");
+      webView.Source = new Uri(serverAddress);
 #endif
       await webView.EnsureCoreWebView2Async();
+      webView.CoreWebView2.BasicAuthenticationRequested += CoreWebView2_BasicAuthenticationRequested;
       webView.CoreWebView2.FrameCreated += FrameCreated;
       webView.CoreWebView2.FrameNavigationStarting += FrameNavigationStarting;
       webView.CoreWebView2.FrameNavigationCompleted += FrameNavigationCompleted;
       webView.CoreWebView2.DownloadStarting += DownloadStarting;
     }
+
+    private void CoreWebView2_BasicAuthenticationRequested(object? sender, CoreWebView2BasicAuthenticationRequestedEventArgs e)
+    {
+      e.Response.UserName = basicLogin;
+      e.Response.Password = basicPassword;
+    }
+
     private void FrameCreated(object? sender, CoreWebView2FrameCreatedEventArgs args)
     {
       Debug.WriteLine("FrameNavigationCreated");
@@ -97,24 +134,24 @@ namespace client
     {
       if (args.Uri.StartsWith("http"))
         window.Title = "Jellyplay - " + args.Uri;
-      Match match = Regex.Match(args.Uri, @"mpv:\/\/(.*)\?pos=([0-9]*)");
+      Match match = Regex.Match(args.Uri, @"mpv([s]{0,1}):\/\/(.*)\?pos=([0-9]*)");
       if (match.Success)
       {
         args.Cancel = true;
-        string path = HttpUtility.UrlDecode(match.Groups[1].Value);
-        int position = (match.Groups[2].Value.Length > 0) ? int.Parse(match.Groups[2].Value) : -1;
-        Debug.WriteLine("path = " + path);
+        string url = "http" + match.Groups[1].Value + "://" + match.Groups[2].Value;
+        int position = (match.Groups[3].Value.Length > 0) ? int.Parse(match.Groups[3].Value) : -1;
+        Debug.WriteLine("url = " + url);
         Debug.WriteLine("position = " + position);
         // Prepare the process to run
         ProcessStartInfo start = new ProcessStartInfo();
         // Enter in the command line arguments, everything you would enter after the executable name itself
         string startPosArg = position > -1 ? $"--start={position} " : "";
-        start.Arguments = $"\"{path}\" {startPosArg}--input-ipc-server=\\\\.\\pipe\\mpvsocket";
+        string headers = $"--http-header-fields=\"Authorization: Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(basicLogin + ":" + basicPassword))}\" ";
+        start.Arguments = $"\"{url}\" {headers}{startPosArg}--input-ipc-server=\\\\.\\pipe\\mpvsocket";
         string exeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-        string? workPath = System.IO.Path.GetDirectoryName(exeFilePath);
-        start.FileName = System.IO.Path.Combine(workPath??"", "mpv", "mpv.exe");
-        Debug.WriteLine(start.FileName);
-        Debug.WriteLine(start.Arguments);
+        string? workPath = Path.GetDirectoryName(exeFilePath);
+        start.FileName = Path.Combine(workPath??"", "mpv", "mpv.exe");
+        Debug.WriteLine(start.FileName + " " + start.Arguments);
         // Do you want to show a console window?
         start.WindowStyle = ProcessWindowStyle.Hidden;
         start.CreateNoWindow = true;
@@ -148,6 +185,28 @@ namespace client
         Debug.WriteLine("url= " + url);
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
       }
+
+      match = Regex.Match(args.Uri, @"jellyplay:\/\/(.*)");
+      if (match.Success)
+      {
+        args.Cancel = true;
+        string action = HttpUtility.UrlDecode(match.Groups[1].Value);
+        Debug.WriteLine("action= " + action);
+        if (action == "logform")
+        {
+          var credentials = SecureStorage.LoadCredentials();
+          var login = credentials != null ? credentials.Value.login : string.Empty;
+          var password = credentials != null ? credentials.Value.password : string.Empty;
+          var loginWindow = new LoginWindow(login, password);
+          if (loginWindow.ShowDialog() == true)
+          {
+            SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
+            basicLogin = loginWindow.Login;
+            basicPassword = loginWindow.Password;
+          }
+        }
+      }
+
     }
 
     void NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs args)
