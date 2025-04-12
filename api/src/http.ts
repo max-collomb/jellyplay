@@ -6,7 +6,7 @@ import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import fastifyStatic from '@fastify/static';
 import fastifyFavicon from 'fastify-favicon';
 import fastifyMultipart from '@fastify/multipart';
-import fastifyBasicAuth from 'fastify-basic-auth';
+import fastifyBasicAuth from '@fastify/basic-auth';
 import geoip from 'geoip-lite';
 
 import { Catalog } from './catalog';
@@ -18,7 +18,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
   console.log("startHttp begin");
   try {
 
-    server.register(fastifyBasicAuth, {
+    await server.register(fastifyBasicAuth, {
       validate: function (username, password, _req, _reply, done) {
         const users = catalog.tables.users?.find();
         if (users) {
@@ -36,50 +36,49 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
 
     server.after(() => {
       // GeoBlocking
-      server.addHook('onRequest', (request: FastifyRequest, reply: FastifyReply, done: (err?: Error) => void) => {
+      server.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
         const ip = request.ip; // Get client IP address
         // Allow localhost and local network IPs
         if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('fe80:') /* link-local IPv6 addresses*/) {
-          return done(); // Allow the request to continue
+          return; // Allow the request to continue
         }
         const geo = geoip.lookup(ip); // Look up geography information for the IP
         if (!geo || geo.country !== 'FR') { // If geo lookup failed or country doesn't match allowed country, reject the request
           return reply.code(403).send({ error: 'Access denied', message: 'Access denied' });
         }
-        done(); // Continue with the request if country is allowed
       });
       server.addHook('onRequest', server.basicAuth);
     });
 
     // route /frontend => ressources statiques
-    server.register(fastifyStatic, {
+    await server.register(fastifyStatic, {
       root: path.join(rootPath, '..', 'frontend', 'dist'),
       prefix: '/frontend',
-      decorateReply: false
+      decorateReply: false,
     });
 
     // route /images => ressources statiques
-    server.register(fastifyStatic, {
+    await server.register(fastifyStatic, {
       root: path.join(rootPath, 'db', 'images'),
       prefix: '/images',
-      decorateReply: false
+      decorateReply: false,
     });
 
     // route /jellyplay-client => ressources statiques
-    server.register(fastifyStatic, {
+    await server.register(fastifyStatic, {
       root: process.platform == 'win32' ? 'X:\\media\\jellyplay-client' : '/volume1/share/media/jellyplay-client',
       prefix: '/jellyplay-client',
-      decorateReply: false
+      decorateReply: false,
     });
 
     // /favicon.ico
-    server.register(fastifyFavicon, { path: path.join(rootPath, 'dist'), name: 'favicon.ico' });
+    await server.register(fastifyFavicon, { path: path.join(rootPath, 'dist'), name: 'favicon.ico' });
     
     // Register content type parser for raw bodies (fallback for binary files)
     server.addContentTypeParser('*', { parseAs: 'buffer' }, (_req, body, done) => { done(null, body); });
 
     // Register multipart content parser with options to accept torrent files
-    server.register(fastifyMultipart, { limits: { fileSize: 50 * 1024 * 1024 /* 50MB limit */ }, });
+    await server.register(fastifyMultipart, { limits: { fileSize: 50 * 1024 * 1024 /* 50MB limit */ }, });
 
     server.get('/files/:type/*', async (request: FastifyRequest, reply: FastifyReply) => {
       const type: string = (request.params as any).type;
@@ -115,8 +114,11 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
 
         if (!range) {
           // No range requested, send entire file
+          reply.header('Content-Length', fileSize);
+          reply.header('Accept-Ranges', 'bytes');
           reply.type('application/octet-stream');
-          return reply.sendFile(filename);
+          const stream = fs.createReadStream(filePath);
+          return reply.send(stream);
         }
 
         // Parse the range header
@@ -124,9 +126,9 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
         // console.log("range request : " + start + " - " + end);
-        
+
         // Validate range
-        if (start >= fileSize || end >= fileSize || start > end) {
+        if (isNaN(start) || isNaN(end) || start < 0 || start >= fileSize || end >= fileSize || start > end) {
           // Return 416 Range Not Satisfiable
           reply.code(416);
           reply.header('Content-Range', `bytes */${fileSize}`);
@@ -201,9 +203,9 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
     server.post('/catalog/download/import_tvshow', catalog.importTvshowDownload.bind(catalog));
     server.post('/catalog/downloads/seedbox_remove', catalog.removeTorrent.bind(catalog));
 
-    await server.listen(3000, '0.0.0.0');
-    const address = server.server.address();
-    const port = typeof address === 'string' ? address : address?.port;
+    await server.listen({ port: 3000, host: '0.0.0.0' });
+    // const address = server.server.address();
+    // const port = typeof address === 'string' ? address : address?.port;
   } catch (err) {
     console.log("error", err);
     server.log.error(err);

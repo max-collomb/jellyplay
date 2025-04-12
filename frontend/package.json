@@ -3,7 +3,7 @@
     "@leeoniya/ufuzzy": "^1.0.2",
     "bootstrap": "5.x",
     "bootstrap-dark-5": "1.x",
-    "moviedb-promise": "3.x",
+    "moviedb-promise": "^4.0.7",
     "react": "17.x",
     "react-bootstrap": "2.x",
     "react-circular-progressbar": "^2.1.0",
@@ -14,6 +14,7 @@
     "@types/react-dom": "17.x",
     "@typescript-eslint/eslint-plugin": "^5.50.0",
     "@typescript-eslint/parser": "^5.50.0",
+    "buffer": "^5.7.1",
     "eslint": "^8.33.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-airbnb-typescript": "^17.0.0",
@@ -21,9 +22,9 @@
     "eslint-plugin-jsx-a11y": "^6.7.1",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "parcel": "^2.5.0",
+    "parcel": "^2.14.4",
     "process": "^0.11.10",
-    "typescript": "^4.6.4"
+    "typescript": "^5.8.3"
   },
   "scripts": {
     "build": "npx parcel build ./src/index.html --public-url ./",
