@@ -7,8 +7,9 @@ namespace client
     public string Login { get; private set; }
     public string Password { get; private set; }
 
-    public LoginWindow(string login, string password)
+    public LoginWindow(string login, string password, Window owner)
     {
+      Owner = owner;
       Login = login;
       Password = password;
       InitializeComponent();

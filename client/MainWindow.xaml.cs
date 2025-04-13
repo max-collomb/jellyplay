@@ -21,6 +21,7 @@ namespace client
     private string uploadUrl = "";
     private string basicLogin = "";
     private string basicPassword = "";
+    private int count401 = 0;
 
     public MainWindow()
     {
@@ -30,9 +31,10 @@ namespace client
       var credentials = SecureStorage.LoadCredentials();
       if (credentials == null)
       {
-        var loginWindow = new LoginWindow(string.Empty, string.Empty);
+        var loginWindow = new LoginWindow(string.Empty, string.Empty, this);
         if (loginWindow.ShowDialog() == true)
         {
+          count401 = 0;
           SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
           basicLogin = loginWindow.Login;
           basicPassword = loginWindow.Password;
@@ -61,10 +63,10 @@ namespace client
 #else
       var connectionManager = new ConnectionManager(
         localAddress: "http://192.168.0.99:3000/frontend/",
-        publicAddress: "https://jellyplay.synology.me:37230/frontend/",
+        publicAddress: "https://jellyplay.synology.me:37230/frontend/"
       );
       string serverAddress = await connectionManager.GetOptimalServerUrlAsync();
-      Debug.WriteLine($"Connecting to {serverUrl}");
+      Debug.WriteLine($"Connecting to {serverAddress}");
       webView.Source = new Uri(serverAddress);
 #endif
       await webView.EnsureCoreWebView2Async();
@@ -197,9 +199,10 @@ namespace client
           var credentials = SecureStorage.LoadCredentials();
           var login = credentials != null ? credentials.Value.login : string.Empty;
           var password = credentials != null ? credentials.Value.password : string.Empty;
-          var loginWindow = new LoginWindow(login, password);
+          var loginWindow = new LoginWindow(login, password, this);
           if (loginWindow.ShowDialog() == true)
           {
+            count401 = 0;
             SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
             if (loginWindow.Login != login || loginWindow.Password != password)
             {
@@ -226,7 +229,44 @@ namespace client
         webView.CoreWebView2.OpenDevToolsWindow();
 #endif
       }
-      webView.CoreWebView2.ExecuteScriptAsync($"window._mpvSchemeSupported = true;");
+
+      // Check if the navigation resulted in a 401 Unauthorized error
+      if (args.HttpStatusCode == 401)
+      {
+        // It seems that there's a least one 401 error, even if the credentials are ok
+        count401++;
+        if (count401 > 2)
+        {
+          Debug.WriteLine("401 Unauthorized detected. Opening login window...");
+
+          // Open the login window
+          var credentials = SecureStorage.LoadCredentials();
+          var login = credentials != null ? credentials.Value.login : string.Empty;
+          var password = credentials != null ? credentials.Value.password : string.Empty;
+          var loginWindow = new LoginWindow(login, password, this);
+
+          if (loginWindow.ShowDialog() == true)
+          {
+            count401 = 0;
+            // Save the new credentials
+            SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
+            basicLogin = loginWindow.Login;
+            basicPassword = loginWindow.Password;
+
+            // Reload the page with the new credentials
+            webView.CoreWebView2.Reload();
+          }
+          else
+          {
+            // If the user cancels the login, shut down the application
+            Application.Current.Shutdown();
+          }
+        }
+      }
+      else
+      {
+        webView.CoreWebView2.ExecuteScriptAsync($"window._mpvSchemeSupported = true;");
+      }
     }
   }
 }
