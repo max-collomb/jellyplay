@@ -9,7 +9,8 @@ namespace client
 
     public LoginWindow(string login, string password, Window owner)
     {
-      Owner = owner;
+      if (owner != null)
+        Owner = owner;
       Login = login;
       Password = password;
       InitializeComponent();

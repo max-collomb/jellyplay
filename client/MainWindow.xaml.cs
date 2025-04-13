@@ -31,7 +31,7 @@ namespace client
       var credentials = SecureStorage.LoadCredentials();
       if (credentials == null)
       {
-        var loginWindow = new LoginWindow(string.Empty, string.Empty, this);
+        var loginWindow = new LoginWindow(string.Empty, string.Empty, null);
         if (loginWindow.ShowDialog() == true)
         {
           count401 = 0;
