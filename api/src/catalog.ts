@@ -596,8 +596,29 @@ export class Catalog {
     this.log("end scan_tvshows");
   }
 
-  public async getConfig(_request: FastifyRequest, reply: FastifyReply) {
-    reply.send({ config: global.config });
+  public async getConfig(request: FastifyRequest, reply: FastifyReply) {
+    let userName: string = request.headers.authorization?.split(' ')[1] || "";
+    userName = Buffer.from(userName, 'base64').toString('utf8').split(':')[0];
+    reply.send({
+      userName,
+      config: {
+        auth: "",
+        moviesLocalPath: "",
+        tvshowsLocalPath: "",
+        tmpPath: "",
+        tmdbApiKey: global.config.tmdbApiKey,
+        youtubeApiKey: global.config.youtubeApiKey,
+        ruTorrentURL: "",
+        seedboxHost: "",
+        seedboxPort: 0,
+        seedboxUser: "",
+        seedboxPassword: "",
+        seedboxPath: "",
+        yggUrl: global.config.yggUrl,
+        yggUser: global.config.yggUser,
+        yggPwd: global.config.yggPwd,
+      }
+    });
   }
 
   public async getLastUpdate(_request: FastifyRequest, reply: FastifyReply) {

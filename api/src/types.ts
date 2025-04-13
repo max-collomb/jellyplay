@@ -5,9 +5,7 @@ export { ParsedShow, ParsedMovie } from '@ctrl/video-filename-parser';
 export type Config = {
   auth: string,
   moviesLocalPath: string;
-  moviesRemotePath: string;
   tvshowsLocalPath: string;
-  tvshowsRemotePath: string;
   tmpPath: string;
   tmdbApiKey: string;
   youtubeApiKey: string;

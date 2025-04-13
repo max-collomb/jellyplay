@@ -201,8 +201,15 @@ namespace client
           if (loginWindow.ShowDialog() == true)
           {
             SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
-            basicLogin = loginWindow.Login;
-            basicPassword = loginWindow.Password;
+            if (loginWindow.Login != login || loginWindow.Password != password)
+            {
+              string executablePath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty; // Get the path of the current executable
+              if (!string.IsNullOrEmpty(executablePath))
+              {
+                Process.Start(executablePath); // Start a new instance of the application
+                Application.Current.Shutdown(); // Shut down the current instance
+              }
+            }
           }
         }
       }

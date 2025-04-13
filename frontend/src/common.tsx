@@ -26,9 +26,7 @@ export const ctx: Context = {
   config: {
     auth: '',
     moviesLocalPath: '',
-    moviesRemotePath: '',
     tvshowsLocalPath: '',
-    tvshowsRemotePath: '',
     tmpPath: '',
     tmdbApiKey: '',
     youtubeApiKey: '',

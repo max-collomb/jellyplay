@@ -58,7 +58,7 @@ export class ApiClient {
     }
   }
 
-  async getConfig(): Promise<Config> {
+  async getConfig(): Promise<{ config: Config, userName: string }> {
     return new Promise((resolve) => {
       if (cache.config) {
         resolve(cache.config);
@@ -67,7 +67,7 @@ export class ApiClient {
           .then(async (response) => {
             const json = await response.json();
             cache.config = json.config;
-            resolve(json.config);
+            resolve(json);
           });
       }
     });

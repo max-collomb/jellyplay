@@ -63,22 +63,24 @@ export default class App extends React.Component<AppProps, AppState> {
       scanLogs: '',
       downloadCount: 0,
     };
-    ctx.apiClient.getConfig().then((config) => initContext(config));
+    ctx.apiClient.getConfig().then((json) => {
+      initContext(json.config);
+      localStorage.setItem('userName', json.userName);
+      ctx.apiClient.getUsers().then((users) => {
+        let user;
+        for (const u of users) {
+          if (u.name === json.userName) {
+            user = u;
+          }
+        }
+        ctx.user = user;
+        document.body.classList.toggle('simplified-ui', !!user?.simplifiedUI);
+        this.setState({ users });
+      });
+    });
     ctx.apiClient.getScanProgress(0).then((status) => {
       this.setState({ scanning: !status.finished, scanLogs: status.logs });
       this.initPollScan(status.finished);
-    });
-    ctx.apiClient.getUsers().then((users) => {
-      const userName = localStorage.getItem('userName');
-      let user;
-      for (const u of users) {
-        if (u.name === userName) {
-          user = u;
-        }
-      }
-      ctx.user = user;
-      document.body.classList.toggle('simplified-ui', !!user?.simplifiedUI);
-      this.setState({ users });
     });
     ctx.apiClient.getDownloads().then((downloads) => {
       this.updateNewDownloadCount(downloads);
