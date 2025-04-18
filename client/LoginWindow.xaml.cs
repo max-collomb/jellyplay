@@ -7,7 +7,7 @@ namespace client
     public string Login { get; private set; }
     public string Password { get; private set; }
 
-    public LoginWindow(string login, string password, Window owner)
+    public LoginWindow(string login, string password, Window? owner)
     {
       if (owner != null)
         Owner = owner;

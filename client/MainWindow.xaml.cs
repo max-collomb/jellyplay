@@ -120,6 +120,7 @@ namespace client
         {
           Debug.WriteLine("Download completed " + args.DownloadOperation.ResultFilePath);
           using var httpClient = new HttpClient();
+          httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes($"{basicLogin}:{basicPassword}"))}"); // Ajout du header "Authorization"
           using var formContent = new MultipartFormDataContent();
           var fileBytes = File.ReadAllBytes(args.DownloadOperation.ResultFilePath);
           var fileContent = new ByteArrayContent(fileBytes);
@@ -127,7 +128,7 @@ namespace client
           fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-bittorrent");
           formContent.Add(fileContent, "file", Path.GetFileName(args.DownloadOperation.ResultFilePath));
           var response = await httpClient.PostAsync(uploadUrl, formContent);
-          Debug.WriteLine(response.IsSuccessStatusCode ? "File uploaded successfully!" : $"Upload failed with status code: {response.StatusCode}");
+          MessageBox.Show(response.IsSuccessStatusCode ? "Téléchargement en cours...\nAller dans l'onglet \"Téléchargements\" pour suivre la progression" : $"Erreur du téléchargement. Code: {response.StatusCode}");
         }
       };
     }
