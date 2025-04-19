@@ -82,6 +82,9 @@ export const mediaInfo = async (media: DbMovie | Episode | FileInfo, filename: s
     media.created = statSync(filename).birthtime.getTime();
     media.audio = [];
     media.subtitles = [];
+    if (existsSync(filename + '.srt')) {
+      media.subtitles.push('SRT');
+    }
     if ((mediaInfoResult as any).media?.track?.length) {
       for (let track of (mediaInfoResult as any).media.track) {
         switch (track['@type']) {

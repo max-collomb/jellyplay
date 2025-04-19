@@ -137,12 +137,13 @@ namespace client
     {
       if (args.Uri.StartsWith("http"))
         window.Title = "Jellyplay - " + args.Uri;
-      Match match = Regex.Match(args.Uri, @"mpv([s]{0,1}):\/\/(.*)\?pos=([0-9]*)");
+      Match match = Regex.Match(args.Uri, @"mpv([s]{0,1}):\/\/(.*)\?pos=([0-9]*)(&hasSrt)?");
       if (match.Success)
       {
         args.Cancel = true;
         string url = "http" + match.Groups[1].Value + "://" + match.Groups[2].Value;
         int position = (match.Groups[3].Value.Length > 0) ? int.Parse(match.Groups[3].Value) : -1;
+        string srtUrl = (match.Groups[4].Length > 0) ? url + ".srt" : string.Empty;
         Debug.WriteLine("url = " + url);
         Debug.WriteLine("position = " + position);
         // Prepare the process to run
@@ -150,7 +151,8 @@ namespace client
         // Enter in the command line arguments, everything you would enter after the executable name itself
         string startPosArg = position > -1 ? $"--start={position} " : "";
         string headers = $"--http-header-fields=\"Authorization: Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(basicLogin + ":" + basicPassword))}\" ";
-        start.Arguments = $"\"{url}\" {headers}{startPosArg}--input-ipc-server=\\\\.\\pipe\\mpvsocket";
+        string subFileArg = string.IsNullOrEmpty(srtUrl) ? "" : $"--sub-file=\"{srtUrl}\" ";
+        start.Arguments = $"\"{url}\" {headers}{startPosArg}{subFileArg}--input-ipc-server=\\\\.\\pipe\\mpvsocket";
         string exeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
         string? workPath = Path.GetDirectoryName(exeFilePath);
         start.FileName = Path.Combine(workPath??"", "mpv", "mpv.exe");

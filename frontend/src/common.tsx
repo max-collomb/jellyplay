@@ -128,9 +128,15 @@ export function getMovieProgress(movie: DbMovie): JSX.Element {
   return position > 0 ? <div className="progress-bar"><div style={{ width: `${Math.round(100 * (position / movie.duration))}%` }} /></div> : <></>;
 }
 
-export function playVideoFile(path: string, pos?: number): void {
+export function playMovie(movie: DbMovie): void {
   if (window._mpvSchemeSupported && ctx.user) {
-    const url = `mpv${document.location.protocol === 'https:' ? 's' : ''}://${document.location.host}/files/movie/${encodeURIComponent(path)}?pos=${pos === undefined ? '' : pos}`;
+    window._setPosition = ctx.apiClient.setMoviePosition.bind(ctx.apiClient, movie.filename, ctx.user.name);
+  }
+  const path = movie.filename;
+  const pos = getMoviePosition(movie);
+  const hasSrt = movie.subtitles.includes('SRT');
+  if (window._mpvSchemeSupported && ctx.user) {
+    const url = `mpv${document.location.protocol === 'https:' ? 's' : ''}://${document.location.host}/files/movie/${encodeURIComponent(path)}?pos=${pos === undefined ? '' : pos}${hasSrt ? '&hasSrt' : ''}`;
     console.log(url); // eslint-disable-line no-console
     document.location.href = url;
   } else {
@@ -140,13 +146,6 @@ export function playVideoFile(path: string, pos?: number): void {
       alert('La copie du chemin dans le presse-papier a échoué'); // eslint-disable-line no-alert
     });
   }
-}
-
-export function playMovie(movie: DbMovie): void {
-  if (window._mpvSchemeSupported && ctx.user) {
-    window._setPosition = ctx.apiClient.setMoviePosition.bind(ctx.apiClient, movie.filename, ctx.user.name);
-  }
-  playVideoFile(movie.filename, getMoviePosition(movie));
 }
 
 export function playUrl(url: string): void {
@@ -292,7 +291,8 @@ export function playTvshow(tvshow: DbTvshow, episode: Episode | undefined): Epis
     const path = `${tvshow.foldername}/${ep.filename}`;
     if (window._mpvSchemeSupported && ctx.user) {
       window._setPosition = ctx.apiClient.setEpisodePosition.bind(ctx.apiClient, tvshow.foldername, ep.filename, ctx.user?.name);
-      const url = `mpv${document.location.protocol === 'https:' ? 's' : ''}://${document.location.host}/files/tvshow/${encodeURIComponent(path)}?pos=${getEpisodePosition(ep)}`;
+      const hasSrt = ep.subtitles.includes('SRT');
+      const url = `mpv${document.location.protocol === 'https:' ? 's' : ''}://${document.location.host}/files/tvshow/${encodeURIComponent(path)}?pos=${getEpisodePosition(ep)}${hasSrt ? '&hasSrt' : ''}`;
       console.log(url); // eslint-disable-line no-console
       document.location.href = url;
     } else {

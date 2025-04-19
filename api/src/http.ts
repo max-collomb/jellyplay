@@ -92,7 +92,7 @@ export const startHttp = async (rootPath: string, catalog: Catalog) => {
         console.error(`Invalid filename parameter received: ${filename}`);
         return reply.status(400).send('Invalid');
       }
-      if (!['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv'].includes(path.extname(filename).toLowerCase())) {
+      if (!['.avi', '.mkv', '.mp4', '.mpg', '.mpeg', '.wmv', '.srt'].includes(path.extname(filename).toLowerCase())) {
         console.error(`Invalid filename extension received: ${filename}`);
         return reply.status(400).send('Invalid');
       }
