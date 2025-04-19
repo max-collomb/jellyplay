@@ -398,7 +398,6 @@ export class Catalog {
     const filenameSet: Set<string> = new Set<string>();
     for (const filename of filenames) {
       filenameSet.add(filename);
-      const filepath: string = path.join(this.moviesPath, filename);
       if (this.tables.movies?.find({ filename }).length === 0) {
         this.log(`[+] file added ${filename}`);
         try {
@@ -999,7 +998,11 @@ export class Catalog {
       tvshow.countries = [];
 
       this.scanLogs = "";
-      await this.tmdbClient.getTvshowData(tvshow);
+      if (tvshow.isSaga) {
+        await this.tmdbClient.getCollectionData(tvshow);
+      } else {
+        await this.tmdbClient.getTvshowData(tvshow);
+      }
       for(let episode of tvshow.episodes) {
         if (tvshow.isSaga) {
           await this.tmdbClient.addCollectionEpisode(tvshow, episode);
