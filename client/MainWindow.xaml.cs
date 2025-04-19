@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web;
@@ -18,17 +19,41 @@ namespace client
     private bool initialized = false;
     private CoreWebView2Frame? iFrame;
     private string uploadUrl = "";
+    private string basicLogin = "";
+    private string basicPassword = "";
+    private int count401 = 0;
 
     public MainWindow()
     {
       InitializeComponent();
       InitializeWebView2();
       ((App)Application.Current).WindowPlace.Register(this);
+      var credentials = SecureStorage.LoadCredentials();
+      if (credentials == null)
+      {
+        var loginWindow = new LoginWindow(string.Empty, string.Empty, null);
+        if (loginWindow.ShowDialog() == true)
+        {
+          count401 = 0;
+          SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
+          basicLogin = loginWindow.Login;
+          basicPassword = loginWindow.Password;
+        }
+        else
+        {
+          Application.Current.Shutdown();
+        }
+      }
+      else
+      {
+        basicLogin = credentials.Value.login;
+        basicPassword = credentials.Value.password;
+      }
     }
 
     async void InitializeWebView2()
     {
-      window.Title = "Jellyplay - http://nas.colors.ovh:3000/frontend/";
+      window.Title = "Jellyplay - loading...";
       webView.DefaultBackgroundColor = System.Drawing.Color.Black;
       webView.Visibility = Visibility.Collapsed;
       webView.NavigationStarting += NavigationStarting;
@@ -36,14 +61,28 @@ namespace client
 #if DEBUG
       webView.Source = new Uri("http://127.0.0.1:3000/frontend/");
 #else
-      webView.Source = new Uri("http://nas.colors.ovh:3000/frontend/");
+      var connectionManager = new ConnectionManager(
+        localAddress: "http://192.168.0.99:3000/frontend/",
+        publicAddress: "https://jellyplay.synology.me:37230/frontend/"
+      );
+      string serverAddress = await connectionManager.GetOptimalServerUrlAsync();
+      Debug.WriteLine($"Connecting to {serverAddress}");
+      webView.Source = new Uri(serverAddress);
 #endif
       await webView.EnsureCoreWebView2Async();
+      webView.CoreWebView2.BasicAuthenticationRequested += CoreWebView2_BasicAuthenticationRequested;
       webView.CoreWebView2.FrameCreated += FrameCreated;
       webView.CoreWebView2.FrameNavigationStarting += FrameNavigationStarting;
       webView.CoreWebView2.FrameNavigationCompleted += FrameNavigationCompleted;
       webView.CoreWebView2.DownloadStarting += DownloadStarting;
     }
+
+    private void CoreWebView2_BasicAuthenticationRequested(object? sender, CoreWebView2BasicAuthenticationRequestedEventArgs e)
+    {
+      e.Response.UserName = basicLogin;
+      e.Response.Password = basicPassword;
+    }
+
     private void FrameCreated(object? sender, CoreWebView2FrameCreatedEventArgs args)
     {
       Debug.WriteLine("FrameNavigationCreated");
@@ -81,6 +120,7 @@ namespace client
         {
           Debug.WriteLine("Download completed " + args.DownloadOperation.ResultFilePath);
           using var httpClient = new HttpClient();
+          httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes($"{basicLogin}:{basicPassword}"))}"); // Ajout du header "Authorization"
           using var formContent = new MultipartFormDataContent();
           var fileBytes = File.ReadAllBytes(args.DownloadOperation.ResultFilePath);
           var fileContent = new ByteArrayContent(fileBytes);
@@ -88,7 +128,7 @@ namespace client
           fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-bittorrent");
           formContent.Add(fileContent, "file", Path.GetFileName(args.DownloadOperation.ResultFilePath));
           var response = await httpClient.PostAsync(uploadUrl, formContent);
-          Debug.WriteLine(response.IsSuccessStatusCode ? "File uploaded successfully!" : $"Upload failed with status code: {response.StatusCode}");
+          MessageBox.Show(response.IsSuccessStatusCode ? "Téléchargement en cours...\nAller dans l'onglet \"Téléchargements\" pour suivre la progression" : $"Erreur du téléchargement. Code: {response.StatusCode}");
         }
       };
     }
@@ -97,24 +137,26 @@ namespace client
     {
       if (args.Uri.StartsWith("http"))
         window.Title = "Jellyplay - " + args.Uri;
-      Match match = Regex.Match(args.Uri, @"mpv:\/\/(.*)\?pos=([0-9]*)");
+      Match match = Regex.Match(args.Uri, @"mpv([s]{0,1}):\/\/(.*)\?pos=([0-9]*)(&hasSrt)?");
       if (match.Success)
       {
         args.Cancel = true;
-        string path = HttpUtility.UrlDecode(match.Groups[1].Value);
-        int position = (match.Groups[2].Value.Length > 0) ? int.Parse(match.Groups[2].Value) : -1;
-        Debug.WriteLine("path = " + path);
+        string url = "http" + match.Groups[1].Value + "://" + match.Groups[2].Value;
+        int position = (match.Groups[3].Value.Length > 0) ? int.Parse(match.Groups[3].Value) : -1;
+        string srtUrl = (match.Groups[4].Length > 0) ? url + ".srt" : string.Empty;
+        Debug.WriteLine("url = " + url);
         Debug.WriteLine("position = " + position);
         // Prepare the process to run
         ProcessStartInfo start = new ProcessStartInfo();
         // Enter in the command line arguments, everything you would enter after the executable name itself
         string startPosArg = position > -1 ? $"--start={position} " : "";
-        start.Arguments = $"\"{path}\" {startPosArg}--input-ipc-server=\\\\.\\pipe\\mpvsocket";
+        string headers = $"--http-header-fields=\"Authorization: Basic {Convert.ToBase64String(Encoding.UTF8.GetBytes(basicLogin + ":" + basicPassword))}\" ";
+        string subFileArg = string.IsNullOrEmpty(srtUrl) ? "" : $"--sub-file=\"{srtUrl}\" ";
+        start.Arguments = $"\"{url}\" {headers}{startPosArg}{subFileArg}--input-ipc-server=\\\\.\\pipe\\mpvsocket";
         string exeFilePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-        string? workPath = System.IO.Path.GetDirectoryName(exeFilePath);
-        start.FileName = System.IO.Path.Combine(workPath??"", "mpv", "mpv.exe");
-        Debug.WriteLine(start.FileName);
-        Debug.WriteLine(start.Arguments);
+        string? workPath = Path.GetDirectoryName(exeFilePath);
+        start.FileName = Path.Combine(workPath??"", "mpv", "mpv.exe");
+        Debug.WriteLine(start.FileName + " " + start.Arguments);
         // Do you want to show a console window?
         start.WindowStyle = ProcessWindowStyle.Hidden;
         start.CreateNoWindow = true;
@@ -148,6 +190,36 @@ namespace client
         Debug.WriteLine("url= " + url);
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
       }
+
+      match = Regex.Match(args.Uri, @"jellyplay:\/\/(.*)");
+      if (match.Success)
+      {
+        args.Cancel = true;
+        string action = HttpUtility.UrlDecode(match.Groups[1].Value);
+        Debug.WriteLine("action= " + action);
+        if (action == "logform")
+        {
+          var credentials = SecureStorage.LoadCredentials();
+          var login = credentials != null ? credentials.Value.login : string.Empty;
+          var password = credentials != null ? credentials.Value.password : string.Empty;
+          var loginWindow = new LoginWindow(login, password, this);
+          if (loginWindow.ShowDialog() == true)
+          {
+            count401 = 0;
+            SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
+            if (loginWindow.Login != login || loginWindow.Password != password)
+            {
+              string executablePath = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty; // Get the path of the current executable
+              if (!string.IsNullOrEmpty(executablePath))
+              {
+                Process.Start(executablePath); // Start a new instance of the application
+                Application.Current.Shutdown(); // Shut down the current instance
+              }
+            }
+          }
+        }
+      }
+
     }
 
     void NavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs args)
@@ -160,7 +232,44 @@ namespace client
         webView.CoreWebView2.OpenDevToolsWindow();
 #endif
       }
-      webView.CoreWebView2.ExecuteScriptAsync($"window._mpvSchemeSupported = true;");
+
+      // Check if the navigation resulted in a 401 Unauthorized error
+      if (args.HttpStatusCode == 401)
+      {
+        // It seems that there's a least one 401 error, even if the credentials are ok
+        count401++;
+        if (count401 > 2)
+        {
+          Debug.WriteLine("401 Unauthorized detected. Opening login window...");
+
+          // Open the login window
+          var credentials = SecureStorage.LoadCredentials();
+          var login = credentials != null ? credentials.Value.login : string.Empty;
+          var password = credentials != null ? credentials.Value.password : string.Empty;
+          var loginWindow = new LoginWindow(login, password, this);
+
+          if (loginWindow.ShowDialog() == true)
+          {
+            count401 = 0;
+            // Save the new credentials
+            SecureStorage.SaveCredentials(loginWindow.Login, loginWindow.Password);
+            basicLogin = loginWindow.Login;
+            basicPassword = loginWindow.Password;
+
+            // Reload the page with the new credentials
+            webView.CoreWebView2.Reload();
+          }
+          else
+          {
+            // If the user cancels the login, shut down the application
+            Application.Current.Shutdown();
+          }
+        }
+      }
+      else
+      {
+        webView.CoreWebView2.ExecuteScriptAsync($"window._mpvSchemeSupported = true;");
+      }
     }
   }
 }

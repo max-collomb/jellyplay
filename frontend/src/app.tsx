@@ -63,22 +63,24 @@ export default class App extends React.Component<AppProps, AppState> {
       scanLogs: '',
       downloadCount: 0,
     };
-    ctx.apiClient.getConfig().then((config) => initContext(config));
+    ctx.apiClient.getConfig().then((json) => {
+      initContext(json.config);
+      localStorage.setItem('userName', json.userName);
+      ctx.apiClient.getUsers().then((users) => {
+        let user;
+        for (const u of users) {
+          if (u.name === json.userName) {
+            user = u;
+          }
+        }
+        ctx.user = user;
+        document.body.classList.toggle('simplified-ui', !!user?.simplifiedUI);
+        this.setState({ users });
+      });
+    });
     ctx.apiClient.getScanProgress(0).then((status) => {
       this.setState({ scanning: !status.finished, scanLogs: status.logs });
       this.initPollScan(status.finished);
-    });
-    ctx.apiClient.getUsers().then((users) => {
-      const userName = localStorage.getItem('userName');
-      let user;
-      for (const u of users) {
-        if (u.name === userName) {
-          user = u;
-        }
-      }
-      ctx.user = user;
-      document.body.classList.toggle('simplified-ui', !!user?.simplifiedUI);
-      this.setState({ users });
     });
     ctx.apiClient.getDownloads().then((downloads) => {
       this.updateNewDownloadCount(downloads);
@@ -328,7 +330,7 @@ export default class App extends React.Component<AppProps, AppState> {
                 </svg>
               </Button> */}
               <Button variant="dark" className="ms-1" style={{ lineHeight: '18px' }} onClick={this.handleOptionsToggle.bind(this, true)}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16"><path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" /></svg></Button>
-              {ctx.user ? <a href="#" style={{ textDecoration: 'none' }} onClick={this.handleUserSelected.bind(this, undefined)}><img src={`/images/users/${ctx.user.name}.svg`} alt={ctx.user.name} width="36" className="ms-3" /></a> : null}
+              {ctx.user ? <a href="jellyplay://logform" style={{ textDecoration: 'none' }} onClick={undefined/* this.handleUserSelected.bind(this, undefined) */}><img src={`/images/users/${ctx.user.name}.svg`} alt={ctx.user.name} width="36" className="ms-3" /></a> : null}
             </Form>
             {offcanvas}
           </Container>

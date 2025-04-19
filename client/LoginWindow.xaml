@@ -1,0 +1,21 @@
+﻿<Window x:Class="client.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStartupLocation="CenterOwner"
+        Title="Login" Height="250" Width="300">
+    <Grid>
+        <StackPanel Margin="20">
+            <TextBlock Text="Utilisateur" Margin="0,0,0,10"/>
+            <ComboBox Name="LoginComboBox" Margin="0,0,0,20" IsEditable="True">
+                <ComboBoxItem Content="max"/>
+                <ComboBoxItem Content="flo"/>
+                <ComboBoxItem Content="amélie"/>
+                <ComboBoxItem Content="thomas"/>
+                <ComboBoxItem Content="mjl"/>
+            </ComboBox>
+            <TextBlock Text="Mot de passe" Margin="0,0,0,10"/>
+            <PasswordBox Name="PasswordBox" Margin="0,0,0,20"/>
+            <Button Content="OK" Width="100" HorizontalAlignment="Center" Click="OkButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

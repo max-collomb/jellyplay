@@ -151,21 +151,41 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
     const notOwnedTvshows: any[] = [];
     const ownedTvshows2: any[] = [];
     const notOwnedTvshows2: any[] = [];
+    const alreadyListedMovies: Set<number> = new Set<number>();
+    const alreadyListedMovies2: Set<number> = new Set<number>();
+    const alreadyListedTvshows: Set<number> = new Set<number>();
+    const alreadyListedTvshows2: Set<number> = new Set<number>();
     person.movie_credits?.cast?.filter((movie: any) => !!movie.poster_path).forEach((movie) => {
+      if (movie.id) {
+        if (alreadyListedMovies.has(movie.id)) return;
+        alreadyListedMovies.add(movie.id);
+      }
       if (this.isOwnedMovie(movie.id)) ownedMovies.push(movie);
       else notOwnedMovies.push(movie);
     });
     person.movie_credits?.crew?.filter((movie: any) => !!movie.poster_path).forEach((movie) => {
+      if (movie.id) {
+        if (alreadyListedMovies2.has(movie.id)) return;
+        alreadyListedMovies2.add(movie.id);
+      }
       if (movie.job === 'Director' || movie.job === 'Writer') {
         if (this.isOwnedMovie(movie.id)) ownedMovies2.push(movie);
         else notOwnedMovies2.push(movie);
       }
     });
     person.tv_credits?.cast?.filter((tvshow: any) => !!tvshow.poster_path).forEach((tvshow) => {
+      if (tvshow.id) {
+        if (alreadyListedTvshows.has(tvshow.id)) return;
+        alreadyListedTvshows.add(tvshow.id);
+      }
       if (this.isOwnedTvshow(tvshow.id)) ownedTvshows.push(tvshow);
       else notOwnedTvshows.push(tvshow);
     });
     person.tv_credits?.crew?.filter((tvshow: any) => !!tvshow.poster_path).forEach((tvshow) => {
+      if (tvshow.id) {
+        if (alreadyListedTvshows2.has(tvshow.id)) return;
+        alreadyListedTvshows2.add(tvshow.id);
+      }
       if (tvshow.job === 'Director' || tvshow.job === 'Writer') {
         if (this.isOwnedMovie(tvshow.id)) ownedTvshows2.push(tvshow);
         else notOwnedTvshows2.push(tvshow);

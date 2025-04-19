@@ -17,7 +17,7 @@ import {
 import { getMovieAudiences, getTvshowAudiences } from '../../api/src/audience';
 
 import {
-  ctx, renderFileSize, renderRelativeTimeString, parseFilename, playVideoFile, searchCandidates,
+  ctx, renderFileSize, renderRelativeTimeString, parseFilename, searchCandidates,
 } from './common';
 import ImportDownloadForm from './import-download-form';
 
@@ -38,7 +38,7 @@ type DownloadsState = {
 };
 
 export default class Downloads extends React.Component<DownloadsProps, DownloadsState> {
-  timer: NodeJS.Timer | undefined = undefined;
+  timer: ReturnType<typeof setInterval> | undefined = undefined;
 
   constructor(props: DownloadsProps) {
     super(props);
@@ -120,12 +120,6 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
 
   handleRemoveTorrent(hash: string): void {
     ctx.apiClient.removeSeedboxTorrent(hash).then(() => this.refreshDownloads.bind(this));
-  }
-
-  handleFilenameClick(path: string, evt: React.MouseEvent<HTMLElement>): void {
-    evt.preventDefault();
-    // console.log(`${ctx.config.tmpPath}/${path.split(/[\\/]/).pop()}`);
-    playVideoFile(`${ctx.config.tmpPath}/${path.split(/[\\/]/).pop()}`);
   }
 
   async handleSetAudience(downloads: DbDownload[], audience: number, evt: React.MouseEvent<HTMLElement>): Promise<void> {
@@ -326,7 +320,7 @@ export default class Downloads extends React.Component<DownloadsProps, Downloads
                   : null}
                 <Card.Body>
                   <div className="d-flex overflow-hidden">
-                    <a className="text-truncate text-muted" href="#" onClick={this.handleFilenameClick.bind(this, download.path)} title={title}>{path}</a>
+                    <span className="text-truncate" title={title}>{path}</span>
                     <span className={`mx-3 flex-shrink-0${hasAutoId ? '' : ' d-none'}`}><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16"><path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8" /></svg></span>
                     <span className={`text-truncate flex-shrink-0${hasAutoId ? '' : ' d-none'}`} title={download.autoId?.filename}>{download.autoId?.filename}</span>
                   </div>

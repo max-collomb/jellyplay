@@ -103,7 +103,6 @@ function getEpisodeUserStatus(episode: Episode, user: DbUser): UserEpisodeStatus
   for (let userStatus of episode.userStatus) {
     if (userStatus.userName == user.name) {
       return userStatus;
-      break;
     }
   }
   return null;
@@ -399,7 +398,6 @@ export class Catalog {
     const filenameSet: Set<string> = new Set<string>();
     for (const filename of filenames) {
       filenameSet.add(filename);
-      const filepath: string = path.join(this.moviesPath, filename);
       if (this.tables.movies?.find({ filename }).length === 0) {
         this.log(`[+] file added ${filename}`);
         try {
@@ -597,35 +595,56 @@ export class Catalog {
     this.log("end scan_tvshows");
   }
 
-  public getConfig(request: FastifyRequest, reply: FastifyReply) {
-    reply.send({ config: global.config });
+  public async getConfig(request: FastifyRequest, reply: FastifyReply) {
+    let userName: string = request.headers.authorization?.split(' ')[1] || "";
+    userName = Buffer.from(userName, 'base64').toString('utf8').split(':')[0];
+    reply.send({
+      userName,
+      config: {
+        auth: "",
+        moviesLocalPath: "",
+        tvshowsLocalPath: "",
+        tmpPath: "",
+        tmdbApiKey: global.config.tmdbApiKey,
+        youtubeApiKey: global.config.youtubeApiKey,
+        ruTorrentURL: "",
+        seedboxHost: "",
+        seedboxPort: 0,
+        seedboxUser: "",
+        seedboxPassword: "",
+        seedboxPath: "",
+        yggUrl: global.config.yggUrl,
+        yggUser: global.config.yggUser,
+        yggPwd: global.config.yggPwd,
+      }
+    });
   }
 
-  public getLastUpdate(request: FastifyRequest, reply: FastifyReply) {
+  public async getLastUpdate(_request: FastifyRequest, reply: FastifyReply) {
     reply.send({ lastUpdate: this.lastUpdate });
   }
 
-  public getUsers(request: FastifyRequest, reply: FastifyReply) {
+  public async getUsers(_request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.users?.find() });
   }
 
-  public getMovies(request: FastifyRequest, reply: FastifyReply) {
+  public async getMovies(_request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.movies?.find(), lastUpdate: this.lastUpdate });
   }
 
-  public getMovie(request: FastifyRequest, reply: FastifyReply) {
+  public async getMovie(request: FastifyRequest, reply: FastifyReply) {
     reply.send({ movie: this.tables.movies?.find({ tmdbid: (request.params as any).movieId }) });
   }
 
-  public getTvshows(request: FastifyRequest, reply: FastifyReply) {
+  public async getTvshows(_request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.tvshows?.find(), lastUpdate: this.lastUpdate });
   }
 
-  public getCredits(request: FastifyRequest, reply: FastifyReply) {
+  public async getCredits(_request: FastifyRequest, reply: FastifyReply) {
     reply.send({ list: this.tables.credits?.find(), lastUpdate: this.lastUpdate });
   }
 
-  public getHome(request: FastifyRequest, reply: FastifyReply) {
+  public async getHome(request: FastifyRequest, reply: FastifyReply) {
     const RECENT_LENGTH_MAX = 20;
     const user = this.tables.users?.findOne({ name: (request.params as any).userName });
     const lists: HomeLists = {
@@ -708,7 +727,7 @@ export class Catalog {
     reply.send({ lists, lastUpdate: this.lastUpdate });
   }
 
-  public setMoviePosition(request: FastifyRequest, reply: FastifyReply) {
+  public async setMoviePosition(request: FastifyRequest, reply: FastifyReply) {
     let body: SetPositionMessage = request.body as SetPositionMessage;
     console.log("set_position ", body.filename, body.userName, body.position);
     let movie = this.tables.movies?.findOne({ filename: body.filename });
@@ -737,12 +756,12 @@ export class Catalog {
         }
       }
       this.tables.movies?.update(movie);
-      reply.send({ userStatus: movie.userStatus });
+      return reply.send({ userStatus: movie.userStatus });
     }
     reply.send({});
   }
 
-  public setEpisodePosition(request: FastifyRequest, reply: FastifyReply) {
+  public async setEpisodePosition(request: FastifyRequest, reply: FastifyReply) {
     let body: SetPositionMessage = request.body as SetPositionMessage;
     console.log("set_position ", body.foldername, body.filename, body.userName, body.position);
     let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
@@ -773,24 +792,24 @@ export class Catalog {
           }
         }
         this.tables.tvshows?.update(tvshow);
-        reply.send({ userStatus: episode.userStatus });
+        return reply.send({ userStatus: episode.userStatus });
       }
     }
     reply.send({});
   }
 
-  public scanNow(request: FastifyRequest, reply: FastifyReply) {
+  public async scanNow(_request: FastifyRequest, reply: FastifyReply) {
     if (! this.scanning) {
       this.load();
     }
     reply.send({ logs: this.scanLogs, finished: ! this.scanning });
   }
 
-  public getScanProgress(request: FastifyRequest, reply: FastifyReply) {
+  public async getScanProgress(request: FastifyRequest, reply: FastifyReply) {
     reply.send({ logs: this.scanLogs.substring(parseFloat((request.params as any).offset)), finished: ! this.scanning });
   }
 
-  public setMovieStatus(request: FastifyRequest, reply: FastifyReply) {
+  public async setMovieStatus(request: FastifyRequest, reply: FastifyReply) {
     let body: SetStatusMessage = request.body as SetStatusMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
@@ -811,12 +830,12 @@ export class Catalog {
       }
       this.tables.movies?.update(movie);
       this.lastUpdate = Date.now();
-      reply.send({ userStatus: movie.userStatus });
+      return reply.send({ userStatus: movie.userStatus });
     }
     reply.send({});
   }
 
-  public setTvshowStatus(request: FastifyRequest, reply: FastifyReply) {
+  public async setTvshowStatus(request: FastifyRequest, reply: FastifyReply) {
     let body: SetStatusMessage = request.body as SetStatusMessage;
     let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
     if (tvshow) {
@@ -834,12 +853,12 @@ export class Catalog {
       userStatus.currentStatus = body.status as SeenStatus;
       this.tables.tvshows?.update(tvshow);
       this.lastUpdate = Date.now();
-      reply.send({ userStatus: tvshow.userStatus });
+      return reply.send({ userStatus: tvshow.userStatus });
     }
     reply.send({});
   }
 
-  public setEpisodeStatus(request: FastifyRequest, reply: FastifyReply) {
+  public async setEpisodeStatus(request: FastifyRequest, reply: FastifyReply) {
     let body: SetStatusMessage = request.body as SetStatusMessage;
     let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
     if (tvshow) {
@@ -862,32 +881,32 @@ export class Catalog {
         }
         this.tables.tvshows?.update(tvshow);
         this.lastUpdate = Date.now();
-        reply.send({ userStatus: episode.userStatus });
+        return reply.send({ userStatus: episode.userStatus });
       }
     }
     reply.send({});
   }
 
-  public setMovieAudience(request: FastifyRequest, reply: FastifyReply) {
+  public async setMovieAudience(request: FastifyRequest, reply: FastifyReply) {
     let body: SetMovieAudienceMessage = request.body as SetMovieAudienceMessage;
     let movie = this.tables.movies?.findOne({ filename: body.filename });
     if (movie) {
       movie.audience = body.audience;
       this.tables.movies?.update(movie);
       this.lastUpdate = Date.now();
-      reply.send({ audience: movie.audience });
+      return reply.send({ audience: movie.audience });
     }
     reply.send({});
   }
 
-  public setTvshowAudience(request: FastifyRequest, reply: FastifyReply) {
+  public async setTvshowAudience(request: FastifyRequest, reply: FastifyReply) {
     let body: SetTvshowAudienceMessage = request.body as SetTvshowAudienceMessage;
     let tvshow = this.tables.tvshows?.findOne({ foldername: body.foldername });
     if (tvshow) {
       tvshow.audience = body.audience;
       this.tables.tvshows?.update(tvshow);
       this.lastUpdate = Date.now();
-      reply.send({ audience: tvshow.audience });
+      return reply.send({ audience: tvshow.audience });
     }
     reply.send({});
   }
@@ -979,7 +998,11 @@ export class Catalog {
       tvshow.countries = [];
 
       this.scanLogs = "";
-      await this.tmdbClient.getTvshowData(tvshow);
+      if (tvshow.isSaga) {
+        await this.tmdbClient.getCollectionData(tvshow);
+      } else {
+        await this.tmdbClient.getTvshowData(tvshow);
+      }
       for(let episode of tvshow.episodes) {
         if (tvshow.isSaga) {
           await this.tmdbClient.addCollectionEpisode(tvshow, episode);
@@ -1203,8 +1226,7 @@ export class Catalog {
     const download = this.tables.downloads?.findOne({ path: body.path });
     if (!download) {
       reply.status(404);
-      reply.send({ error: "download not found" });
-      return;
+      return reply.send({ error: "download not found" });
     }
     if (!download.autoId || download.autoId.username === body.autoId.username) {
       download.autoId = body.autoId;
@@ -1218,8 +1240,7 @@ export class Catalog {
     const download = this.tables.downloads?.findOne({ path: body.path });
     if (!download) {
       reply.status(404);
-      reply.send({ error: "download not found" });
-      return;
+      return reply.send({ error: "download not found" });
     }
     const filename: string = path.basename(body.filename);
     const filepath: string = path.join(this.moviesPath, filename);
@@ -1282,8 +1303,7 @@ export class Catalog {
     const download = this.tables.downloads?.findOne({ path: body.path });
     if (!download) {
       reply.status(404);
-      reply.send({ error: "download not found" });
-      return;
+      return reply.send({ error: "download not found" });
     }
     const foldername: string = path.basename(body.foldername);
     let folderpath: string = path.join(this.tvshowsPath, foldername);

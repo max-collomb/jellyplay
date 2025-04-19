@@ -152,16 +152,18 @@ V1.1
 [x] onglet téléchargement : précharger une suggestion d'identification pour importer en un clic
 [x] onglet téléchargement : pouvoir lire un fichier vidéo sans l'importer
 [x] onglet téléchargement : précharger la classification (audience) et imposer la saisie si inconnue avant l'import
-[ ] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
-[ ] recherche série non possédée : gérer séries et séries animé selon le genre
+[x] fiche série non possédée : nouvel onglet avec recherche ygg + téléchargement
+[x] recherche série non possédée : gérer séries et séries animé selon le genre
+[x] lire les fichiers vidéo via http et non via samba (https://github.com/fastify/send)
+[x] changement d'utilisateur via l'application C#
+[x] supprimer le clic que un fichier téléchargé mais pas encore importé
+[ ] mise à jour de l'application possible depuis l'extérieur (clickonce via http, ou changer complétement de mécanisme)
 
-[ ] lire les fichiers vidéo via http et non via samba (https://github.com/fastify/send)
 [ ] intégrer les spéctacles / concerts
 [ ] comment gérer "Flo + Max" et "En famille" ? voir en pastille les autres utilisateurs qui veulent voir une vidéo ?
 [ ] [frontend] navigation avec les flèches du clavier + entrée + back
 [ ] [frontend] améliorer l'affichage sur mobile
 [ ] suppression collaborative (admin demande l'autorisation de supprimer ? validation par tous les membres ?)
 [ ] suppression d'une série (ou d'une saison)
-
 
 // document.location.href = "http://127.0.0.1:3000/frontend/index.html"

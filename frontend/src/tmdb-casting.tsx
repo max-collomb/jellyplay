@@ -29,7 +29,7 @@ export default class TmdbCasting extends React.Component<TmdbCastingProps, TmdbC
       <div className="d-flex flex-wrap mt-3">
         {
           cast?.map((person) => (
-            <div key={person.id} className="cast-card" onClick={this.handleCastSearch.bind(this, person)}>
+            <div key={person.id} className="cast-card" onClick={this.handleCastSearch.bind(this, person)} title={`${person.name}\n${(person.character ? `en tant que ${person.character}` : '-')}`}>
               {person.profile_path
                 ? <img src={`${ctx.tmdbClient?.baseUrl}w185${person.profile_path}`} alt={person.name} />
                 : (
