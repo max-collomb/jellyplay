@@ -41,7 +41,7 @@ export default class Casting extends React.Component<CastingProps, CastingState>
         cast.map((role) => {
           const credit = this.getCredit(role.tmdbid);
           return credit ? (
-            <div key={credit.tmdbid} className="cast-card" onClick={this.handleCreditSearch.bind(this, credit)}>
+            <div key={credit.tmdbid} className="cast-card" onClick={this.handleCreditSearch.bind(this, credit)} title={`${credit.name}\n${(role.character ? `en tant que ${role.character}` : '-')}`}>
               {credit.profilePath
                 ? <img src={`/images/profiles_w185${credit.profilePath}`} alt={credit.name} />
                 : (
