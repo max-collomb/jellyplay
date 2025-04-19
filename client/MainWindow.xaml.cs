@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web;
@@ -157,6 +158,7 @@ namespace client
         string? workPath = Path.GetDirectoryName(exeFilePath);
         start.FileName = Path.Combine(workPath??"", "mpv", "mpv.exe");
         Debug.WriteLine(start.FileName + " " + start.Arguments);
+        await webView.CoreWebView2.ExecuteScriptAsync($"console.log({JsonSerializer.Serialize(start.FileName + " " + start.Arguments)});");
         // Do you want to show a console window?
         start.WindowStyle = ProcessWindowStyle.Hidden;
         start.CreateNoWindow = true;
