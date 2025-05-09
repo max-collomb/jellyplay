@@ -197,6 +197,14 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
     return <>{ links }</>;
   }
 
+  renderGenres(genres: string[]): JSX.Element {
+    const links = [];
+    for (const genre of genres) {
+      links.push(<span className="genre" key={genre}><a href="#" onClick={() => ctx.eventBus.emit('set-search', { search: `genre:${genre}` })}>{genre}</a></span>);
+    }
+    return <>{links}</>;
+  }
+
   render(): JSX.Element {
     const {
       movie, reloadingMetadata, fixingMetadata, renaming, tabKey,
@@ -309,7 +317,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
               <p><span className="dd">{movie.filename}</span></p>
               <p>
                 <span className="dt">Genre</span>
-                <span className="dd">{movie.genres.join(', ')}</span>
+                <span className="dd">{this.renderGenres(movie.genres)}</span>
               </p>
               <p>
                 <span className="dt">Réalisé par</span>

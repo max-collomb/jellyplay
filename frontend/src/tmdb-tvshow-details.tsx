@@ -158,6 +158,14 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
     return <>{ links }</>;
   }
 
+  renderGenres(genres: string[]): JSX.Element {
+    const links = [];
+    for (const genre of genres) {
+      links.push(<span className="genre" key={genre}><a href="#" onClick={() => ctx.eventBus.emit('set-search', { search: `genre:${genre}` })}>{genre}</a></span>);
+    }
+    return <>{links}</>;
+  }
+
   render(): JSX.Element {
     const { tvshowId } = this.props;
     const {
@@ -224,7 +232,7 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
             <div className="flex-grow-1 pe-5">
               <p>
                 <span className="dt">Genre</span>
-                <span className="dd">{ tvshow?.genres ? tvshow?.genres.filter((genre) => !!genre.name).map((genre) => genre.name).join(', ') : '' }</span>
+                <span className="dd">{ this.renderGenres(tvshow?.genres ? tvshow?.genres.filter((genre) => !!genre.name).map((genre) => genre.name as string) : []) }</span>
               </p>
               <p>
                 <span className="dt">Réalisé par</span>

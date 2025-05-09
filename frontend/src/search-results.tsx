@@ -19,7 +19,9 @@ type SearchResultsState = {
   tvshows: DbTvshow[];
   credits: DbCredit[];
   movieHaystack: string[];
+  movieGenres: { [key: string]: number[] };
   tvshowHaystack: string[];
+  tvshowGenres: { [key: string]: number[] };
   creditHaystack: string[];
   movieIds: Set<number>;
   tvshowIds: Set<number>;
@@ -36,7 +38,9 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
       tvshows: [],
       credits: [],
       movieHaystack: [],
+      movieGenres: {},
       tvshowHaystack: [],
+      tvshowGenres: {},
       creditHaystack: [],
       movieIds: new Set<number>(),
       tvshowIds: new Set<number>(),
@@ -46,14 +50,28 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
     };
     ctx.apiClient.getMovies().then((movies) => {
       const movieHaystack: string[] = uFuzzy.latinize(movies.map((movie) => movie.title + (movie.originalTitle && movie.originalTitle !== movie.title ? ` ${movie.originalTitle}` : '')));
-      const { movieIds } = this.state;
-      movies.forEach((movie) => movieIds.add(movie.tmdbid));
+      const { movieIds, movieGenres } = this.state;
+      movies.forEach((movie, idx) => {
+        movie.genres.forEach((genre) => {
+          const latinizedGenre = uFuzzy.latinize([genre])[0].toLowerCase();
+          if (!movieGenres[latinizedGenre]) movieGenres[latinizedGenre] = [];
+          movieGenres[latinizedGenre].push(idx);
+        });
+        movieIds.add(movie.tmdbid);
+      });
       this.setState({ movies, movieHaystack, movieIds });
     });
     ctx.apiClient.getTvshows().then((tvshows) => {
       const tvshowHaystack: string[] = uFuzzy.latinize(tvshows.map((tvshow) => tvshow.title + (tvshow.originalTitle && tvshow.originalTitle !== tvshow.title ? ` ${tvshow.originalTitle}` : '')));
-      const { tvshowIds } = this.state;
-      tvshows.forEach((tvshow) => tvshowIds.add(tvshow.tmdbid));
+      const { tvshowIds, tvshowGenres } = this.state;
+      tvshows.forEach((tvshow, idx) => {
+        tvshow.genres.forEach((genre) => {
+          const latinizedGenre = uFuzzy.latinize([genre])[0].toLowerCase();
+          if (!tvshowGenres[latinizedGenre]) tvshowGenres[latinizedGenre] = [];
+          tvshowGenres[latinizedGenre].push(idx);
+        });
+        tvshowIds.add(tvshow.tmdbid);
+      });
       this.setState({ tvshows, tvshowHaystack, tvshowIds });
     });
     ctx.apiClient.getCredits().then((credits) => {
@@ -101,11 +119,11 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
 
   async refreshTmdbResults(): Promise<void> {
     const { query } = this.props;
-    if (query) {
+    if (query && !query.toLowerCase().startsWith('genre:')) {
       const tmdbResults = await tmdbClient.searchMulti(query);
       this.setState({ tmdbResults: tmdbResults || [] });
     } else {
-      this.setState({ tmdbResults: [] });
+      setTimeout(() => this.setState({ tmdbResults: [] }), 0);
     }
   }
 
@@ -113,7 +131,7 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
     const { query: originalQuery, onClose } = this.props;
     const query = uFuzzy.latinize([originalQuery])[0];
     const {
-      movies, tvshows, credits, movieHaystack, tvshowHaystack, creditHaystack, fuzzyIndex, tmdbResults, movieIds, tvshowIds, creditIds,
+      movies, tvshows, credits, movieHaystack, movieGenres, tvshowHaystack, tvshowGenres, creditHaystack, fuzzyIndex, tmdbResults, movieIds, tvshowIds, creditIds,
     } = this.state;
     let movieResults: DbMovie[] = [];
     let tvshowResults: DbTvshow[] = [];
@@ -123,11 +141,17 @@ export default class SearchResults extends React.Component<SearchResultsProps, S
     const tmdbPersonResults: PersonResult[] = [];
 
     if (query) {
-      const movieIndexes = fuzzyIndex.filter(movieHaystack, query);
+      const movieIndexes = (query.toLowerCase().startsWith('genre:'))
+        ? (movieGenres[query.substring(6).toLowerCase()] || [])
+        : fuzzyIndex.filter(movieHaystack, query);
       movieResults = movieIndexes?.map((idx) => movies[idx]) || [];
-      const tvshowIndexes = fuzzyIndex.filter(tvshowHaystack, query);
+      const tvshowIndexes = (query.toLowerCase().startsWith('genre:'))
+        ? (tvshowGenres[query.substring(6).toLowerCase()] || [])
+        : fuzzyIndex.filter(tvshowHaystack, query);
       tvshowResults = tvshowIndexes?.map((idx) => tvshows[idx]) || [];
-      const creditIndexes = fuzzyIndex.filter(creditHaystack, query);
+      const creditIndexes = (query.toLowerCase().startsWith('genre:'))
+        ? []
+        : fuzzyIndex.filter(creditHaystack, query);
       creditResults = creditIndexes?.map((idx) => credits[idx]) || [];
       if (tmdbResults) {
         tmdbResults.forEach((result) => {

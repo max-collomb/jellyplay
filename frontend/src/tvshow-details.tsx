@@ -184,6 +184,14 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
     });
   }
 
+  renderGenres(genres: string[]): JSX.Element {
+    const links = [];
+    for (const genre of genres) {
+      links.push(<span className="genre" key={genre}><a href="#" onClick={() => ctx.eventBus.emit('set-search', { search: `genre:${genre}` })}>{genre}</a></span>);
+    }
+    return <>{links}</>;
+  }
+
   renderEpisode(tvshow: DbTvshow, episode: Episode): JSX.Element {
     const userStatus = getEpisodeUserStatus(episode);
     return (
@@ -413,7 +421,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
           <div className="content-bar">
             <p>
               <span className="dt">Genre</span>
-              <span className="dd">{tvshow.genres.join(', ')}</span>
+              <span className="dd">{this.renderGenres(tvshow.genres)}</span>
             </p>
             <div className="d-flex align-items-start mb-2">
               <p className="synopsis">{selectedSeason?.synopsys || tvshow.synopsys}</p>

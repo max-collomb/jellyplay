@@ -50,6 +50,7 @@ export default class App extends React.Component<AppProps, AppState> {
   constructor(props: AppProps) {
     super(props);
     this.handleEventHashChanged = this.handleEventHashChanged.bind(this);
+    this.handleEventSetSearch = this.handleEventSetSearch.bind(this);
     this.handleEventWillNavigate = this.handleEventWillNavigate.bind(this);
     const orderBy = (localStorage.getItem('orderBy') || 'addedDesc') as OrderBy;
     this.state = {
@@ -101,6 +102,7 @@ export default class App extends React.Component<AppProps, AppState> {
     // l'événement "search" n'est pas géré par FormControl => on se replie sur du vanillaJS
     document?.getElementById('search-input')?.addEventListener('search', (evt) => this.setState({ search: (evt?.target as HTMLInputElement).value || '' }));
     ctx.eventBus.on('hash-changed', this.handleEventHashChanged);
+    ctx.eventBus.on('set-search', this.handleEventSetSearch);
     ctx.eventBus.on('will-navigate-app', this.handleEventWillNavigate);
     ctx.eventBus.on('downloads-fetched', (data) => this.updateNewDownloadCount(data.downloads));
   }
@@ -116,6 +118,12 @@ export default class App extends React.Component<AppProps, AppState> {
       this.setState({ search: data.route.state.search, searchInputValue: data.route.state.search });
     }
     this.setState(data);
+  }
+
+  handleEventSetSearch(data: any): void {
+    if (data.search) {
+      this.setState({ search: data.search, searchInputValue: data.search });
+    }
   }
 
   handleEventWillNavigate(): void {

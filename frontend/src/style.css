@@ -292,6 +292,11 @@ div.media-card .progress-bar {
 .media-details .cast > a:active { color: #fff; }
 .media-details .cast + .cast:before { content: ", "; text-decoration: none; }
 
+.media-details .genre > a,
+.media-details .genre > a:hover,
+.media-details .genre > a:active { color: #fff; }
+.media-details .genre + .genre:before { content: ", "; text-decoration: none; }
+
 .content-bar {
   background: rgba(0,0,0,0.5);
   padding: 1em;
