@@ -284,6 +284,9 @@ export default class App extends React.Component<AppProps, AppState> {
                 <Button variant={document.location.host === 'nas.colors.ovh:3000' ? 'secondary' : 'outline-secondary'} onClick={this.handleServerClick.bind(this, 'nas.colors.ovh:3000')}>nas.colors.ovh:3000</Button>
               </ButtonGroup>
             </ButtonToolbar>
+            <ButtonToolbar className={`my-3${window.electronAPI ? '' : ' d-none'}`}>
+              <Button variant="outline-secondary" className="flex-fill" onClick={() => { window.electronAPI.checkForUpdates(); this.setState({ optionsVisible: false }); }}>Rechercher des mises à jour</Button>
+            </ButtonToolbar>
             <ButtonToolbar className="my-3">
               <Button variant="outline-secondary" className={`flex-fill${ctx.user?.admin && !scanning ? '' : ' disabled'}`} onClick={this.handleScanClick.bind(this)}>Scanner la bibliothèque</Button>
               <Spinner animation="border" role="status" className={scanning ? 'ms-3' : 'd-none'} />

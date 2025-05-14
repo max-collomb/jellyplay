@@ -220,6 +220,8 @@ export class ApiClient {
   }
 
   setMoviePosition(filename: string, userName: string, position: number): void {
+    if (window._positions[filename] === position) return;
+    window._positions[filename] = position;
     fetch('/catalog/movie/set_position', {
       method: 'POST',
       headers: new Headers({ 'content-type': 'application/json' }),
@@ -231,6 +233,8 @@ export class ApiClient {
   }
 
   setEpisodePosition(foldername: string, filename: string, userName: string, position: number): void {
+    if (window._positions[filename] === position) return;
+    window._positions[filename] = position;
     fetch('/catalog/tvshow/set_position', {
       method: 'POST',
       headers: new Headers({ 'content-type': 'application/json' }),
