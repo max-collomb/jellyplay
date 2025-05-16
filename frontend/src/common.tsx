@@ -142,7 +142,7 @@ export function playMovie(movie: DbMovie): void {
     console.log(url); // eslint-disable-line no-console
     document.location.href = url;
   } else {
-    navigator.clipboard.writeText(`${document.location.protocol}://${document.location.host}/files/movie/${encodeURIComponent(path)}`).then(() => {
+    navigator.clipboard.writeText(`${document.location.protocol}//${document.location.host}/files/movie/${encodeURIComponent(path)}`).then(() => {
       alert('Le chemin a été copié dans le presse-papier'); // eslint-disable-line no-alert
     }, () => {
       alert('La copie du chemin dans le presse-papier a échoué'); // eslint-disable-line no-alert
@@ -298,7 +298,7 @@ export function playTvshow(tvshow: DbTvshow, episode: Episode | undefined): Epis
       console.log(url); // eslint-disable-line no-console
       document.location.href = url;
     } else {
-      navigator.clipboard.writeText(`${document.location.protocol}://${document.location.host}/files/tvshow/${encodeURIComponent(path)}`).then(() => {
+      navigator.clipboard.writeText(`${document.location.protocol}//${document.location.host}/files/tvshow/${encodeURIComponent(path)}`).then(() => {
         alert('Le chemin a été copié dans le presse-papier'); // eslint-disable-line no-alert
       }, () => {
         alert('La copie du chemin dans le presse-papier a échoué'); // eslint-disable-line no-alert
