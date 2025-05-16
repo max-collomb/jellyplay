@@ -3,7 +3,7 @@
   --bs-body-bg-alt: #0c0d0e;
 }
 
-* { font-family: 'Noto Sans', sans-serif; }
+* { font-family: 'Roboto', sans-serif; }
 
 /* http://webkit-scroll-gen.sourceforge.net/ */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -118,7 +118,16 @@ input[type="search"]::-webkit-search-cancel-button {
   min-width: 150px;
   max-width: 342px;
 }
-
+@media (max-width: 576px) {
+  .media-card,
+  .media-card.portrait {
+    min-width: 120px;
+  }
+  .media-card .poster,
+  .media-card.portrait .poster {
+    min-width: 120px;
+  }  
+}
 .media-card.landscape .poster {
   min-width: 300px;
   max-width: 780px;
@@ -141,6 +150,9 @@ input[type="search"]::-webkit-search-cancel-button {
 .movie .poster > img { aspect-ratio: 2/3; }
 .tvshow .poster > img { aspect-ratio: 16/9; }
 .episode-card .poster { position: relative; min-width: 300px; width: 300px; height: 169px; }
+@media (max-width: 768px) {
+  .episode-card .poster { position: relative; min-width: 120px; width: 120px; height: 68px; }
+}
 .saga-episode-card .poster { position: relative; min-width: 185px; width: 185px; height: 277.5px; }
 .saga-episode-card .poster > img { aspect-ratio: 2/3; }
 .poster .no-poster-picture {
@@ -250,14 +262,23 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .media-poster {
-  min-width: 300px;
+  min-width: 250px;
   max-width: 780px;
   width: 20vw;
   float: left;
   overflow: hidden;
 }
 .tvshow .media-poster, /*{ margin: 0 3vw; }*/
-.movie .media-poster { margin: 5vh 3vw 0 3vw; }
+.movie .media-poster { margin: 8em 3vw 0 3vw; }
+
+@media (max-width: 768px) {
+  .tvshow .media-poster,
+  .movie .media-poster {
+      margin: 3em auto 1em;
+      width: 66%;
+      float: none;
+    }
+}
 
 span.poster .progress-bar,
 div.media-card .progress-bar {
@@ -275,7 +296,7 @@ div.media-card .progress-bar {
   background: #32cbff;
 }
 
-.title-bar { padding: 1em; background: rgba(0,0,0,0.75); }
+.title-bar { padding: 1em 1em 0; background: rgba(0,0,0,0.75); }
 .portrait .title-bar { margin-top: 6vh; }
 .landscape .title-bar { margin-top: 2rem; }
 
@@ -307,7 +328,9 @@ div.media-card .progress-bar {
 .content-bar .synopsis { max-width: 1000px; }
 
 .cast-card {
-  width: 185px;
+  width: 29vw;
+  min-width: 90px;
+  max-width: 185px;
   margin: 1em 0.5vw;
   border-radius: 5px;
   overflow: hidden;
@@ -331,14 +354,16 @@ div.media-card .progress-bar {
 .cast-card .actor:active { color: #fff; }
 .cast-card .character { color: #777; font-size: 80%; font-weight: normal; padding: 0 0.5rem 1rem; }
 
+.cast-card img { width: 100% }
 .cast-card .no-profile-picture {
   display: block;
   background: rgba(0,0,0,0.5);
-  width: 185px;
-  padding-top: 80px;
-  aspect-ratio:2/3;
+  width: 100%;
+  padding: 40px 15px 0;
+  aspect-ratio: 2/3;
   text-align: center;
 }
+.cast-card .no-profile-picture svg { opacity: 0.25; }
 
 .user-card { padding: 3rem; cursor: pointer; }
 .user-card:hover { background: rgba(255,255,255,0.1);}

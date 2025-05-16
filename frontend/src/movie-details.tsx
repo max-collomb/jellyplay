@@ -244,7 +244,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
         </div>
         <div className="media-poster">
           <span className="poster" style={{ backgroundImage: movie.posterPath ? `url(/images/posters_w780${movie.posterPath})` : '' }}>
-            <b onClick={this.handleClick.bind(this)}>
+            <b onClick={this.handleClick.bind(this)} className={ctx.hasHover ? '' : 'd-none'}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
                 <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
               </svg>
@@ -253,8 +253,8 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
           </span>
         </div>
         <div className="title-bar">
-          <div className="d-flex align-items-center">
-            <div className="flex-grow-1">
+          <div className="d-flex flex-column flex-lg-row">
+            <div className="flex-grow-1 flex-shrink-1 pb-3">
               <h2>{movie.title}</h2>
               {movie.originalTitle && movie.originalTitle !== movie.title ? <h6>{movie.originalTitle}</h6> : null}
               <div>
@@ -265,8 +265,8 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
                 <img src={`/images/classification/${movie.audience}.svg`} alt={`-${movie.audience}`} width="18px" />
               </div>
             </div>
-            {movie.rating ? <Rating value={movie.rating} type="movie" tmdbid={movie.tmdbid} /> : undefined}
-            <div className="actions">
+            <div className="actions pb-3">
+              {movie.rating ? <Rating value={movie.rating} type="movie" tmdbid={movie.tmdbid} /> : undefined}
               <a href="#" className="link-light me-3" onClick={this.handleClick.bind(this)}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
                   <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
@@ -312,7 +312,7 @@ export default class MovieDetails extends React.Component<MovieDetailsProps, Mov
           </div>
         </div>
         <div className="content-bar">
-          <div className="d-flex align-items-start mb-3">
+          <div className="d-flex align-items-start mb-3 flex-column flex-lg-row">
             <div className="flex-grow-1 pe-5">
               <p><span className="dd">{movie.filename}</span></p>
               <p>

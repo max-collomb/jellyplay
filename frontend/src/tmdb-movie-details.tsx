@@ -234,8 +234,8 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
           <span className="poster" style={{ backgroundImage: movie.poster_path ? `url(${ctx.tmdbClient?.baseUrl}w780${movie.poster_path})` : '' }} />
         </div>
         <div className="title-bar">
-          <div className="d-flex align-items-center">
-            <div className="flex-grow-1">
+          <div className="d-flex flex-column flex-lg-row">
+            <div className="flex-grow-1 flex-shrink-1 pb-3">
               <h2>{movie.title}</h2>
               {movie?.original_title && movie.original_title !== movie.title ? <h6>{movie.original_title}</h6> : null}
               <div>
@@ -246,8 +246,8 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
                 <img src={`/images/classification/${this.getAudience(movie)}.svg`} alt="audience" width="18px" />
               </div>
             </div>
-            {movie.vote_average ? <Rating value={movie.vote_average} type="movie" tmdbid={movie.id} /> : undefined}
-            <div className="actions">
+            <div className="actions pb-3">
+              {movie.vote_average ? <Rating value={movie.vote_average} type="movie" tmdbid={movie.id} /> : undefined}
               <a
                 href="#"
                 className={`btn me-3 ${isWished ? 'btn-danger' : 'btn-primary'}`}
@@ -266,7 +266,7 @@ export default class TmdbMovieDetails extends React.Component<TmdbMovieDetailsPr
           </div>
         </div>
         <div className="content-bar">
-          <div className="d-flex align-items-start mb-3">
+          <div className="d-flex align-items-start mb-3 flex-column flex-lg-row">
             <div className="flex-grow-1 pe-5">
               <p>
                 <span className="dt">Genre</span>

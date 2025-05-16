@@ -209,7 +209,9 @@ export default class TmdbPersonDetails extends React.Component<TmdbPersonDetails
               <h2>{person.name}</h2>
               <div>
                 {person.birthday ? `Né${person.gender === 1 ? 'e' : ''} le ${(new Date(person.birthday)).toLocaleDateString()} ${person.place_of_birth ? `à ${person.place_of_birth}` : ''}` : '' }
-                {person.deathday ? `. Décédé${person.gender === 1 ? 'e' : ''} le ${(new Date(person.deathday)).toLocaleDateString()}` : '' }
+                {person.deathday && person.birthday
+                  ? `. Décédé${person.gender === 1 ? 'e' : ''} le ${(new Date(person.deathday)).toLocaleDateString()} à ${Math.floor(Math.abs((new Date(person.deathday)).getTime() - (new Date(person.birthday)).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} ans`
+                  : ` (${Math.floor(Math.abs(Date.now() - (new Date(person.birthday || Date.now())).getTime()) / (365.25 * 24 * 60 * 60 * 1000))} ans)` }
               </div>
             </div>
           </div>

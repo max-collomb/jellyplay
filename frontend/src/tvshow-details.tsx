@@ -200,7 +200,7 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
           ? (
             <span className="poster">
               <img src={`/images/stills_w300${episode.stillPath}`} alt="still" />
-              <b onClick={this.handlePlayTvshow.bind(this, episode)}>
+              <b onClick={this.handlePlayTvshow.bind(this, episode)} className={ctx.hasHover ? '' : 'd-none'}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" className="bi bi-play-circle-fill" viewBox="0 0 16 16">
                   <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
                 </svg>
@@ -358,8 +358,8 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
             </span>
           </div>
           <div className="title-bar">
-            <div className="d-flex align-items-center">
-              <div className="flex-grow-1">
+            <div className="d-flex flex-column flex-lg-row">
+              <div className="flex-grow-1 flex-shrink-1 pb-3">
                 <h2>{tvshow.title}</h2>
                 {tvshow.originalTitle && tvshow.originalTitle !== tvshow.title ? <h6>{tvshow.originalTitle}</h6> : null}
                 <div>
@@ -370,8 +370,8 @@ export default class Tvshows extends React.Component<TvshowDetailsProps, TvshowD
                   <img src={`/images/classification/${tvshow.audience}.svg`} alt={`-${tvshow.audience}`} width="18px" />
                 </div>
               </div>
-              {tvshow.rating ? <Rating value={tvshow.rating} type="tv" tmdbid={tvshow.tmdbid} /> : undefined}
-              <div className="actions">
+              <div className="actions pb-3">
+                {tvshow.rating ? <Rating value={tvshow.rating} type="tv" tmdbid={tvshow.tmdbid} /> : undefined}
                 <a href="#" className="link-light me-3" onClick={this.handlePlayTvshow.bind(this, undefined)}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
                     <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />

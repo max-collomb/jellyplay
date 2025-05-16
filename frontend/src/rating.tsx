@@ -30,6 +30,6 @@ export default class Rating extends React.PureComponent<RatingProps, {}> {
     if (tmdbid && type) {
       content = <a href={`browser://https%3A%2F%2Fwww.themoviedb.org%2F${type}%2F${tmdbid}`}>{content}</a>;
     }
-    return <div className="rating" title={`Note spectateurs ${(value * 10).toFixed(0)}%`}>{content}</div>;
+    return <div className="rating d-inline-block" title={`Note spectateurs ${(value * 10).toFixed(0)}%`}>{content}</div>;
   }
 }

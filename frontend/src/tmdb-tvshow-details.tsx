@@ -191,8 +191,8 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
           <span className="poster" style={{ backgroundImage: tvshow.poster_path ? `url(${ctx.tmdbClient?.baseUrl}w780${tvshow.poster_path})` : '' }} />
         </div>
         <div className="title-bar">
-          <div className="d-flex align-items-center">
-            <div className="flex-grow-1">
+          <div className="d-flex flex-column flex-lg-row">
+            <div className="flex-grow-1 flex-shrink-1 pb-3">
               <h2>{tvshow.name}</h2>
               {tvshow?.original_name && tvshow.original_name !== tvshow.name ? <h6>{tvshow.original_name}</h6> : null}
               <div>
@@ -208,8 +208,8 @@ export default class TmdbTvshowDetails extends React.Component<TmdbTvshowDetails
                 <img src={`/images/classification/${this.getAudience(tvshow)}.svg`} alt="audience" width="18px" />
               </div>
             </div>
-            {tvshow.vote_average ? <Rating value={tvshow.vote_average} type="tv" tmdbid={tvshow.id} /> : undefined}
-            <div className="actions">
+            <div className="actions pb-3">
+              {tvshow.vote_average ? <Rating value={tvshow.vote_average} type="tv" tmdbid={tvshow.id} /> : undefined}
               <a
                 href="#"
                 className={`btn me-3 ${isWished ? 'btn-danger' : 'btn-primary'}`}
