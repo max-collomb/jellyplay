@@ -366,7 +366,7 @@ export default class App extends React.Component<AppProps, AppState> {
             {offcanvas}
           </Container>
         </Navbar>
-        <div className="mt-5">{search ? <SearchResults query={search} onClose={() => this.setState({ search: '', searchInputValue: '' })} /> : content}</div>
+        <div style={{ paddingTop: '56px' }}>{search ? <SearchResults query={search} onClose={() => this.setState({ search: '', searchInputValue: '' })} /> : content}</div>
       </>
     );
   }

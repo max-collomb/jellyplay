@@ -126,8 +126,8 @@ export default class TvShows extends React.Component<TvShowCardProps, TvShowCard
       }
     } else {
       infos.push(
-        <span key={1} className="year">{getSeasonCount(tvshow)}</span>,
-        <span key={2} className="duration">{getEpisodeCount(tvshow)}</span>,
+        <span key={1} className="year text-truncate">{getSeasonCount(tvshow)}</span>,
+        <span key={2} className="duration text-truncate">{getEpisodeCount(tvshow)}</span>,
       );
     }
     posterPath = posterPath || tvshow.posterPath;
