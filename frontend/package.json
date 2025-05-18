@@ -4,14 +4,14 @@
     "bootstrap": "5.x",
     "bootstrap-dark-5": "1.x",
     "moviedb-promise": "^4.0.7",
-    "react": "17.x",
+    "react": "18.x",
     "react-bootstrap": "2.x",
-    "react-circular-progressbar": "^2.1.0",
-    "react-dom": "17.x"
+    "react-circular-progressbar": "2.x",
+    "react-dom": "18.x"
   },
   "devDependencies": {
-    "@types/react": "17.x",
-    "@types/react-dom": "17.x",
+    "@types/react": "18.x",
+    "@types/react-dom": "18.x",
     "@typescript-eslint/eslint-plugin": "^5.50.0",
     "@typescript-eslint/parser": "^5.50.0",
     "buffer": "^5.7.1",

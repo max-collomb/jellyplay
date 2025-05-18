@@ -121,11 +121,11 @@ input[type="search"]::-webkit-search-cancel-button {
 @media (max-width: 576px) {
   .media-card,
   .media-card.portrait {
-    min-width: 120px;
+    min-width: 112px;
   }
   .media-card .poster,
   .media-card.portrait .poster {
-    min-width: 120px;
+    min-width: 112px;
   }  
 }
 .media-card.landscape .poster {

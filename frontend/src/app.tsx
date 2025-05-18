@@ -49,8 +49,6 @@ type AppState = {
 export default class App extends React.Component<AppProps, AppState> {
   constructor(props: AppProps) {
     super(props);
-    this.handleEventHashChanged = this.handleEventHashChanged.bind(this);
-    this.handleEventSetSearch = this.handleEventSetSearch.bind(this);
     this.handleEventWillNavigate = this.handleEventWillNavigate.bind(this);
     const orderBy = (localStorage.getItem('orderBy') || 'addedDesc') as OrderBy;
     this.state = {
@@ -114,18 +112,18 @@ export default class App extends React.Component<AppProps, AppState> {
     ctx.eventBus.off('downloads-fetched');
   }
 
-  handleEventHashChanged(data: any): void {
+  handleEventHashChanged = (data: any): void => {
     if (data.route.state?.search) {
       this.setState({ search: data.route.state.search, searchInputValue: data.route.state.search });
     }
     this.setState(data);
-  }
+  };
 
-  handleEventSetSearch(data: any): void {
+  handleEventSetSearch = (data: any): void => {
     if (data.search) {
       this.setState({ search: data.search, searchInputValue: data.search });
     }
-  }
+  };
 
   handleEventWillNavigate(): void {
     const { search } = this.state;
@@ -151,24 +149,24 @@ export default class App extends React.Component<AppProps, AppState> {
     this.setState({ orderBy, optionsVisible: false });
   }
 
-  handleSearchChange(evt: React.ChangeEvent<HTMLInputElement>): void {
+  handleSearchChange = (evt: React.ChangeEvent<HTMLInputElement>): void => {
     this.setState({ searchInputValue: evt.target.value });
-  }
+  };
 
-  handleSearchKeyDown(evt: React.KeyboardEvent<HTMLInputElement>): void {
+  handleSearchKeyDown = (evt: React.KeyboardEvent<HTMLInputElement>): void => {
     if (evt.key === 'Enter') {
       const { searchInputValue } = this.state;
       this.setState({ search: searchInputValue });
       evt.preventDefault();
       evt.stopPropagation();
     }
-  }
+  };
 
-  handleSearchClick(evt: React.MouseEvent<HTMLButtonElement>): void {
+  handleSearchClick = (evt: React.MouseEvent<HTMLButtonElement>): void => {
     const { searchInputValue } = this.state;
     this.setState({ search: searchInputValue });
     evt.preventDefault();
-  }
+  };
 
   handleServerClick(host: string, evt: React.MouseEvent<HTMLButtonElement>): void {
     document.location.href = `http://${host}/frontend/`;
@@ -269,7 +267,7 @@ export default class App extends React.Component<AppProps, AppState> {
               onChange={this.handleSearchChange.bind(this)}
               onKeyDown={this.handleSearchKeyDown.bind(this)}
             />
-            <Button variant="dark" style={{ lineHeight: '18px' }} onClick={this.handleSearchClick.bind(this)}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" /></svg></Button>
+            <Button variant="dark" style={{ lineHeight: '18px' }} onClick={this.handleSearchClick.bind(this)}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" /></svg></Button>
           </InputGroup>
           <hr className="d-md-none" />
           <Offcanvas.Title>Tri</Offcanvas.Title>
@@ -358,7 +356,7 @@ export default class App extends React.Component<AppProps, AppState> {
                   onChange={this.handleSearchChange.bind(this)}
                   onKeyDown={this.handleSearchKeyDown.bind(this)}
                 />
-                <Button variant="dark" style={{ lineHeight: '18px' }} onClick={this.handleSearchClick.bind(this)}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" /></svg></Button>
+                <Button variant="dark" style={{ lineHeight: '18px' }} onClick={this.handleSearchClick.bind(this)}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" /></svg></Button>
               </InputGroup>
               <Button variant="dark" className="ms-1" style={{ lineHeight: '18px' }} onClick={this.handleOptionsToggle.bind(this, true)}><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-three-dots-vertical" viewBox="0 0 16 16"><path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" /></svg></Button>
               {ctx.user ? <a href="jellyplay://logform" style={{ textDecoration: 'none' }} onClick={undefined/* this.handleUserSelected.bind(this, undefined) */} className="d-none d-sm-block"><img src={`/images/users/${ctx.user.name}.svg`} alt={ctx.user.name} width="36" className="ms-3" /></a> : null}
