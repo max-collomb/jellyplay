@@ -12,6 +12,7 @@ declare global {
     _positions: { [key: string]: number };
     _setPosition: (position: number) => void;
     _exited: () => void;
+    _playerAlreadyRunning: () => void;
     electronAPI: {
       checkForUpdates: () => void;
     }

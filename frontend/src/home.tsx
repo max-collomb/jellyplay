@@ -36,6 +36,10 @@ export default class Home extends React.Component<HomeProps, HomeState> {
 
   componentDidMount() {
     window._exited = this.refreshContent.bind(this);
+    window._playerAlreadyRunning = () => {
+      // eslint-disable-next-line no-alert
+      alert('Une lecture est déjà en cours');
+    };
   }
 
   componentDidUpdate() {
