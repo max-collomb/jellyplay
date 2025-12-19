@@ -47,7 +47,7 @@ export class YggFrame extends React.Component<YggFrameProps, {}> {
               $.ajax({
                 type: 'POST',
                 url: '/auth/process_login',
-                data: new FormData(document.querySelector('.login-form')),
+                data: new FormData(document.querySelector('#login-form')),
                 contentType: false,
                 processData: false,
                 success: function (data) { window.location.href = '${ctx.config.yggUrl + url}'; }
