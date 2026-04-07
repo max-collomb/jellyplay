@@ -190,6 +190,7 @@ export class Catalog {
       this.tables.users.insert({ name: 'amélie', audience: 999, admin: false, simplifiedUI: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
       this.tables.users.insert({ name: 'thomas', audience: 999, admin: false, simplifiedUI: false, created: 1659304800000 /* UTC 2022-08-01 00:00:00.000 */ }); 
       this.tables.users.insert({ name: 'mjl',    audience: 999, admin: false, simplifiedUI: true,  created: 2145916800000 /* UTC 2038-01-01 00:00:00.000 */ });
+      this.tables.users.insert({ name: 'élise',  audience: 999, admin: false, simplifiedUI: false, created: 1775772000000 /* UTC 2026-04-10 00:00:00.000 */ }); 
     }
 
     this.tables.wishes = this.db.getCollection('wishes');
